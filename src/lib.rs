@@ -5,7 +5,7 @@
 //! checkpoint per the [cyb-model](https://cyber.page/cyb-model) format.
 //!
 //! ```ignore
-//! use mc::Graph;
+//! use tru::Graph;
 //!
 //! let g = Graph::open("bostrom-23195000.graph")?;
 //! println!("snapshot {}: {} cyberlinks", g.name(), g.cyberlinks()?.count());

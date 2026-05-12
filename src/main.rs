@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use mc::Graph;
+use tru::Graph;
 
 #[derive(Parser)]
-#[command(name = "mc", version, about = "model compilation: .graph → .model")]
+#[command(name = "tru", version, about = "model compilation: .graph → .model")]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,

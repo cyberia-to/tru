@@ -1,10 +1,10 @@
 //! Smoke test: synthesize a tiny .graph in memory, write it to a temp file,
-//! open it with mc::Graph, verify round-trip of frontmatter + cyberlink records.
+//! open it with tru::Graph, verify round-trip of frontmatter + cyberlink records.
 
 use std::io::Write;
 
-use mc::graph::record::RECORD_SIZE;
-use mc::Graph;
+use tru::graph::record::RECORD_SIZE;
+use tru::Graph;
 
 fn synth_record(neuron: u8, from: u8, to: u8, amount: u128, valence: i8, block: u64) -> [u8; RECORD_SIZE] {
     let mut r = [0u8; RECORD_SIZE];
@@ -40,7 +40,7 @@ fn round_trip_minimal_graph() {
     );
     let config = "chain_id = \"smoke\"\nblock = 1\n";
 
-    let tmp = std::env::temp_dir().join("mc-smoke.graph");
+    let tmp = std::env::temp_dir().join("tru-smoke.graph");
     let mut f = std::fs::File::create(&tmp).unwrap();
     f.write_all(frontmatter.as_bytes()).unwrap();
     write!(f, "~~~config\n{config}").unwrap();
