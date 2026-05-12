@@ -12,7 +12,7 @@ What convergence means, why it matters, and how the [[collective focus theorem]]
 
 The [[tri-kernel]] runs continuously over the [[cybergraph]], computing a probability distribution over all [[particles]]. Convergence means this process settles: no matter where you start, you arrive at the same answer.
 
-That answer is $\pi^*$ -- the collective [[focus]] distribution. It is the unique fixed point of the tri-kernel operator. It assigns every particle a number between 0 and 1, with all numbers summing to 1. $\pi^*$ encodes what the network collectively considers relevant.
+That answer is $\phi^*$ -- the collective [[focus]] distribution. It is the unique fixed point of the tri-kernel operator. It assigns every particle a number between 0 and 1, with all numbers summing to 1. $\phi^*$ encodes what the network collectively considers relevant.
 
 Without convergence, different validators could compute different answers. Consensus would be impossible. Convergence is the mathematical property that makes the cybergraph a shared memory rather than a collection of disagreeing views.
 
@@ -28,7 +28,7 @@ where $\lambda_2$ is the second-largest eigenvalue of the transition matrix $P$.
 
 $\lambda = 0$ means the system never mixes. $\lambda = 1$ means instant convergence. Everything in between is governed by exponential decay:
 
-$$\|\pi^{(t)} - \pi^*\| \leq C \cdot (1-\lambda)^t$$
+$$\|\phi^{(t)} - \phi^*\| \leq C \cdot (1-\lambda)^t$$
 
 The spectral gap is the heartbeat of the [[cybergraph]]. It determines:
 
@@ -54,7 +54,7 @@ A cold network has few [[cyberlinks]] and small spectral gap. Finality may be sl
 
 ### Partition Recovery
 
-When two halves reconnect after a partition, $\lambda$ determines how quickly $\pi$ reconverges. The spectral gap bounds how long "disagreement" persists after reconnection.
+When two halves reconnect after a partition, $\lambda$ determines how quickly $\phi^*$ reconverges. The spectral gap bounds how long "disagreement" persists after reconnection.
 
 ---
 
@@ -86,9 +86,9 @@ The [[collective focus theorem]] establishes convergence in two parts.
 
 ### Part I -- Diffusion Alone
 
-Consider a [[cybergraph]] where every edge has positive weight and every particle has positive token value. Define transition probabilities proportional to edge weight times token value. If the graph is strongly connected and aperiodic, then by the [[Perron-Frobenius theorem]], a unique stationary distribution $\pi^*$ exists. Any initialization converges to it.
+Consider a [[cybergraph]] where every edge has positive weight and every particle has positive token value. Define transition probabilities proportional to edge weight times token value. If the graph is strongly connected and aperiodic, then by the [[Perron-Frobenius theorem]], a unique stationary distribution $\phi^*$ exists. Any initialization converges to it.
 
-This is the special case: diffusion only, no springs, no heat. The proof is classical -- it follows directly from the theory of ergodic Markov chains. The stationary distribution $\pi^*$ is the simplest Schelling point the network can agree on: the stable consensus of observation probabilities.
+This is the special case: diffusion only, no springs, no heat. The proof is classical -- it follows directly from the theory of ergodic Markov chains. The stationary distribution $\phi^*$ is the simplest Schelling point the network can agree on: the stable consensus of observation probabilities.
 
 Small perturbations to edge weights or token values do not destabilize the equilibrium. Clusters of strongly connected particles naturally emerge as modules.
 
@@ -124,7 +124,7 @@ This locality comes from three independent decay mechanisms:
 - Springs: the screening parameter $\mu$ creates exponential decay in the Green's function -- structural influence falls off exponentially with graph distance
 - Heat: the kernel $H_\tau = \exp(-\tau L)$ has Gaussian tail decay -- heat dissipates rapidly beyond a scale determined by $\tau$
 
-All three operators localize. A new cyberlink in one corner of the graph does not require recomputing $\pi^*$ for the entire graph. Only the local neighborhood needs updating. This is what makes planetary-scale computation feasible: $10^{15}$ particles, but any single edit touches only $O(\log(1/\varepsilon))$ hops.
+All three operators localize. A new cyberlink in one corner of the graph does not require recomputing $\phi^*$ for the entire graph. Only the local neighborhood needs updating. This is what makes planetary-scale computation feasible: $10^{15}$ particles, but any single edit touches only $O(\log(1/\varepsilon))$ hops.
 
 ---
 
@@ -151,7 +151,7 @@ The eigenvalues of the transition matrix satisfy $1 = \lambda_1 \geq |\lambda_2|
 
 The tri-kernel's composite gap blends contributions from all three operators. Each operator's gap is determined by its own parameter: $\alpha$ for diffusion, $\mu$ for springs, $\tau \lambda_2$ for heat. The composite gap $\kappa$ is a weighted average.
 
-$\pi^*$ is a mathematical consequence of three properties: ergodicity (diffusion), screening (springs), bounded temperature (heat). Convergence follows from Banach's fixed-point theorem -- it is proven, not postulated. No selection principle is needed to pick the "right" state: the contraction mapping leaves exactly one.
+$\phi^*$ is a mathematical consequence of three properties: ergodicity (diffusion), screening (springs), bounded temperature (heat). Convergence follows from Banach's fixed-point theorem -- it is proven, not postulated. No selection principle is needed to pick the "right" state: the contraction mapping leaves exactly one.
 
 ---
 

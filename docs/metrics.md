@@ -16,7 +16,7 @@ Attention is individual. It is how much a [[neuron]] projects onto a target [[pa
 
 Focus is collective. It is the aggregated result of all neurons' attention, processed by the [[tri-kernel]] into a single probability distribution over all particles. Focus is the effect -- the output of the collective computation.
 
-Individual neurons direct attention. The cybergraph aggregates all attention into focus. Every particle's focus score $\pi^*_i$ reflects the contributions of all neurons, weighted by their tokens and filtered by the epistemic layer.
+Individual neurons direct attention. The cybergraph aggregates all attention into focus. Every particle's focus score $\phi^*_i$ reflects the contributions of all neurons, weighted by their tokens and filtered by the epistemic layer.
 
 Attention is produced by two mechanisms: will (broad auto-distribution across all cyberlinks) and fine-tuning (manual per-target weight adjustment). Both produce the same thing at the receiving end -- attention at the target particle.
 
@@ -34,7 +34,7 @@ The softmax is the same operation as the [[LMSR]] price function and the [[tri-k
 
 Transformer attention is one step of the tri-kernel diffusion operator $D$ applied to the current context window. Probability mass flows from each query position toward compatible key positions -- exactly the random walk dynamics that the tri-kernel uses to compute focus over the cybergraph.
 
-Deep Equilibrium Models showed that iterating a transformer layer to convergence reaches the same fixed point as the tri-kernel: $\pi^*$ restricted to the context window. $L$ layers of attention = $L$ steps of diffusion toward that fixed point.
+Deep Equilibrium Models showed that iterating a transformer layer to convergence reaches the same fixed point as the tri-kernel: $\phi^*$ restricted to the context window. $L$ layers of attention = $L$ steps of diffusion toward that fixed point.
 
 ---
 
@@ -58,9 +58,9 @@ The [[graph-native-transformer]] derivation proves that the minimum number of he
 
 Gravity is a node-level metric. Like physical gravity, it is a property of the node itself -- a massive body warps space around it and attracts everything, regardless of what is nearby.
 
-$$G_i = \pi_i \cdot \sum_{j \neq i} \frac{\pi_j}{d(i,j)^2}$$
+$$G_i = \phi^*_i \cdot \sum_{j \neq i} \frac{\phi^*_j}{d(i,j)^2}$$
 
-where $\pi_i$ is the node's own focus probability, $\pi_j$ are focus probabilities of all other nodes, and $d(i,j)$ is the shortest path length in the cyberlink graph.
+where $\phi^*_i$ is the node's own focus probability, $\phi^*_j$ are focus probabilities of all other nodes, and $d(i,j)$ is the shortest path length in the cyberlink graph.
 
 A node's gravity is its focus mass multiplied by the total attention field it experiences from the rest of the graph. High-focus node surrounded by other high-focus nodes = enormous gravity. High-focus node on the periphery = less gravity despite its own mass.
 
@@ -72,7 +72,7 @@ $$\Phi_i = m_i \cdot \sum_{j} \frac{m_j}{r_{ij}^2}$$
 
 | physics | knowledge graph |
 |---------|----------------|
-| mass $m$ | focus probability $\pi$ |
+| mass $m$ | focus probability $\phi^*$ |
 | distance $r$ | graph distance $d(i,j)$ |
 | gravitational potential $\Phi$ | node gravity $G_i$ |
 
@@ -82,9 +82,9 @@ The node does not choose what to attract. It simply has mass (focus), and everyt
 
 | gravity | profile | meaning |
 |---------|---------|---------|
-| high | high $\pi$, surrounded by high-$\pi$ neighbors | core attractor -- holds the graph together |
-| medium | moderate $\pi$, or high $\pi$ but few neighbors | regional hub -- local structure anchor |
-| low | low $\pi$, or isolated from high-$\pi$ nodes | peripheral -- structurally weightless |
+| high | high $\phi^*$, surrounded by high-$\phi^*$ neighbors | core attractor -- holds the graph together |
+| medium | moderate $\phi^*$, or high $\phi^*$ but few neighbors | regional hub -- local structure anchor |
+| low | low $\phi^*$, or isolated from high-$\phi^*$ nodes | peripheral -- structurally weightless |
 
 ### Applications
 
@@ -98,9 +98,9 @@ Cohesion measurement: total graph gravity $G_{\text{total}} = \sum G_i$ measures
 
 The force between any two specific nodes:
 
-$$F_{ij} = \frac{\pi_i \cdot \pi_j}{d(i,j)^2}$$
+$$F_{ij} = \frac{\phi^*_i \cdot \phi^*_j}{d(i,j)^2}$$
 
-The highest $F_{ij}$ pairs are the structural bonds of the graph. Pairs with high $\pi_i \cdot \pi_j$ but large $d(i,j)$ are the most valuable missing cyberlinks -- creating them collapses distance and unlocks attention flow.
+The highest $F_{ij}$ pairs are the structural bonds of the graph. Pairs with high $\phi^*_i \cdot \phi^*_j$ but large $d(i,j)$ are the most valuable missing cyberlinks -- creating them collapses distance and unlocks attention flow.
 
 ---
 
@@ -111,11 +111,11 @@ The highest $F_{ij}$ pairs are the structural bonds of the graph. Pairs with hig
 The [[tru]] computes cyberank every block. The score feeds into:
 
 - [[Karma]]: accumulated track record of a neuron's contributions
-- [[Syntropy]]: the organizational quality of the focus distribution ($J = D_{\text{KL}}(\pi^* \| u)$ -- how far attention deviates from uniform noise)
+- [[Syntropy]]: the organizational quality of the focus distribution ($J = D_{\text{KL}}(\phi^* \| u)$ -- how far attention deviates from uniform noise)
 - Inference: the probability distribution that drives query responses and autoregressive generation
 - Sorting in [[cyb]]: the user-facing ordering of search results
 
-Luminosity = size x $\pi$ -- what a node radiates (knowledge output). Gravity = $\pi$ x $\sum(\pi_j/d^2)$ -- how strongly a node attracts (structural pull). A healthy graph needs both: high-luminosity nodes that radiate knowledge, with high-gravity nodes that hold the structure together.
+Luminosity = size x $\phi^*$ -- what a node radiates (knowledge output). Gravity = $\phi^*$ x $\sum(\phi^*_j/d^2)$ -- how strongly a node attracts (structural pull). A healthy graph needs both: high-luminosity nodes that radiate knowledge, with high-gravity nodes that hold the structure together.
 
 ---
 

@@ -14,11 +14,11 @@ Formal definition of the three local operators whose fixed point is [[cyberank]]
 
 The transition matrix $P = D^{-1}A$ (or column-stochastic $P = AD^{-1}$) governs probability flow:
 
-$$\pi^{(t+1)} = \alpha P^\top \pi^{(t)} + (1-\alpha)u$$
+$$\phi^{(t+1)} = \alpha P^\top \phi^{(t)} + (1-\alpha)u$$
 
 where $\alpha \in (0,1)$ is the teleport parameter and $u$ is a prior (often uniform or stake-weighted).
 
-Properties: row-stochastic, preserves probability mass, powers remain local. Under ergodicity (strong connectivity + aperiodicity), converges to unique stationary distribution $\pi^*$.
+Properties: row-stochastic, preserves probability mass, powers remain local. Under ergodicity (strong connectivity + aperiodicity), converges to unique stationary distribution $\phi^*$.
 
 Locality: geometric decay via teleport parameter $\alpha$.
 
@@ -76,7 +76,7 @@ Three energy terms:
 
 The Boltzmann equilibrium form:
 
-$$\pi^*_i \propto \exp\big(-\beta\,[E_{\text{spring},i} + \lambda\,E_{\text{diff},i} + \gamma\,C_i]\big)$$
+$$\phi^*_i \propto \exp\big(-\beta\,[E_{\text{spring},i} + \lambda\,E_{\text{diff},i} + \gamma\,C_i]\big)$$
 
 The three energy terms correspond to the three operators: $E_{\text{spring}}$ encodes structural coherence via the screened [[Laplacian]], $E_{\text{diff}}$ encodes flow consistency via [[diffusion]], $C_i$ encodes context pressure via [[heat kernel]] weighting.
 
@@ -124,7 +124,7 @@ $$p_{ij} = \frac{w_{ij} \cdot t_j}{\sum_{k \in \mathcal{N}(i)} w_{ik} \cdot t_k}
 
 Assumptions: $G$ is strongly connected (directed path between any pair) and aperiodic (gcd of all directed cycle lengths is 1).
 
-Claim: there exists a unique stationary distribution $\pi$ satisfying $\pi P = \pi$ with $\sum_i \pi_i = 1$.
+Claim: there exists a unique stationary distribution $\phi^*$ satisfying $\phi^* P = \phi^*$ with $\sum_i \phi^*_i = 1$.
 
 #### Proof
 
@@ -132,21 +132,21 @@ Step 1 (Markov Chain): The matrix $P = [p_{ij}]$ is stochastic. Non-negativity: 
 
 Step 2 (Irreducibility): For any pair $(u, v)$, a path from $u$ to $v$ exists with positive probability. The chain is irreducible.
 
-Step 3 (Uniqueness): Since $P$ is irreducible and aperiodic, the chain is ergodic. By the [[Perron-Frobenius theorem]], a unique stationary distribution $\pi$ exists satisfying $\pi P = \pi$, $\sum_i \pi_i = 1$.
+Step 3 (Uniqueness): Since $P$ is irreducible and aperiodic, the chain is ergodic. By the [[Perron-Frobenius theorem]], a unique stationary distribution $\phi^*$ exists satisfying $\phi^* P = \phi^*$, $\sum_i \phi^*_i = 1$.
 
 Step 4 (Convergence): By the ergodic theorem, for any initial distribution $\mu^{(0)}$:
 
-$$\pi = \lim_{t \to \infty} \mu^{(0)} \cdot P^t$$
+$$\phi^* = \lim_{t \to \infty} \mu^{(0)} \cdot P^t$$
 
-Step 5 (Interpretation): The stationary distribution $\pi$ is a stable [[consensus]] of observation probabilities. Each $\pi_j$ reflects both the [[particle]]'s structural position and the [[neuron]] [[token]] influence. This is the simplest Schelling point everyone can universally agree on.
+Step 5 (Interpretation): The stationary distribution $\phi^*$ is a stable [[consensus]] of observation probabilities. Each $\phi^*_j$ reflects both the [[particle]]'s structural position and the [[neuron]] [[token]] influence. This is the simplest Schelling point everyone can universally agree on.
 
 #### Corollaries
 
-Corollary 1 (Stability): Small perturbations in $w_{ij}$ or $t_j$ do not destabilize the equilibrium: $\lim_{t \to \infty} \pi_j(t) = \pi_j + \varepsilon, \quad |\varepsilon| \ll \pi_j$.
+Corollary 1 (Stability): Small perturbations in $w_{ij}$ or $t_j$ do not destabilize the equilibrium: $\lim_{t \to \infty} \phi^*_j(t) = \phi^*_j + \varepsilon, \quad |\varepsilon| \ll \phi^*_j$.
 
-Corollary 2 (Decentralized Computation): [[Focus]] $\pi_j$ for each node can be computed locally by summing contributions from incoming edges.
+Corollary 2 (Decentralized Computation): [[Focus]] $\phi^*_j$ for each node can be computed locally by summing contributions from incoming edges.
 
-Corollary 3 (Emergent Modularity): Clusters of strongly connected [[particles]] naturally emerge, forming modules: $C_i = \{ j \in V \mid \pi_j > \tau \}$ where $\tau$ is a significance threshold.
+Corollary 3 (Emergent Modularity): Clusters of strongly connected [[particles]] naturally emerge, forming modules: $C_i = \{ j \in V \mid \phi^*_j > \tau \}$ where $\tau$ is a significance threshold.
 
 ### Part II -- Composite Contraction (General Case)
 
@@ -156,7 +156,7 @@ The composite operator $\mathcal{R} = \lambda_d D + \lambda_s S + \lambda_h H_\t
 
 #### Reduction
 
-When $\lambda_s = \lambda_h = 0$: $\mathcal{R} = D$, $\kappa = \alpha$, $\mathcal{F}$ reduces to $D_{\text{KL}}(\phi \| D\phi)$, and the fixed point is the stationary distribution $\pi^*$ from Part I. The general case subsumes the special case.
+When $\lambda_s = \lambda_h = 0$: $\mathcal{R} = D$, $\kappa = \alpha$, $\mathcal{F}$ reduces to $D_{\text{KL}}(\phi \| D\phi)$, and the fixed point is the stationary distribution $\phi^*$ from Part I. The general case subsumes the special case.
 
 ---
 
@@ -229,9 +229,9 @@ Complexity: $O(|N_h| \cdot c)$ per kernel for average degree $c$.
 
 Monitor per epoch:
 
-- Entropy $H(\pi)$, negentropy $J(\pi)$
+- Entropy $H(\phi^*)$, negentropy $J(\phi^*)$
 - Spectral gap estimate
-- $\ell_1$ drift $\|\pi^t - \pi^{(t-1)}\|$
+- $\ell_1$ drift $\|\phi^{(t)} - \phi^{(t-1)}\|$
 - Locality radius $h$, nodes touched
 - Compute vs verify wall-time
 

@@ -95,7 +95,7 @@ Diffusion and heat describe irreversible spreading -- entropy growth and the arr
 
 Each conserves a different quantity: mass/probability (diffusion), potential/kinetic energy (springs), and thermal energy (heat). Each minimizes a different functional: entropy production, potential energy, free energy. Together they are Pareto-optimal: they explain the majority of natural transport, oscillation, and dissipation with minimal assumptions.
 
-The [[Laplacian]] is the shared mathematical root. The graph Laplacian $L = D - A$ is the discrete form of the Laplace-Beltrami operator $\nabla^2$ on continuous manifolds. Newton's gravitational potential satisfies the Poisson equation $\nabla^2\Phi = 4\pi G\rho$ -- [[gravity]] is the springs kernel of the physical universe, with [[mass]] density as the source term. The screened form $(L + \mu I)$ in the tri-kernel corresponds to massive gravity theories where the graviton has effective range. On the [[cybergraph]], [[tokens]] play the role of [[mass]]: they curve graph topology the way [[mass]] curves [[spacetime]].
+The [[Laplacian]] is the shared mathematical root. The graph Laplacian $L = D - A$ is the discrete form of the Laplace-Beltrami operator $\nabla^2$ on continuous manifolds. Newton's gravitational potential satisfies the Poisson equation $\nabla^2\Phi = 4\phi^* G\rho$ -- [[gravity]] is the springs kernel of the physical universe, with [[mass]] density as the source term. The screened form $(L + \mu I)$ in the tri-kernel corresponds to massive gravity theories where the graviton has effective range. On the [[cybergraph]], [[tokens]] play the role of [[mass]]: they curve graph topology the way [[mass]] curves [[spacetime]].
 
 The Jeans instability illustrates the kernel interplay in cosmology: a gas cloud collapses into a star when gravitational potential (springs) overcomes thermal pressure (heat). This is a phase transition in the tri-kernel sense -- the moment $\lambda_s$ dominates $\lambda_h$.
 
@@ -131,7 +131,7 @@ An adversary optimizing against one kernel worsens their position against anothe
 
 ## The Friston Connection
 
-The fixed point $\pi^*$ minimizes a free energy functional:
+The fixed point $\phi^*$ minimizes a free energy functional:
 
 $$\mathcal{F}(\phi) = E_{\text{spring}}(\phi) + \lambda E_{\text{diffusion}}(\phi) - T S(\phi)$$
 

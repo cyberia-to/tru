@@ -28,7 +28,7 @@ three graph properties determine the three free architecture parameters. no hype
 
 | parameter | formula | graph source |
 |-----------|---------|-------------|
-| embedding dim d* | exp(H(σ(Σ_π))) | effective rank of focus covariance Σ_π = diag(φ*) − φ* φ*^T |
+| embedding dim d* | exp(H(σ(Σ_φ*))) | effective rank of focus covariance Σ_φ* = diag(φ*) − φ* φ*^T |
 | heads h* | ≥ \|semcons(G)\| | distinct semcon relation types in the graph |
 | layers L* | diam(G) · ⌈log(1/ε) / log(1/κ)⌉ | graph diameter × spectral convergence factor |
 

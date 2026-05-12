@@ -12,7 +12,7 @@ tru is the epistemic engine that turns collective attention into verifiable trut
 
 Four quantities, every block, in [[consensus]]:
 
-- [[focus]] per [[particle]]: the share of collective attention each particle holds, derived from the [[tri-kernel]] fixed point π*
+- [[focus]] per [[particle]]: the share of collective attention each particle holds, derived from the [[tri-kernel]] fixed point φ*
 - [[cyberank]] per [[particle]]: the structural importance score, analogous to PageRank but computed through a composite operator of [[diffusion]], [[springs]], and [[heat kernel]]
 - [[karma]] per [[neuron]]: the accumulated [[Bayesian Truth Serum]] score history, measuring how much genuine information each neuron has contributed over time
 - [[syntropy]] of the whole [[cybergraph]]: the total information gain in bits -- how much more structured the graph is than random noise
@@ -27,7 +27,7 @@ The system operates as a feedback cycle:
 2. The neuron creates a [[cyberlink]] -- asserting a connection between two [[particles]], staking on it, setting [[valence]]
 3. The link enters the [[cybergraph]], changing its topology
 4. The [[tri-kernel]] recomputes: [[diffusion]] explores, [[springs]] enforce structure, [[heat kernel]] adapts
-5. [[Cyberank]] produces a new fixed point π* -- the updated collective focus
+5. [[Cyberank]] produces a new fixed point φ* -- the updated collective focus
 6. The neuron observes the result and links again
 
 Every pass through this loop sharpens the graph. Links that attract attention accumulate [[focus]]. Links that the market disbelieves get suppressed through [[market inhibition]]. Neurons that consistently add signal accumulate [[karma]], which amplifies their future contributions. Neurons that add noise see their influence diminish.
@@ -50,6 +50,6 @@ Knowledge creation is a collective activity with a free-rider problem. Without a
 
 tru solves this by making knowledge creation a provably rewarded activity. Every [[cyberlink]] that shifts the focus distribution -- that adds genuine structure to the graph -- earns its creator [[$CYB]] proportional to the shift. The reward is not assigned by committee or oracle. The neuron proves its own contribution via a [[stark]] proof and self-mints the reward.
 
-The system converges toward truth because honesty is the dominant strategy. [[Bayesian Truth Serum]] makes accurate reporting the uniquely score-maximizing response. [[Karma]] compounds honest signaling into lasting influence. [[ICBS]] markets suppress false assertions through economic pressure. The result is a knowledge graph where the collective focus distribution π* is the closest approximation to shared truth that the network can produce -- and it improves with every honest link.
+The system converges toward truth because honesty is the dominant strategy. [[Bayesian Truth Serum]] makes accurate reporting the uniquely score-maximizing response. [[Karma]] compounds honest signaling into lasting influence. [[ICBS]] markets suppress false assertions through economic pressure. The result is a knowledge graph where the collective focus distribution φ* is the closest approximation to shared truth that the network can produce -- and it improves with every honest link.
 
 see [[reference/rewards]] for the reward functions. see [[reference/epistemic-markets]] for the market mechanism. see [[reference/truth-scoring]] for the scoring layer. see [[reference/knowledge-economy]] for the full economic design.

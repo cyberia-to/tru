@@ -138,7 +138,7 @@ Consistently right before the crowd → high karma → more adjacency weight per
 
 ## honesty as the foundation of syntropy
 
-The [[cybergraph]]'s information measure -- [[syntropy]] $J(\pi^*) = D_{KL}(\pi^* \| u)$ -- is produced entirely by the aggregate of honest epistemic acts. Each honest cyberlink is a bit of genuine signal. The tri-kernel converts honest signals into a sharper $\pi^*$. Dishonest links move $\pi^*$ toward noise, lowering syntropy.
+The [[cybergraph]]'s information measure -- [[syntropy]] $J(\phi^*) = D_{KL}(\phi^* \| u)$ -- is produced entirely by the aggregate of honest epistemic acts. Each honest cyberlink is a bit of genuine signal. The tri-kernel converts honest signals into a sharper $\phi^*$. Dishonest links move $\phi^*$ toward noise, lowering syntropy.
 
 A maximally honest graph is a maximally syntropy-generating machine. Honesty is the fuel.
 

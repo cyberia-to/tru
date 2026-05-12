@@ -18,7 +18,7 @@ the input to tru is already weighted by honesty: [[karma]] records each neuron's
 
 ## self-minting
 
-tru computes Δπ — the shift in φ* before and after a neuron's batch of links. a neuron proves Δπ via [[zheng]] and self-mints [[CYB]] proportional to the proven shift. no central aggregator decides who contributed what. each neuron runs tru locally, generates the proof, submits the claim.
+tru computes Δφ* — the shift in φ* before and after a neuron's batch of links. a neuron proves Δφ* via [[zheng]] and self-mints [[CYB]] proportional to the proven shift. no central aggregator decides who contributed what. each neuron runs tru locally, generates the proof, submits the claim.
 
 this is why tru runs locally on every [[neuron]], not only on validators. validators run it for consensus. every neuron runs it to earn.
 
@@ -36,7 +36,7 @@ tru is the only component in the stack that understands graph structure. [[glia]
 
 ## specs
 
-- [specs/field.md](specs/field.md) — effective adjacency, tri-kernel, φ*, eigensolver, cyberank, syntropy, Δπ
+- [specs/field.md](specs/field.md) — effective adjacency, tri-kernel, φ*, eigensolver, cyberank, syntropy, Δφ*
 - [specs/ct1.md](specs/ct1.md) — CT-1 compilation pipeline: eight passes from .graph to .model
 - [specs/model.md](specs/model.md) — .model container format
 
