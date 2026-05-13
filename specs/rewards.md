@@ -135,4 +135,4 @@ Learning incentives and [[costly signal]] mechanics work together: the staking c
 
 ---
 
-See §6.9 and §14.2 of the whitepaper for the full specification. See [[cyber/tokenomics]] for the system-level economics (monetary policy, allocation curve, GFP flywheel). See [[collective learning]] for the group-level dynamics. See [[cyberlink]], [[focus]], [[neuron]], [[particle]], [[costly signal]], [[relevance machine]].
+See §6.9 and §14.2 of the whitepaper for the full specification. See [[cyber/tokenomics]] for the system-level economics (monetary policy, allocation curve, GFP flywheel). See [[collective learning]] for the group-level dynamics. See [[cyberlink]], [[focus]], [[neuron]], [[particle]], [[costly signal]], [[convergence vm]].
