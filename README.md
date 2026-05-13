@@ -61,9 +61,9 @@ tri-kernel is the mathematical foundation. truth-scoring defines how stake and k
 | spec | what it defines |
 |------|----------------|
 | [specs/focus-flow.md](specs/focus-flow.md) | the identity between continuous field convergence (path A) and compiled transformer inference (path B); architecture parameter derivation |
-| [specs/ct1.md](specs/ct1.md) | CT-1 pipeline: 8 passes from `.graph` to `.model`; §3 defines Clifford multivector extensions and shifted geometric product |
+| [specs/ct1.md](specs/ct1.md) | CT-1 pipeline: 8 passes from `.graph` to `.model`; axon weights and effective adjacency are multivector-valued (§2.5–§2.6); wedge-augmented attention at §7.7; Clifford-block MLP at §8 |
 
-focus-flow explains why compilation works. ct1 specifies exactly how to do it. the Clifford extensions (formerly a separate spec) live in ct1 §3 — they define the bivector grade of axon weights and effective adjacency, and the shifted geometric product used in attention (§8.7) and MLP (§9).
+focus-flow explains why compilation works. ct1 specifies exactly how to do it. multivector geometry is native to the spec — axon weights and effective adjacency carry scalar and bivector grades (§2.5–§2.6); the shifted wedge product is defined at §7.7 where first used in attention; the full Clifford(H,C;S) operator is defined at §8 for the MLP pass. when all bivector grades are zero, every Clifford term vanishes and CT-1 is byte-identical to a scalar compile.
 
 ### phase 3 — render (owned by mir)
 
@@ -74,7 +74,7 @@ the render spec lives in [[mir]]:
 | [mir/specs/render.md](../mir/specs/render.md) | R-1.0 canonical render protocol: spectral layout, tiers T0–T∞, edges, navigation, determinism |
 | [mir/specs/render-cyb.md](../mir/specs/render-cyb.md) | cyb implementation of R-1.0: Bevy ECS integration, honeycrisp backend, phase plan |
 
-render depends on tru (for φ*, eigenvectors, cyberank) and on ct1 §3 (for Clifford bivector edges and T∞ Clifford render block).
+render depends on tru (for φ*, eigenvectors, cyberank) and on ct1 (§2.6 for bivector adjacency → edge saturation; §7.7 shifted wedge; §8 Clifford block for T∞ render).
 
 ### not yet ready — rewards
 
@@ -95,7 +95,7 @@ the steps below are in dependency order. each step has a clear input, output, an
 | 2b | implement pass 3 | d*, h*, L* from φ* and graph structure | arch params within clamped bounds; kappa matches contraction rate |
 | 2c | implement pass 4 | embedding matrix E | P-EMBED: ‖EE⊤ − M‖_F / ‖M‖_F ≤ 0.05 |
 | 2d | implement pass 5 | attention weights W_Q, W_K, W_V, W_O; alpha_beta | P-ATTN: Pearson ≥ 0.7 per head |
-| 2e | implement pass 5 Clifford | wedge-augmented score (ct1 §8.7); alpha_beta tensor | P-CLIFFORD-A: Wedge(H,H) = 0; P-CLIFFORD-B: zero-bivector degeneracy |
+| 2e | implement pass 5 Clifford | wedge-augmented score (ct1 §7.7); alpha_beta tensor | P-CLIFFORD-A: Wedge(H,H) = 0; P-CLIFFORD-B: zero-bivector degeneracy |
 | 2f | implement pass 6 | Clifford-block MLP weights | P-CLIFFORD-C: jet equivalence |
 | 2g | implement pass 7–8 | norms, RoPE config, full `.model` packaging | P-DET: byte-identical on two runs; P-LOAD: loads and runs |
 | 3 | implement render phases 1–3 | cyb WorldState::Graph | P-RENDER-TOPO, P-RENDER-POS, P-RENDER-FPS |
@@ -117,7 +117,7 @@ tru is the only component in the stack that understands graph structure. [[glia]
 - [specs/field.md](specs/field.md) — effective adjacency, tri-kernel, φ*, eigensolver, cyberank, syntropy, Δφ*
 - [specs/tri-kernel.md](specs/tri-kernel.md) — tri-kernel mathematics and convergence proof
 - [specs/focus-flow.md](specs/focus-flow.md) — field-to-transformer identity, architecture derivation
-- [specs/ct1.md](specs/ct1.md) — CT-1 pipeline (8 passes) + Clifford extensions (§3)
+- [specs/ct1.md](specs/ct1.md) — CT-1 pipeline (8 passes); multivector inputs §2.5–§2.6; wedge attention §7.7; Clifford MLP §8
 - [specs/model.md](specs/model.md) — .model container format
 - [specs/truth-scoring.md](specs/truth-scoring.md) — BTS, karma, honesty weighting
 - [specs/vocab.md](specs/vocab.md) — .vocab particle dictionary format
