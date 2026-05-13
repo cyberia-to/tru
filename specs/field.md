@@ -125,12 +125,12 @@ each particle receives a position in k-dimensional spectral space: row i of V_k 
 
 | output | definition | consumer |
 |--------|-----------|---------|
-| φ* | tri-kernel fixed point, Σ φ*(i) = 1 | [[foculus]], self-minting proofs, CT-1 compilation |
+| φ* | tri-kernel fixed point, Σ φ*(i) = 1 | [[foculus]], self-minting proofs, CT-0 compilation |
 | cyberank(p) | φ*(p) — focus per particle | [[glia]] routing, [[cyb]] ranking, [[cybernode]] queries |
 | spectral positions | top-k eigenvectors of (L + μI) | [[mir]] world geometry |
-| syntropy J | Σ_j φ*(j) · log(|V| · φ*(j)) | network health, norm pass in CT-1 |
+| syntropy J | Σ_j φ*(j) · log(|V| · φ*(j)) | network health, norm pass in CT-0 |
 | Δφ*(ν, batch) | φ*_after − φ*_before for neuron ν's link batch | self-minting proof input to [[zheng]] |
 
 karma is not written by tru's field pass. karma is accumulated by [[plumb]] from BTS scores and read from [[bbg]] as input. tru reads karma; [[plumb]] writes it.
 
-see [[collective focus theorem]] for the convergence proofs. see [[ct1.md]] for how φ* feeds into model compilation. see [[tri-kernel]] for why these three operators are the minimal sufficient basis.
+see [[collective focus theorem]] for the convergence proofs. see [[ct0.md]] for how φ* feeds into model compilation. see [[tri-kernel]] for why these three operators are the minimal sufficient basis.

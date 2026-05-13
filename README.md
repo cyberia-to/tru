@@ -17,9 +17,9 @@ two jobs, one engine.
 
 the field job runs the [[tri-kernel]] over every signal: reads signal.a (stake) and signal.v (valence) → composite diffusion-springs-heat operator R = λ_d·D + λ_s·S + λ_h·H_τ → iterates to fixed point → φ*. each particle's φ*(p) is the focus it has earned from the entire weighted graph. the system converges; no authority assigns the result.
 
-the compile job reads the same φ*-weighted graph and derives the CT-1 transformer: embedding dimension d*, attention heads h*, layer count L*, weight matrix W from the top singular vectors of the φ*-weighted adjacency. not trained: compiled.
+the compile job reads the same φ*-weighted graph and derives the CT-0 transformer: embedding dimension d*, attention heads h*, layer count L*, weight matrix W from the top singular vectors of the φ*-weighted adjacency. not trained: compiled.
 
-these are the same computation at different scales. the field is the continuous limit; the compiled model is that limit frozen at finite depth L*. the [[CT-1]] pipeline makes this precise — eight passes from .graph to .model, each pass an exact derivation of transformer parameters from φ*.
+these are the same computation at different scales. the field is the continuous limit; the compiled model is that limit frozen at finite depth L*. the [[CT-0]] pipeline makes this precise — eight passes from .graph to .model, each pass an exact derivation of transformer parameters from φ*.
 
 ## the name
 
@@ -42,7 +42,7 @@ the specs are organized in dependency order. implement them in the sequence belo
 | spec | what it defines |
 |------|----------------|
 | [specs/vocab.md](specs/vocab.md) | `.vocab` particle dictionary: content-addressed particle → bytes mapping |
-| [specs/model.md](specs/model.md) | `.model` container format: the inference-ready artifact CT-1 produces |
+| [specs/model.md](specs/model.md) | `.model` container format: the inference-ready artifact CT-0 produces |
 
 these two formats are prerequisites for everything else. vocab feeds pass 1; model is the output of pass 8.
 
@@ -61,9 +61,9 @@ tri-kernel is the mathematical foundation. truth-scoring defines how stake and k
 | spec | what it defines |
 |------|----------------|
 | [specs/focus-flow.md](specs/focus-flow.md) | the identity between continuous field convergence (path A) and compiled transformer inference (path B); architecture parameter derivation |
-| [specs/ct1.md](specs/ct1.md) | CT-1 pipeline: 8 passes from `.graph` to `.model`; axon weights and effective adjacency are multivector-valued (§2.5–§2.6); wedge-augmented attention at §7.7; Clifford-block MLP at §8 |
+| [specs/ct0.md](specs/ct0.md) | CT-0 pipeline: 8 passes from `.graph` to `.model`; axon weights and effective adjacency are multivector-valued (§2.5–§2.6); wedge-augmented attention at §7.7; Clifford-block MLP at §8 |
 
-focus-flow explains why compilation works. ct1 specifies exactly how to do it. multivector geometry is native to the spec — axon weights and effective adjacency carry scalar and bivector grades (§2.5–§2.6); the shifted wedge product is defined at §7.7 where first used in attention; the full Clifford(H,C;S) operator is defined at §8 for the MLP pass. when all bivector grades are zero, every Clifford term vanishes and CT-1 is byte-identical to a scalar compile.
+focus-flow explains why compilation works. ct0 specifies exactly how to do it. multivector geometry is native to the spec — axon weights and effective adjacency carry scalar and bivector grades (§2.5–§2.6); the shifted wedge product is defined at §7.7 where first used in attention; the full Clifford(H,C;S) operator is defined at §8 for the MLP pass. when all bivector grades are zero, every Clifford term vanishes and CT-0 is byte-identical to a scalar compile.
 
 ### phase 3 — render (owned by mir)
 
@@ -74,7 +74,7 @@ the render spec lives in [[mir]]:
 | [mir/specs/render.md](../mir/specs/render.md) | R-1.0 canonical render protocol: spectral layout, tiers T0–T∞, edges, navigation, determinism |
 | [mir/specs/render-cyb.md](../mir/specs/render-cyb.md) | cyb implementation of R-1.0: Bevy ECS integration, honeycrisp backend, phase plan |
 
-render depends on tru (for φ*, eigenvectors, cyberank) and on ct1 (§2.6 for bivector adjacency → edge saturation; §7.7 shifted wedge; §8 Clifford block for T∞ render).
+render depends on tru (for φ*, eigenvectors, cyberank) and on ct0 (§2.6 for bivector adjacency → edge saturation; §7.7 shifted wedge; §8 Clifford block for T∞ render).
 
 ### not yet ready — rewards
 
@@ -95,7 +95,7 @@ the steps below are in dependency order. each step has a clear input, output, an
 | 2b | implement pass 3 | d*, h*, L* from φ* and graph structure | arch params within clamped bounds; kappa matches contraction rate |
 | 2c | implement pass 4 | embedding matrix E | P-EMBED: ‖EE⊤ − M‖_F / ‖M‖_F ≤ 0.05 |
 | 2d | implement pass 5 | attention weights W_Q, W_K, W_V, W_O; alpha_beta | P-ATTN: Pearson ≥ 0.7 per head |
-| 2e | implement pass 5 Clifford | wedge-augmented score (ct1 §7.7); alpha_beta tensor | P-CLIFFORD-A: Wedge(H,H) = 0; P-CLIFFORD-B: zero-bivector degeneracy |
+| 2e | implement pass 5 Clifford | wedge-augmented score (ct0 §7.7); alpha_beta tensor | P-CLIFFORD-A: Wedge(H,H) = 0; P-CLIFFORD-B: zero-bivector degeneracy |
 | 2f | implement pass 6 | Clifford-block MLP weights | P-CLIFFORD-C: jet equivalence |
 | 2g | implement pass 7–8 | norms, RoPE config, full `.model` packaging | P-DET: byte-identical on two runs; P-LOAD: loads and runs |
 | 3 | implement render phases 1–3 | cyb WorldState::Graph | P-RENDER-TOPO, P-RENDER-POS, P-RENDER-FPS |
@@ -117,7 +117,7 @@ tru is the only component in the stack that understands graph structure. [[glia]
 - [specs/field.md](specs/field.md) — effective adjacency, tri-kernel, φ*, eigensolver, cyberank, syntropy, Δφ*
 - [specs/tri-kernel.md](specs/tri-kernel.md) — tri-kernel mathematics and convergence proof
 - [specs/focus-flow.md](specs/focus-flow.md) — field-to-transformer identity, architecture derivation
-- [specs/ct1.md](specs/ct1.md) — CT-1 pipeline (8 passes); multivector inputs §2.5–§2.6; wedge attention §7.7; Clifford MLP §8
+- [specs/ct0.md](specs/ct0.md) — CT-0 pipeline (8 passes); multivector inputs §2.5–§2.6; wedge attention §7.7; Clifford MLP §8
 - [specs/model.md](specs/model.md) — .model container format
 - [specs/truth-scoring.md](specs/truth-scoring.md) — BTS, karma, honesty weighting
 - [specs/vocab.md](specs/vocab.md) — .vocab particle dictionary format

@@ -2,23 +2,23 @@
 tags: cyber, tru, core, spec
 crystal-type: spec
 crystal-domain: cyber
-alias: CT-1, compiled transformers spec, ct-spec, model compilation pipeline, tru compile
+alias: CT-0, CT-1, compiled transformers spec, ct-spec, model compilation pipeline, tru compile
 ---
-# Compiled Transformers Specification (CT-1)
+# Compiled Transformers Specification (CT-0)
 
 formal contract for compiling a transformer from a [[cybergraph]] snapshot. companion to [[compiled transformers]] (the how-to article) and [[graph-native-transformer]] (the derivation). this page is what the rust crate implements; conformance is checked against the predicates in §11.
 
-CT-1 operates on multivector-valued graphs. axon weights and effective adjacency carry two grades: a scalar grade (stake-weighted sum) and a bivector grade (valence-oriented consensus). the attention score is wedge-augmented; the MLP is a Clifford block. when all bivector grades are zero, every Clifford term vanishes and CT-1 output is byte-identical to a scalar compile.
+CT-0 operates on multivector-valued graphs. axon weights and effective adjacency carry two grades: a scalar grade (stake-weighted sum) and a bivector grade (valence-oriented consensus). the attention score is wedge-augmented; the MLP is a Clifford block. when all bivector grades are zero, every Clifford term vanishes and CT-0 output is byte-identical to a scalar compile.
 
 ---
 
 ## 1. Scope
 
-CT-1 specifies a deterministic function
+CT-0 specifies a deterministic function
 
 $$\text{compile}: G \to \mathcal{M}$$
 
-where $G$ is a cybergraph snapshot in [[cyb-graph|.graph format]] and $\mathcal{M}$ is a transformer checkpoint in [[cyb-model|.model format]]. Two implementations conforming to CT-1 must produce a byte-identical $\mathcal{M}$ given a byte-identical $G$ and the same compiler version.
+where $G$ is a cybergraph snapshot in [[cyb-graph|.graph format]] and $\mathcal{M}$ is a transformer checkpoint in [[cyb-model|.model format]]. Two implementations conforming to CT-0 must produce a byte-identical $\mathcal{M}$ given a byte-identical $G$ and the same compiler version.
 
 ---
 
@@ -30,7 +30,7 @@ A snapshot is a `.graph` container (see [[cyb-graph]]) read into the tuple $G = 
 
 - $\mathcal{S}$ — the `signals` records, ordered as written in the file (canonical chain order)
 - $h$ — the `block` field of the `config` section
-- $\nu_{\text{compiler}}$ — the compiler version string, always `"CT-1"`.
+- $\nu_{\text{compiler}}$ — the compiler version string, always `"CT-0"`.
 
 If the optional `proof` or `impulse` extension sections are present (see [[cyb-graph]] §extensions), conforming compilers verify proofs before compilation and may reuse impulses to skip power iteration (see §5.1). Snapshots without these extensions are accepted — the base `.graph` spec has no provenance layer.
 
@@ -241,7 +241,7 @@ with $\varepsilon_L = 10^{-2}$. Clamp $L^* \in [4, 512]$.
 `arch.toml`:
 
 ```toml
-compiler   = "CT-1"
+compiler   = "CT-0"
 block      = 12345678
 particles  = 3143630
 d          = 300
@@ -347,7 +347,7 @@ The shifted wedge operation also underlies the Clifford-block MLP in §8; the fu
 
 ## 8. Pass 6 — MLP Weights
 
-CT-1 uses a Clifford-block MLP per CliffordNet (Ji, Z. arXiv 2601.06793, 2026). The primitive is the shifted geometric product of feature tensors $H, C \in \mathbb{F}_p^{N \times D}$ over shift set $S$:
+CT-0 uses a Clifford-block MLP per CliffordNet (Ji, Z. arXiv 2601.06793, 2026). The primitive is the shifted geometric product of feature tensors $H, C \in \mathbb{F}_p^{N \times D}$ over shift set $S$:
 
 Shifted inner product:
 
@@ -425,7 +425,7 @@ RoPE with base $\theta_0 = 10000$, max sequence length 8192. Inverse frequencies
 
 ## 10. Pass 8 — Packaging as `.model`
 
-The output of CT-1 is a single `.model` file (see [[cyb-model]]) loadable by the cyb-llm runtime at `~/git/cyb/llm`. The runtime mmaps the file, parses the TOML frontmatter, jumps to the binary `weights` section, and starts inference — no extraction step.
+The output of CT-0 is a single `.model` file (see [[cyb-model]]) loadable by the cyb-llm runtime at `~/git/cyb/llm`. The runtime mmaps the file, parses the TOML frontmatter, jumps to the binary `weights` section, and starts inference — no extraction step.
 
 ### 10.1 Container layout
 
@@ -434,7 +434,7 @@ The output of CT-1 is a single `.model` file (see [[cyb-model]]) loadable by the
 ```toml
 [cyb]
 types = ["model"]
-name = "bostrom-23195000-ct1"
+name = "bostrom-23195000-ct0"
 
 [[files]]
 name = "card"
@@ -472,10 +472,10 @@ Markdown. Auto-generated from compile inputs:
 
 ```markdown
 ~~~card
-# bostrom-23195000-ct1
+# bostrom-23195000-ct0
 
 Compiled from bostrom-23195000.graph at 2026-03-23 14:42 UTC.
-Spec: CT-1. d=300, h=13, L=290, params=4.19B.
+Spec: CT-0. d=300, h=13, L=290, params=4.19B.
 
 snapshot particle: hemera:9f3c...
 model particle:    hemera:1a2b...
@@ -521,7 +521,7 @@ shift_set              = [1, 2, 4, 8, 16]   # S (§7.7 and §8)
 self_energy_suppression = 1                 # λ ∈ {0, 1}; 1 = differential mode
 
 [lineage]
-spec          = "CT-1"
+spec          = "CT-0"
 source        = "hemera:9f3c..."
 source_kind   = ".graph"
 chain_id      = "bostrom-1"
@@ -533,7 +533,7 @@ semcons_hash  = "hemera:..."
 
 ### 10.4 `program` section
 
-The standard Llama transformer-decoder program from cyb-model.md applies unchanged. CT-1 emits the trident form by default; the `.rs` form is acceptable when proof is not required.
+The standard Llama transformer-decoder program from cyb-model.md applies unchanged. CT-0 emits the trident form by default; the `.rs` form is acceptable when proof is not required.
 
 ```trident
 ~~~program
@@ -545,7 +545,7 @@ pub fn forward(input: Field, output: Field, seq: Field, cfg: Config) {
 }
 ```
 
-CT-1 does not emit a custom program. The architecture parameters in `config` parameterize the standard one. Custom programs (e.g. for graph-walk inference instead of token-sequence inference) are reserved for CT-2.
+CT-0 does not emit a custom program. The architecture parameters in `config` parameterize the standard one. Custom programs (e.g. for graph-walk inference instead of token-sequence inference) are reserved for CT-2.
 
 ### 10.5 `tensors` section
 
@@ -587,11 +587,11 @@ For particle vocabularies there are no merge rules; the `[merges]` table is omit
 
 ### 10.7 `eval` section
 
-CT-1 conformance scores per §11, plus optional downstream metrics. Per-mille integers.
+CT-0 conformance scores per §11, plus optional downstream metrics. Per-mille integers.
 
 ```toml
 ~~~eval
-[ct1_conformance]
+[ct0_conformance]
 P_EMBED = 31         # reconstruction error × 1000; 0.031
 P_ATTN_min = 810     # min Pearson × 1000
 P_ATTN_mean = 890
@@ -609,12 +609,12 @@ Updatable by the runtime after benchmark runs, same convention as cyb-model.
 
 Raw tensor data, 4096-byte page-aligned per tensor for zero-copy mmap and `unimem` integration. Encodings follow cyb-model §weights:
 
-| from CT-1 internal | to disk encoding | conversion |
+| from CT-0 internal | to disk encoding | conversion |
 |---|---|---|
 | float32 projections | u16 | `round(value * 256)` |
 | float32 norms | u32 | `round(value * 65536)` |
 
-Future quantization passes (`q4`/`q8`) are planned for CT-2 and remain u16 in CT-1.
+Future quantization passes (`q4`/`q8`) are planned for CT-2 and remain u16 in CT-0.
 
 ### 10.9 Reproducibility particle
 
@@ -622,13 +622,13 @@ The compiled `.model` file is itself a particle. Its identity is
 
 $$\text{particle}(\mathcal{M}) = \text{hemera}(\text{model file bytes})$$
 
-over the entire `.model` file including frontmatter. Two CT-1 conforming implementations on the same `.graph` snapshot must produce the same particle.
+over the entire `.model` file including frontmatter. Two CT-0 conforming implementations on the same `.graph` snapshot must produce the same particle.
 
 ---
 
 ## 11. Conformance Predicates
 
-A compile $\mathcal{M}$ is CT-1 conforming on snapshot $G$ iff all the following hold.
+A compile $\mathcal{M}$ is CT-0 conforming on snapshot $G$ iff all the following hold.
 
 ### 11.1 Reconstruction (P-EMBED)
 
@@ -656,7 +656,7 @@ The cyb-llm runtime at `~/git/cyb/llm` loads the `.model` file via the `.cyb` pa
 cyb-llm load <output.model> --warmup 1 --check-finite
 ```
 
-A round-trip extraction to a HuggingFace directory (config.json + model.safetensors) is also supported via `cyb-llm export hf <output.model>` and must succeed for the file to be CT-1 conforming. This guarantees the compiled model is consumable by both the cyb stack and the wider ecosystem.
+A round-trip extraction to a HuggingFace directory (config.json + model.safetensors) is also supported via `cyb-llm export hf <output.model>` and must succeed for the file to be CT-0 conforming. This guarantees the compiled model is consumable by both the cyb stack and the wider ecosystem.
 
 ### 11.6 Clifford geometry (P-CLIFFORD)
 
@@ -664,14 +664,14 @@ P-CLIFFORD decomposes into three sub-checks. All must pass.
 
 P-CLIFFORD-A — wedge anti-symmetry. For every layer $l$, $\mathrm{Wedge}_s(X, X) = 0$ numerically to within $\varepsilon_w = 10^{-6}$ on a fixed-seed length-128 random embedding sequence, for every $s \in S$. Follows from the anti-symmetry of $e_i \wedge e_j$.
 
-P-CLIFFORD-B — zero-bivector degeneracy. On an input `.graph` with no bivector grades ($w_2 = 0$, $A^{\mathrm{eff}}_2 = 0$ everywhere), the CT-1 output is byte-identical to a scalar-only compile. Confirms that Clifford terms degenerate correctly when the graph carries no geometric data.
+P-CLIFFORD-B — zero-bivector degeneracy. On an input `.graph` with no bivector grades ($w_2 = 0$, $A^{\mathrm{eff}}_2 = 0$ everywhere), the CT-0 output is byte-identical to a scalar-only compile. Confirms that Clifford terms degenerate correctly when the graph carries no geometric data.
 
 P-CLIFFORD-C — jet equivalence. The shifted geometric product output via the [[nox]] jets (`shifted_inner_product`, `shifted_wedge_product`) matches a reference scalar-field implementation within $\varepsilon_j = 10^{-9}$ on a 64-element fixed test vector set emitted by the compiler alongside the `.model`.
 
 Stored in the `eval` section (§10.7) as:
 
 ```toml
-[ct1_conformance_clifford]
+[ct0_conformance_clifford]
 P_CLIFFORD_A = 1      # wedge antisymmetry
 P_CLIFFORD_B = 1      # zero-bivector degeneracy
 P_CLIFFORD_C = 1      # jet-vs-reference equivalence
@@ -690,14 +690,14 @@ Build and run:
 ```
 cd ~/git/mc
 cargo build --release
-./target/release/mc bostrom-23195000.graph -o bostrom-23195000-ct1.model
+./target/release/mc bostrom-23195000.graph -o bostrom-23195000-ct0.model
 ```
 
 The certificate is embedded in the `.model`'s `eval` section (§10.7). The CLI also writes a sidecar `certificate.toml` for human inspection:
 
 ```toml
 # certificate.toml
-spec        = "CT-1"
+spec        = "CT-0"
 snapshot    = "hemera:..."
 output      = "hemera:..."   # the model's particle
 P-EMBED     = { value = 0.031, pass = true }
@@ -720,9 +720,9 @@ curl -s https://node.bostrom.cybernode.ai/cyber/graph/snapshot?block=23195000 \
 
 ## 13. Versioning
 
-CT-1 is the current spec. The compiler version string (§2.1) is always `"CT-1"`. The `[clifford]` config block holds structural parameters (`shift_set`, `self_energy_suppression`); there are no on/off feature flags — Clifford geometry is part of the CT-1 architecture. When the input `.graph` carries no bivector data, Clifford terms are zero and the output is byte-identical to a scalar compile.
+CT-0 is the current spec. The compiler version string (§2.1) is always `"CT-0"`. The `[clifford]` config block holds structural parameters (`shift_set`, `self_energy_suppression`); there are no on/off feature flags — Clifford geometry is part of the CT-0 architecture. When the input `.graph` carries no bivector data, Clifford terms are zero and the output is byte-identical to a scalar compile.
 
-Backward-incompatible changes increment to CT-2. Changes that are strictly additive and backward-compatible remain CT-1 with updated patch notes here.
+Backward-incompatible changes increment to CT-2. Changes that are strictly additive and backward-compatible remain CT-0 with updated patch notes here.
 
 Future work:
 

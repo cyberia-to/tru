@@ -146,7 +146,7 @@ empirical validation: GPT-4 has 96 layers. natural language knowledge graphs hav
 
 ## the compilation
 
-the weights are compiled by the 8-pass procedure in [[compiled transformers]]. the formal spec with exact formulas and conformance predicates lives in [[tru/specs/ct1|CT-1]].
+the weights are compiled by the 8-pass procedure in [[compiled transformers]]. the formal spec with exact formulas and conformance predicates lives in [[tru/specs/ct0|CT-0]].
 
 | parameter | formula | graph property |
 |---|---|---|

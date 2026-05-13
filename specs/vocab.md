@@ -101,7 +101,7 @@ position of an entry in the file is its vocab id (0, 1, 2, ...). entry `i` is re
 
 entries appear in any order the publisher chose; the publisher commits to it. the file's particle changes if the order changes. two valid conventions:
 
-- **first-appearance**: scan signals in chain order, append each unseen particle. matches the natural id assignment in CT-1 Pass 1.
+- **first-appearance**: scan signals in chain order, append each unseen particle. matches the natural id assignment in CT-0 Pass 1.
 - **lexicographic**: sort particles ascending. faster binary search but loses any historical signal information.
 
 the publisher picks one and notes it in the card.
