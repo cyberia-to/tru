@@ -28,7 +28,7 @@ A snapshot is a `.graph` container (see [[cyb-graph]]) read into the tuple $G = 
 
 - $\mathcal{S}$ — the `signals` records, ordered as written in the file (canonical chain order)
 - $h$ — the `block` field of the `config` section
-- $\nu_{\text{compiler}}$ — the compiler version string, always `"CT-1"`. Clifford extensions (§§7.7, 8.5, 11.6) are part of CT-1 and are controlled by the `[clifford]` config block; when all flags are false the output is byte-identical to the scalar baseline.
+- $\nu_{\text{compiler}}$ — the compiler version string, always `"CT-1"`.
 
 If the optional `proof` or `impulse` extension sections are present (see [[cyb-graph]] §extensions), conforming compilers verify proofs before compilation and may reuse impulses to skip power iteration (see §5.1). Snapshots without these extensions are accepted — the base `.graph` spec has no provenance layer.
 
@@ -283,9 +283,9 @@ Per layer $l$:
 
 dtype `float32`, row-major.
 
-### 7.7 Wedge-Augmented Attention (optional)
+### 7.7 Wedge-Augmented Attention
 
-When `wedge_attention = true` in config, CT-1 extends the scalar score $Q K^\top$ with a bivector magnitude term capturing orientation mismatch between query and key. The per-head score at inference time is
+CT-1 extends the scalar score $Q K^\top$ with a bivector magnitude term capturing orientation mismatch between query and key. The per-head score at inference time is
 
 $$\mathrm{score}_{ij}^{(l, h)} = \alpha \cdot \frac{Q_i^{(l, h)} \cdot K_j^{(l, h)}}{\sqrt{d_h}} + \beta \cdot \frac{\|Q_i^{(l, h)} \wedge K_j^{(l, h)}\|}{\sqrt{d_h}}$$
 
@@ -293,64 +293,22 @@ where the bivector norm uses the shifted wedge product from [[clifford]] §5.2 w
 
 $$\|Q \wedge K\|^2 = \sum_{s \in S} \sum_c \left( Q_c K_{(c+s) \bmod d_h} - Q_{(c+s) \bmod d_h} K_c \right)^2$$
 
-The scalars $\alpha, \beta \in \mathbb{F}_p$ are per-layer learnable (2 additional parameters per layer), initialized at $\alpha = 1, \beta = 0$. When $\beta = 0$ the wedge term is zero and inference is equivalent to the scalar-only path with no performance penalty.
+The scalars $\alpha, \beta \in \mathbb{F}_p$ are per-layer learnable (2 additional parameters per layer), initialized at $\alpha = 1, \beta = 0$. When the input `.graph` has no bivector extensions, wedge terms are zero and $\beta$ receives no gradient — the score degenerates to the standard dot-product attention with no performance penalty.
 
 The attention weights $W_Q, W_K, W_V, W_O$ in §7.4–7.5 are unchanged. Only the score function adds the wedge magnitude term.
 
 Emitted tensors per layer:
 - `layers.{l}.attn.alpha_beta.weight` of shape $(2,)$, dtype `float32`
 
-Active only when `wedge_attention = true` in config; when false, $\beta = 0$ and the tensor is still written for stability but has no effect. See [[clifford]] §C3 for the wedge anti-symmetry conformance check.
+See [[clifford]] §C3 for the wedge anti-symmetry conformance check.
 
 ---
 
 ## 8. Pass 6 — MLP Weights
 
-### 8.1 Co-occurrence by signal-respecting walks
+CT-1 uses a Clifford-block MLP per CliffordNet (Ji, 2026). The shifted geometric product from [[clifford]] §5 followed by a single learnable projection replaces a conventional FFN — no expanded inner dimension, no FFN ratio. When the input `.graph` has no bivector extensions, all wedge terms are zero and the Clifford block degenerates to a standard gated linear unit with no performance penalty.
 
-For each layer $l$, draw $W = \min(|V|/10, 10^6)$ walks of length $l_{\text{eff}}$ (from §7.2) seeded by ChaCha20 with seed $\text{hemera}(L \,\|\, \nu_{\text{compiler}} \,\|\, \text{"mlp"} \,\|\, l)$.
-
-Walks are signal-respecting: at every step, the next edge is drawn preferentially from links inside the same signal as the current edge, with probability proportional to effective stake $w(\ell)$. Only when the signal is exhausted does the walker cross to a neighboring link in a different signal (again weighted by $w(\ell)$ across all incident links).
-
-$$P(\text{next} = \ell' \mid \text{current} = \ell) = \begin{cases}
-\frac{w(\ell')}{\sum_{\ell'' \in \text{signal}(\ell) \setminus \{\ell\}} w(\ell'')} & \text{if } \ell' \in \text{signal}(\ell) \\
-(1 - \beta) \cdot \frac{w(\ell')}{\sum_{\ell''} w(\ell'')} & \text{otherwise}
-\end{cases}$$
-
-with $\beta = 0.8$ (the mixing weight favoring intra-signal continuation). Signals are coherent epistemic acts — their internal co-occurrence encodes intent; cross-signal co-occurrence encodes weaker associative noise. $\beta$ controls how much of each the MLP weights absorb.
-
-### 8.2 PMI matrix
-
-For window $w_{\text{co}} = 5$, accumulate weighted co-occurrence counts $C^{(l)}_{ij}$ for pairs $(v_i, v_j)$ at distance $\leq w_{\text{co}}$ within walks. Convert to positive PMI:
-
-$$\text{PMI}^{(l)}_{ij} = \max\left(0, \log \frac{p^{(l)}(v_i, v_j) \cdot Z}{p(v_i) \cdot p(v_j)}\right)$$
-
-with $p(v_i) = \phi^*_i$ and $Z = \sum_{ij} C^{(l)}_{ij}$.
-
-### 8.3 Projection and factorization
-
-$$\widetilde{\text{PMI}}^{(l)} = E^\top \text{PMI}^{(l)} E \in \mathbb{R}^{d^* \times d^*}$$
-
-Truncated SVD to rank $4 d^*$ (oversampled by 10):
-
-$$\widetilde{\text{PMI}}^{(l)} = U \Sigma V^\top$$
-
-$$W_1^{(l)} = U_{:, 1:4d^*} \cdot \sqrt{\Sigma_{1:4d^*}}$$
-
-$$W_2^{(l)} = \sqrt{\Sigma_{1:4d^*}} \cdot V^\top_{:, 1:4d^*}$$
-
-### 8.4 Output tensors
-
-- `layers.{l}.mlp.up_proj.weight` of shape $(d^*, 4d^*)$
-- `layers.{l}.mlp.down_proj.weight` of shape $(4d^*, d^*)$
-
-Activation between them is SiLU; this is implicit in the architecture, not stored.
-
-### 8.5 Clifford-Block MLP (optional, No-FFN Variant)
-
-When `clifford_mlp = true` in config, CT-1 offers an alternative MLP path that replaces the SwiGLU pair `up_proj` + `down_proj` with a Clifford block per CliffordNet (Ji, 2026). The MLP stage is the shifted geometric product from [[clifford]] §5 followed by a single learnable projection — no expanded inner dimension, no FFN ratio.
-
-Per-layer computation (replaces §§8.1–8.4 when `clifford_mlp = true` in `config`):
+Per-layer computation:
 
 $$H_{\mathrm{out}} = H + \gamma \odot \left[ \sigma(H) + \mathrm{gate}(H, G) \odot G \right]$$
 
@@ -367,9 +325,9 @@ with:
 
 For graph-native compiles, the "DWConv" is replaced by a local graph convolution over the [[cybergraph]] 1-hop neighborhood — the graph Laplacian action $\mathcal{L} H$ — computed by SpMV against the cybergraph adjacency. This preserves spatial-topological fidelity since the cybergraph is the native topology.
 
-#### 8.5.1 Weights emitted
+### 8.1 Weights emitted
 
-Per layer $l$ when Clifford-MLP active:
+Per layer $l$:
 
 - `layers.{l}.mlp_clifford.proj.weight` of shape $(|S| \cdot 2 d^*, d^*)` — the projection $\mathrm{Linear}_{\mathrm{proj}}$
 - `layers.{l}.mlp_clifford.gate.weight` of shape $(2 d^*, d^*)$ — gate linear layer
@@ -381,18 +339,9 @@ Total MLP parameters per layer: $2 |S| d^{*2} + 2 d^{*2} + d^* + 18 d^*$.
 
 At $|S| = 5$ and $d^* = 300$: $2 \cdot 5 \cdot 300^2 + 2 \cdot 300^2 + 5700 = 1{,}085{,}700$ params per layer.
 
-Compare to SwiGLU ($3 \cdot d^* \cdot 4 d^* = 12 \cdot 300^2 = 1{,}080{,}000$): the Clifford block is roughly same as SwiGLU at identical width, but with $|S| = 2$ (Nano config) the params drop to $2 \cdot 2 \cdot 300^2 + \ldots \approx 365{,}000$ per layer — a 3× reduction.
+The Clifford block achieves SwiGLU-equivalent capability at fewer layers ($L^*/2$ to $L^*/3$ in CIFAR-class experiments per the paper), so the total param budget drops proportionally. Run §5.4 with $\lambda_2$ and $\kappa$ recomputed against the Clifford layer contraction rate — the emitted $L^*$ scales down automatically.
 
-The intended deployment saves depth: CT-1 Clifford achieves SwiGLU-equivalent capability at fewer layers ($L^*/2$ to $L^*/3$ in CIFAR-class experiments per the paper), so the total param budget drops proportionally. Run §5.4 with $\lambda_2$ and $\kappa$ recomputed against the Clifford layer contraction rate (which improves by a constant factor per the paper's reaction-diffusion analysis) — the emitted $L^*$ scales down automatically.
-
-#### 8.5.2 Compatibility
-
-A CT-1 `.model` with `clifford_mlp = false` uses the standard SwiGLU path from §§8.1–8.4 and is byte-identical to a scalar-only compile. Runtimes detect the flag in `config` and dispatch accordingly:
-
-- A runtime that does not implement the Clifford MLP rejects models with `clifford_mlp = true` with "unsupported MLP variant".
-- A runtime loading a `clifford_mlp = false` model runs the standard SwiGLU path.
-
-#### 8.5.3 Compile determinism
+### 8.2 Compile determinism
 
 Context DWConv / graph-conv weights are initialized by seeded ChaCha20 per §6.2 with salt `"mlp_clifford"`. The LayerScale $\gamma$ initializes to $10^{-5}$ (fp32). All other weights initialized by He-normal seeded from hemera hash of $(L, \nu_{\mathrm{compiler}}, l)$. Sign convention SC-1 applies to the projection SVD where factorization is used for initialization.
 
@@ -514,8 +463,6 @@ scale = 1000
 [clifford]
 shift_set              = [1, 2, 4, 8, 16]   # S in clifford.md §5.3
 self_energy_suppression = 1                 # λ ∈ {0, 1}; 1 = differential mode
-clifford_mlp           = false              # §8.5; when true, replaces SwiGLU
-wedge_attention        = false              # §7.7; when true, β is learnable (≠ 0)
 
 [lineage]
 spec          = "CT-1"
@@ -657,11 +604,11 @@ A round-trip extraction to a HuggingFace directory (config.json + model.safetens
 
 ### 11.6 Clifford Conformance (P-CLIFFORD)
 
-When Clifford extensions are active (`clifford_mlp = true` or `wedge_attention = true`), an additional predicate P-CLIFFORD decomposes into three sub-checks. All must pass.
+P-CLIFFORD decomposes into three sub-checks. All must pass.
 
 P-CLIFFORD-A — wedge anti-symmetry. For every layer $l$, the shifted wedge operator satisfies $\mathrm{Wedge}_s(X, X) = 0$ numerically to within $\varepsilon_w = 10^{-6}$ on a fixed-seed length-128 random embedding sequence, for every $s \in S$.
 
-P-CLIFFORD-B — scalar equivalence. A CT-1 model compiled with `clifford_mlp = false` and `wedge_attention = false` produces logits bit-identical to a scalar-only compile on the cyb-llm warmup pass.
+P-CLIFFORD-B — zero-bivector degeneracy. On an input `.graph` with no bivector extensions ($w_2 = 0$ everywhere), the CT-1 output is byte-identical to a scalar-only compile. Enforces that the Clifford path degenerates correctly when the graph carries no geometric data.
 
 P-CLIFFORD-C — jet equivalence. The shifted geometric product output computed via the [[nox]] jets (`shifted_inner_product`, `shifted_wedge_product`) matches a reference scalar-field implementation within $\varepsilon_j = 10^{-9}$ on a 64-element fixed test vector set emitted by the compiler alongside the `.model`.
 
@@ -670,11 +617,11 @@ Stored in the `eval` section (§10.7) as:
 ```toml
 [ct1_conformance_clifford]
 P_CLIFFORD_A = 1      # wedge antisymmetry
-P_CLIFFORD_B = 1      # scalar equivalence when flags off
+P_CLIFFORD_B = 1      # zero-bivector degeneracy
 P_CLIFFORD_C = 1      # jet-vs-reference equivalence
 ```
 
-P-CLIFFORD is `1` (pass) if and only if all three sub-checks pass. Omitted from the `eval` section when all Clifford flags are false.
+P-CLIFFORD is `1` (pass) if and only if all three sub-checks pass.
 
 ---
 
@@ -702,7 +649,7 @@ P-ATTN      = { min = 0.81, mean = 0.89, pass = true }
 P-LAYER     = { contracting = true, max_ratio = 0.93, pass = true }
 P-DET       = { runs = 2, identical = true, pass = true }
 P-LOAD      = { cyb_llm_load = true, hf_export = true, finite_logits = true, pass = true }
-P-CLIFFORD  = { A_antisym = true, B_scalar_equiv = true, C_jet_equiv = true, pass = true }
+P-CLIFFORD  = { A_antisym = true, B_zero_bivec = true, C_jet_equiv = true, pass = true }
 ```
 
 End-to-end pipe from go-cyber to a loaded model in one command:
@@ -717,7 +664,7 @@ curl -s https://node.bostrom.cybernode.ai/cyber/graph/snapshot?block=23195000 \
 
 ## 13. Versioning
 
-CT-1 is the current spec. Clifford extensions (§§7.7, 8.5, 11.6) are part of CT-1 and are controlled by compile-time flags in the `[clifford]` config block; when all flags are false the output is byte-identical to the scalar baseline. The compiler version string (§2.1) is always `"CT-1"`.
+CT-1 is the current spec. The compiler version string (§2.1) is always `"CT-1"`. The `[clifford]` config block holds structural parameters (`shift_set`, `self_energy_suppression`); there are no on/off feature flags — Clifford geometry is part of the CT-1 architecture. When the input `.graph` carries no bivector data, Clifford terms are zero and the output is byte-identical to a scalar compile.
 
 Backward-incompatible changes increment to CT-2. Changes that are strictly additive and backward-compatible remain CT-1 with updated patch notes here.
 
@@ -732,4 +679,4 @@ Future work:
 
 ---
 
-see [[compiled transformers]] for the readable how-to. see [[graph-native-transformer]] for the mathematical derivation. see [[cyb-graph]] for the input file format. see [[cyb-model]] for the output file format. see [[cyber/link]] for the cyberlink seven-tuple. see [[cyber/tri-kernel]] for the focus computation. see [[cybergraph]] for the underlying axioms. see [[clifford]] for the Clifford extensions consumed by §§7.7, 8.5, 11.6. see [[render]] for the T∞ rendering tier that runs inference on CT-1 output. see [[mc]] for the reference rust implementation.
+see [[compiled transformers]] for the readable how-to. see [[graph-native-transformer]] for the mathematical derivation. see [[cyb-graph]] for the input file format. see [[cyb-model]] for the output file format. see [[cyber/link]] for the cyberlink seven-tuple. see [[cyber/tri-kernel]] for the focus computation. see [[cybergraph]] for the underlying axioms. see [[clifford]] for the Clifford primitive extensions (shifted geometric product, bivector adjacency). see [[render]] for the T∞ rendering tier that runs inference on CT-1 output. see [[mc]] for the reference rust implementation.
