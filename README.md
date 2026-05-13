@@ -1,14 +1,25 @@
 # tru
 
-two outputs from one graph: φ* (what the graph collectively knows) and .model (that knowledge made deployable).
+tru is a convergence VM — the intelligence layer of [[soft3]]. where [[nox]] executes programs and [[glia]] runs models, tru operates by field convergence: it iterates the [[tri-kernel]] until φ* emerges as the unique fixed point.
+
+convergence and derivation are different computation models. derivation proceeds from axioms to conclusions in bounded depth — every formal system, every program execution, every forward pass reaches only what its starting axioms can produce. convergence proceeds by iteration toward equilibrium — the result is the attractor, not a logical consequence. φ* is not derived from the graph: it emerges from it.
+
+| vm | execution model | gödel status |
+|----|-----------------|--------------|
+| [[nox]] | derivation | confined |
+| [[zheng]] | verification | confined |
+| [[glia]] | forward pass | confined |
+| [[tru]] | field convergence | free |
 
 ## field and compile
 
-the [[tri-kernel]] takes cyberlinks weighted by stake, karma, and [[ICBS]] market prices, and converges to φ*: the unique fixed point of the composite diffusion-springs-heat operator. φ* is the truth distribution — what the network's aggregate of honest signals converges to.
+two jobs, one engine.
 
-the [[CT-1]] pipeline takes a [[.graph]] snapshot and compiles a transformer. architecture parameters — embedding dimension d*, attention heads h*, layer count L* — are derived directly from φ* and graph structure. weights are computed analytically from the φ*-weighted adjacency via SVD. not trained: compiled.
+the field job runs the [[tri-kernel]] over every signal: reads signal.a (stake) and signal.v (valence) → composite diffusion-springs-heat operator R = λ_d·D + λ_s·S + λ_h·H_τ → iterates to fixed point → φ*. each particle's φ*(p) is the focus it has earned from the entire weighted graph. the system converges; no authority assigns the result.
 
-these are not two separate tools. compilation requires φ*: the embedding matrix is the top singular vectors of the φ*-weighted adjacency. a transformer compiled from truth-weighted signals encodes what the network has collectively validated, not just what was asserted.
+the compile job reads the same φ*-weighted graph and derives the CT-1 transformer: embedding dimension d*, attention heads h*, layer count L*, weight matrix W from the top singular vectors of the φ*-weighted adjacency. not trained: compiled.
+
+these are the same computation at different scales. the field is the continuous limit; the compiled model is that limit frozen at finite depth L*. the [[CT-1]] pipeline makes this precise — eight passes from .graph to .model, each pass an exact derivation of transformer parameters from φ*.
 
 ## the name
 
