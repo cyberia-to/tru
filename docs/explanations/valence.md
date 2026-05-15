@@ -22,9 +22,9 @@ the separation of these two questions is not a modeling choice. it is a fundamen
 
 | system | binary (topology) | ternary (economics) |
 |---|---|---|
-| mycelium | hypha exists / doesn't | give / maintain / receive |
-| neuron | synapse exists / doesn't | excitatory / modulatory / inhibitory |
-| market | counterparty relationship | buy / hold / sell |
+| [[mycelium]] | hypha exists / doesn't | give / maintain / receive |
+| [[neuron]] | synapse exists / doesn't | excitatory / modulatory / inhibitory |
+| [[market]] | counterparty relationship | buy / hold / sell |
 | [[cybergraph]] | [[cyberlink]] exists / doesn't | affirm / void / challenge |
 
 the cyberlink structure encodes all three layers of the pattern in one atomic record:
