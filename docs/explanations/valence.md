@@ -55,13 +55,13 @@ the source particle always posts to one side; the target always posts to the oth
 
 ## what each value does
 
-### $v = +1$ — affirm
+### v = +1 — affirm
 
 the neuron credits the target particle's truth account and debits its own epistemic capital. it is simultaneously placing a bet: "I predict this market converges toward TRUE."
 
 in the [[inversely coupled bonding surface|ICBS]] market, the affirm signal pushes the market price $m(\ell)$ toward 1. if many neurons affirm, the price rises, and effective adjacency $A^{\text{eff}}_{pq}$ grows. the link gains structural weight in the graph. focus accumulates at the target.
 
-### $v = -1$ — challenge
+### v = -1 — challenge
 
 the neuron debits the target particle's truth account. the bet: "I predict this market converges toward FALSE."
 
@@ -69,7 +69,7 @@ negative valence is not contradiction of the link's existence — the neuron has
 
 in effective adjacency, dominant negative valence drives $m(\ell) \to 0$, suppressing the link's weight toward zero. this is [[market inhibition]] — the epistemic immune system of the [[cybergraph]]. without inhibition, the graph cannot learn a boundary; it can only accumulate. excitation without inhibition produces a blob, not a mind.
 
-### $v = 0$ — void
+### v = 0 — void
 
 not agnostic in a weak sense. void is the structural primitive that predates accounting. it opens the account relationship on both sides without posting any transactions.
 
