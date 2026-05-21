@@ -134,7 +134,7 @@ The [[cybergraph]] is a compounding inference quality asset. Every link reduces 
 - [[cybergraph]] -- the substrate: [[particles]] as nodes, [[cyberlinks]] as typed edges
 - [[tri-kernel]] -- the physics: [[diffusion]] + [[springs]] + [[heat kernel]] converge $\phi \to \phi^*$
 - [[graph-native-transformer]] -- the compiled fast path: $d^*, h^*, L^*$ from graph structure
-- [[nox]] -- the execution: 16 deterministic reduction patterns over [[Goldilocks field]]
+- [[nox]] -- the execution: 18 patterns (16 compute + call + look) over [[Goldilocks field]]
 - [[foculus]] -- the consensus: $\phi^* > \tau$ finalizes [[particles]] without leaders
 - [[tru]] -- the runner: computes [[cyberank]], [[karma]], [[syntropy]] every block
 
