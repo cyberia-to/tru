@@ -1,8 +1,12 @@
+[workspace]
+members = [".", "crates/field"]
+resolver = "2"
+
 [package]
 name = "tru"
 version = "0.1.0"
 edition = "2021"
-description = "model compilation — compile cybergraph snapshots into transformer checkpoints (CT-1)"
+description = "model compilation — compile cybergraph snapshots into transformer checkpoints (CT-0)"
 license = "Apache-2.0"
 repository = "https://github.com/cyberia-to/tru"
 
@@ -15,6 +19,7 @@ name = "tru"
 path = "src/lib.rs"
 
 [dependencies]
+tru-field = { path = "crates/field" }
 anyhow = "1"
 thiserror = "2"
 clap = { version = "4", features = ["derive"] }
@@ -25,4 +30,4 @@ memmap2 = "0.9"
 # Dependencies landing in later phases:
 # cyber-hemera (phase 1 — CIDs and RNG seeds): path = "../hemera/rs"
 # rand_chacha, rand (phase 1 — reproducible sampling)
-# sprs, ndarray, nalgebra (phase 2 — embed pass)
+# nalgebra (phase 2 — embed pass)

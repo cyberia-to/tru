@@ -1,6 +1,6 @@
 //! mc — model compilation.
 //!
-//! Reference implementation of the [CT-1 spec](https://cyber.page/compiled-transformers-spec):
+//! Reference implementation of the [CT-0 spec](https://cyber.page/compiled-transformers-spec):
 //! read a `.graph` cybergraph snapshot, produce a `.model` transformer
 //! checkpoint per the [cyb-model](https://cyber.page/cyb-model) format.
 //!

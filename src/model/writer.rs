@@ -16,6 +16,6 @@ impl Model {
     }
 
     pub fn write(&self, _path: impl AsRef<Path>) -> Result<()> {
-        unimplemented!("Model::write — implemented in phase 3 (CT-1 §10)")
+        unimplemented!("Model::write — implemented in phase 3 (CT-0 §10)")
     }
 }
