@@ -49,7 +49,7 @@ every cyberlink is a double-entry journal entry. the two accounts are already pr
 
 the source particle always posts to one side; the target always posts to the other. the link is the transaction. this gives the system a conservation law: total epistemic assets equal total epistemic liabilities across the whole graph. $\sum_p \phi^*(p) = 1$ is not just a normalization constraint — it is the balance sheet identity.
 
-[[semcons]] are the chart of accounts. `cites`, `contradicts`, `is-a`, `extends` are account types with different debit/credit semantics. `contradicts` edges always debit the target. `cites` edges typically credit. the [[knowledge graph]] partitioned by semcon is a set of sub-ledgers, each recording a different kind of epistemic transaction.
+[[dialects]] are the chart of accounts. `cites`, `contradicts`, `is-a`, `extends` are account types with different debit/credit semantics. `contradicts` edges always debit the target. `cites` edges typically credit. the [[knowledge graph]] partitioned by dialect is a set of sub-ledgers, each recording a different kind of epistemic transaction.
 
 ---
 

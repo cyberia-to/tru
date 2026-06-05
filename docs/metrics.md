@@ -46,11 +46,11 @@ The softmax is the posterior $P(\text{position } j \mid \text{query } i)$ under 
 
 ---
 
-## Multi-Head and Semantic Conventions
+## Multi-Head and Dialects
 
-Through multi-head attention, different heads learn different relation types. Head $h$ with projection $W_Q^{(h)}, W_K^{(h)}$ captures one [[semcon]] -- one pattern of connectivity in the [[cybergraph]].
+Through multi-head attention, different heads learn different relation types. Head $h$ with projection $W_Q^{(h)}, W_K^{(h)}$ captures one [[dialect]] -- one pattern of connectivity in the [[cybergraph]].
 
-The [[graph-native-transformer]] derivation proves that the minimum number of heads equals the number of distinct [[semcon]] types in the graph. Each head specializes in one kind of relationship: "is-a", "contradicts", "extends", "cites". The graph's link topology determines how many attention heads the compiled transformer needs.
+The [[graph-native-transformer]] derivation proves that the minimum number of heads equals the number of distinct [[dialect]] types in the graph. Each head specializes in one kind of relationship: "is-a", "contradicts", "extends", "cites". The graph's link topology determines how many attention heads the compiled transformer needs.
 
 ---
 

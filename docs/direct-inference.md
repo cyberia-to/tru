@@ -30,11 +30,11 @@ $$d^* = \exp\big(H(\sigma(\Sigma_{\phi^*}))\big)$$
 
 this is the intrinsic dimensionality of the [[knowledge]] space — the number of statistically independent semantic axes. an embedding smaller than d* cannot distinguish [[particles]] along the missing axes. an embedding larger than d* wastes capacity on noise directions
 
-Theorem 2. the minimum head count equals the number of distinct [[semcon]] types:
+Theorem 2. the minimum head count equals the number of distinct [[dialect]] types:
 
-$$h^* \geq |\text{Semcon}(G)|$$
+$$h^* \geq |\text{Dialect}(G)|$$
 
-each [[attention]] head with matrices W_Q, W_K captures one relation type. two distinct [[semcon]] types have different spectral structure in their adjacency submatrices. a single head cannot simultaneously attend to patterns with different spectral structure
+each [[attention]] head with matrices W_Q, W_K captures one relation type. two distinct [[dialect]] types have different spectral structure in their adjacency submatrices. a single head cannot simultaneously attend to patterns with different spectral structure
 
 Theorem 3. the layer depth required for convergence:
 

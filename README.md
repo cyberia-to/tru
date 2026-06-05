@@ -91,7 +91,7 @@ the steps below are in dependency order. each step has a clear input, output, an
 | 1a | implement tri-kernel | operators D, S, H_τ; composite R; power iteration | contraction coefficient κ < 1; convergence in expected steps |
 | 1b | implement truth-scoring | BTS score → karma; karma-weighted effective adjacency | karma monotone with correct predictions; adjacency matches §3.4 of field spec |
 | 1c | implement field epoch | φ*, cyberank, syntropy, Δφ* per epoch | Σφ*(p) = 1; cyberank matches §3 of field spec |
-| 2a | implement pass 1–2 | particle index, semcon set | P-DET: two runs produce identical index |
+| 2a | implement pass 1–2 | particle index, dialect set | P-DET: two runs produce identical index |
 | 2b | implement pass 3 | d*, h*, L* from φ* and graph structure | arch params within clamped bounds; kappa matches contraction rate |
 | 2c | implement pass 4 | embedding matrix E | P-EMBED: ‖EE⊤ − M‖_F / ‖M‖_F ≤ 0.05 |
 | 2d | implement pass 5 | attention weights W_Q, W_K, W_V, W_O; alpha_beta | P-ATTN: Pearson ≥ 0.7 per head |

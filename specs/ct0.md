@@ -111,7 +111,7 @@ $$A^{\mathrm{eff}}_{2,\,pq} = \sum_{\ell} a(\ell) \cdot \kappa(\nu(\ell)) \cdot 
 
 where $f_2(m) = |2m - 1|$ is zero at maximum market uncertainty ($m = 0.5$) and one at full confidence. The bivector grade captures oriented confidence: when the market converges and neurons agree on valence, $A^{\mathrm{eff}}_2$ accumulates; when they disagree, it cancels.
 
-Pass 5 attention (§7) uses $A^{\mathrm{eff}}_0$ for the semcon adjacency $A^{(s)}$. Pass 5 wedge attention (§7.7) additionally uses $A^{\mathrm{eff}}_2$ for the bivector score term. When $A^{\mathrm{eff}}_2 = 0$ everywhere, wedge terms vanish and §7.7 degenerates to standard dot-product attention.
+Pass 5 attention (§7) uses $A^{\mathrm{eff}}_0$ for the dialect adjacency $A^{(s)}$. Pass 5 wedge attention (§7.7) additionally uses $A^{\mathrm{eff}}_2$ for the bivector score term. When $A^{\mathrm{eff}}_2 = 0$ everywhere, wedge terms vanish and §7.7 degenerates to standard dot-product attention.
 
 ---
 
@@ -142,7 +142,7 @@ stored as int128 to avoid overflow on long-running chains. $A$ is fed to passes 
 
 ---
 
-## 4. Pass 2 — Semcon Discovery
+## 4. Pass 2 — Dialect Discovery
 
 ### 4.1 Axon set
 
@@ -150,7 +150,7 @@ $$\Omega = \{ \text{axon}(p, q) : (\nu, p, q, \ldots) \in L \}$$
 
 ### 4.2 Label edges
 
-A label edge is any $\ell = (\nu, p, q, \ldots)$ with $q \in \Omega$. The source $p$ is a candidate semcon.
+A label edge is any $\ell = (\nu, p, q, \ldots)$ with $q \in \Omega$. The source $p$ is a candidate dialect.
 
 ### 4.3 Scoring
 
@@ -164,13 +164,13 @@ $$\text{score}(p) = \text{usage}(p) \cdot \log_2(1 + \text{coverage}(p))$$
 
 ### 4.4 Registration
 
-The registered semcon set $S \subseteq P$ is
+The registered dialect set $S \subseteq P$ is
 
 $$S = \{ p : \text{score}(p) \geq \theta \cdot \max_{p'} \text{score}(p') \}$$
 
-with $\theta = 10^{-3}$ (one-thousandth of the strongest semcon by score). Order $S$ by descending score; ties broken by ascending particle hash.
+with $\theta = 10^{-3}$ (one-thousandth of the strongest dialect by score). Order $S$ by descending score; ties broken by ascending particle hash.
 
-The default semcon is the reserved particle $0x00 \times 32$, denoted $\bot$. It is appended to $S$ at the highest index.
+The default dialect is the reserved particle $0x00 \times 32$, denoted $\bot$. It is appended to $S$ at the highest index.
 
 ### 4.5 Assignment
 
@@ -178,11 +178,11 @@ For each $\ell = (\nu, p, q, \ldots) \in L$ compute $\alpha = \text{axon}(p, q)$
 
 $$\sigma(\ell) = \arg\max_{s \in S \setminus \{\bot\}} \sum_{\ell' : \text{src}(\ell') = s, \text{tgt}(\ell') = \alpha} w(\ell')$$
 
-If the argmax set is empty (no registered semcon labels $\alpha$), $\sigma(\ell) = \bot$. Argmax ties are broken by ascending position of $s$ in $S$.
+If the argmax set is empty (no registered dialect labels $\alpha$), $\sigma(\ell) = \bot$. Argmax ties are broken by ascending position of $s$ in $S$.
 
 ### 4.6 Output
 
-`semcons.json` — the ordered list $S$ with per-semcon edge count and aggregate stake.
+`dialects.json` — the ordered list $S$ with per-dialect edge count and aggregate stake.
 
 ### 4.7 Complexity
 
@@ -274,15 +274,15 @@ Randomized SVD uses ChaCha20 seeded with $\text{hemera}(L \,\|\, \nu_{\text{comp
 
 ## 7. Pass 5 — Attention Weights
 
-For each layer $l \in \{0, \ldots, L^* - 1\}$ and each semcon $s \in S$ at head index $h_s$:
+For each layer $l \in \{0, \ldots, L^* - 1\}$ and each dialect $s \in S$ at head index $h_s$:
 
-### 7.1 Per-semcon adjacency
+### 7.1 Per-dialect adjacency
 
 $$A^{(s)}_{ij} = \sum_{\ell : \text{idx}(\text{src}) = i, \text{idx}(\text{tgt}) = j, \sigma(\ell) = s} w(\ell)$$
 
 ### 7.2 Layer-specific power
 
-The layer-$l$ semcon adjacency is
+The layer-$l$ dialect adjacency is
 
 $$A^{(s, l)} = (A^{(s)})^{l_{\text{eff}}}, \quad l_{\text{eff}} = 1 + \lfloor l \cdot \text{diam}(G) / L^* \rfloor$$
 
@@ -528,7 +528,7 @@ chain_id      = "bostrom-1"
 block         = 23195000
 arch_hash     = "hemera:..."
 vocab_hash    = "hemera:..."
-semcons_hash  = "hemera:..."
+dialects_hash  = "hemera:..."
 ```
 
 ### 10.4 `program` section
@@ -636,7 +636,7 @@ $$\frac{\|E E^\top - M\|_F}{\|M\|_F} \leq 0.05$$
 
 ### 11.2 Head specialization (P-ATTN)
 
-For every layer $l$ and semcon $s$:
+For every layer $l$ and dialect $s$:
 
 $$\text{Pearson}(\text{flatten}(W_Q^{(l, h_s)} W_K^{(l, h_s)\top}), \text{flatten}(P^{(s, l)})) \geq 0.7$$
 
@@ -726,7 +726,7 @@ Backward-incompatible changes increment to CT-2. Changes that are strictly addit
 
 Future work:
 
-- multi-label semcon assignment (split-weight variant of §4.5)
+- multi-label dialect assignment (split-weight variant of §4.5)
 - ε-incremental recompile when only $\Delta L$ is supplied
 - decoupled shift sets $S_{\mathrm{inner}} \neq S_{\mathrm{wedge}}$ per CliffordNet future-work §6
 - learned shift offsets (adaptive geometric topology)

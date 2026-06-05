@@ -36,7 +36,7 @@ a weighted knowledge graph $G = (P, N, E, w, \sigma)$ where:
 - $N$ is the set of [[neurons]] (agents that create edges)
 - $E \subseteq N \times P \times P$ is the set of [[cyberlink|cyberlinks]] (signed directed edges)
 - $w: E \to \mathbb{R}_{>0}$ is the stake-weighted edge weight function
-- $\sigma: E \to \text{Semcon}$ assigns each edge a [[semcon|semantic relation type]]
+- $\sigma: E \to \text{Dialect}$ assigns each edge a [[dialect|semantic relation type]]
 
 the adjacency matrix $A \in \mathbb{R}^{|P| \times |P|}$ has entries $A_{ij} = \sum_{e: p_i \to p_j} w(e)$.
 
@@ -96,21 +96,21 @@ corollary: embedding dimension should grow with graph scale. as $|P| \to \infty$
 
 ### attention head count from semantic relations
 
-Theorem 2. the minimum number of attention heads required to represent all semantic relations in $G$ equals the number of distinct semcons $|\text{Semcon}(G)|$.
+Theorem 2. the minimum number of attention heads required to represent all semantic relations in $G$ equals the number of distinct dialects $|\text{Dialect}(G)|$.
 
-each semcon $s \in \text{Semcon}(G)$ defines a distinct relation type over particles — a specific pattern of connectivity with characteristic directionality, weight distribution, and neighborhood structure in the graph.
+each dialect $s \in \text{Dialect}(G)$ defines a distinct relation type over particles — a specific pattern of connectivity with characteristic directionality, weight distribution, and neighborhood structure in the graph.
 
 an attention head with query matrix $W_Q^{(h)}$ and key matrix $W_K^{(h)}$ computes a relation-specific attention pattern:
 
 $$A^{(h)}_{ij} = \text{softmax}\left(\frac{(W_Q^{(h)} e_i)(W_K^{(h)} e_j)^\top}{\sqrt{d}}\right)$$
 
-for head $h$ to faithfully represent semcon $s$, the attention pattern $A^{(h)}$ must correlate with the adjacency submatrix $A^{(s)}$ induced by edges of type $s$.
+for head $h$ to faithfully represent dialect $s$, the attention pattern $A^{(h)}$ must correlate with the adjacency submatrix $A^{(s)}$ induced by edges of type $s$.
 
-two distinct semcons $s_1, s_2$ induce adjacency submatrices $A^{(s_1)}, A^{(s_2)}$ with different spectral structure (by definition of semantic distinction). a single attention head cannot simultaneously attend to patterns with different spectral structure — the $W_Q, W_K$ matrices define one projection direction in embedding space.
+two distinct dialects $s_1, s_2$ induce adjacency submatrices $A^{(s_1)}, A^{(s_2)}$ with different spectral structure (by definition of semantic distinction). a single attention head cannot simultaneously attend to patterns with different spectral structure — the $W_Q, W_K$ matrices define one projection direction in embedding space.
 
-therefore $|\text{Semcon}(G)|$ heads are necessary. they are also sufficient for the base relation set — compositional and positional relations require additional heads, giving:
+therefore $|\text{Dialect}(G)|$ heads are necessary. they are also sufficient for the base relation set — compositional and positional relations require additional heads, giving:
 
-$$h \geq |\text{Semcon}(G)|$$
+$$h \geq |\text{Dialect}(G)|$$
 
 as a lower bound.
 
@@ -151,7 +151,7 @@ the weights are compiled by the 8-pass procedure in [[compiled transformers]]. t
 | parameter | formula | graph property |
 |---|---|---|
 | embedding dim $d^*$ | $\exp\left(H\left(\sigma(\Sigma_{\phi^*})\right)\right)$ | effective rank of focus covariance |
-| head count $h^*$ | $\geq \|\text{Semcon}(G)\|$ | distinct semantic relation types |
+| head count $h^*$ | $\geq \|\text{Dialect}(G)\|$ | distinct semantic relation types |
 | layer count $L^*$ | $\text{diam}(G) \cdot \lceil \log(1/\varepsilon) / \log(1/\kappa) \rceil$ | diameter × spectral convergence factor |
 
 ---
@@ -190,9 +190,9 @@ this is a number, computable from public graph data, localized to specific graph
 
 ## open questions
 
-per-semcon convergence rates: the layer count formula assumes uniform convergence requirements across hops. a per-semcon convergence rate — $\kappa^{(s)}$ for each semcon — would give a more precise layer count. deriving $\kappa^{(s)}$ from the spectral properties of the per-semcon adjacency submatrix $A^{(s)}$ is an open problem.
+per-dialect convergence rates: the layer count formula assumes uniform convergence requirements across hops. a per-dialect convergence rate — $\kappa^{(s)}$ for each dialect — would give a more precise layer count. deriving $\kappa^{(s)}$ from the spectral properties of the per-dialect adjacency submatrix $A^{(s)}$ is an open problem.
 
-head count for compositional relations: the lower bound $h^* \geq |\text{Semcon}(G)|$ does not specify how many additional heads are needed for compositional relations. characterizing the head count for $k$-hop compositional reasoning requires understanding how heads compose across layers, which is not fully characterized.
+head count for compositional relations: the lower bound $h^* \geq |\text{Dialect}(G)|$ does not specify how many additional heads are needed for compositional relations. characterizing the head count for $k$-hop compositional reasoning requires understanding how heads compose across layers, which is not fully characterized.
 
 weight staleness: the compilation produces a transformer that reads the graph at one point in time. the rate at which weight staleness degrades performance, and the conditions under which recompilation is necessary versus incremental update is sufficient, requires empirical study.
 
@@ -202,7 +202,7 @@ compilation vs fine-tuning: whether the compiled weights provide a better initia
 
 ## conclusion
 
-transformer architecture is not a free design choice when a weighted knowledge graph is available. the embedding dimension, attention head count, and layer depth are determined by three graph properties: the effective rank of the focus covariance, the semcon count, and the product of graph diameter with the spectral convergence factor.
+transformer architecture is not a free design choice when a weighted knowledge graph is available. the embedding dimension, attention head count, and layer depth are determined by three graph properties: the effective rank of the focus covariance, the dialect count, and the product of graph diameter with the spectral convergence factor.
 
 the result follows from a simple observation: a transformer's attention mechanism is one step of the same convergent dynamical system that computes the focus distribution over a knowledge graph. the transformer and the knowledge graph ranking system are the same computation at different scales — local and ephemeral in the transformer, collective and persistent in the graph.
 
