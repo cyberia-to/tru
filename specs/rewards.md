@@ -1,6 +1,14 @@
+---
+tags: cyber, tru, soft3
+crystal-type: process
+crystal-domain: cyber
+alias: rewards, impulse, focus impulse, Δφ*, pi_delta
+---
 # Reward Specification
 
 Reward signal, candidate functions, hybrid model, link valuation, attribution, self-minting, and token operations for the [[cybergraph]] knowledge economy.
+
+The reward signal is the [[impulse]] — the proven change in [[focus]] Δφ* a [[neuron]] delivers via a [[signal]]. The impulse is computed locally on the neuron's neighborhood (see [[focus-flow]]), proven against the [[BBG]] root, and doubles as the reward claim: a valid proof of ‖Δφ*‖ > 0 self-mints [[$CYB]] proportional to the shift. This page specifies what that signal is worth; [[focus-flow]] specifies how it is computed.
 
 Source material: [[learning incentives]], [[rewards]]
 
