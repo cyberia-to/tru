@@ -2,7 +2,7 @@
 tags: cyber, tru, soft3
 crystal-type: process
 crystal-domain: cyber
-alias: rewards, impulse, focus impulse, Δφ*, pi_delta
+alias: rewards, reward specification
 ---
 # Reward Specification
 
