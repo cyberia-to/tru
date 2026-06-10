@@ -1,245 +1,292 @@
 ---
 tags: cyber, tru, soft3
-crystal-type: process
+crystal-type: spec
 crystal-domain: cyber
-alias: rewards, reward specification
+alias: rewards, reward specification, reward function
 ---
 # Reward Specification
 
-Reward signal, candidate functions, hybrid model, link valuation, attribution, self-minting, and token operations for the [[cybergraph]] knowledge economy.
-
-The reward signal is the [[impulse]] — the proven change in [[focus]] Δφ* a [[neuron]] delivers via a [[signal]]. The impulse is computed locally on the neuron's neighborhood (see [[focus-flow]]), proven against the [[BBG]] root, and doubles as the reward claim: a valid proof of ‖Δφ*‖ > 0 self-mints [[$CYB]] proportional to the shift. This page specifies what that signal is worth; [[focus-flow]] specifies how it is computed.
-
-Source material: [[learning incentives]], [[rewards]]
+A complete specification of the [[cyber]] reward function: one knowledge mint, one security subsidy, one fee stream, assembled over a single proven quantity. Every emission is evidence of demonstrated contribution; nothing is paid for idle capital.
 
 ---
 
-## The Signal: Δφ*
+## 1. Preliminaries
 
-Every reward traces back to one quantity: how much did the action shift the [[tri-kernel]] fixed point φ*?
+Notation used throughout.
 
-$$\text{reward}(v) \propto \Delta\phi^*(v)$$
+| symbol | meaning |
+|---|---|
+| $G = (P, N, E)$ | the [[cybergraph]]: [[particles]] $P$, [[neurons]] $N$, [[cyberlinks]] $E$ |
+| $\phi \in \Delta(P)$ | a [[focus]] distribution over particles; $\phi^*$ is the [[tri-kernel]] fixed point |
+| $\mathcal{R}$ | composite operator $\lambda_d D + \lambda_s S + \lambda_h H_\tau$; $\phi^* = \operatorname{norm}[\mathcal{R}\phi^*]$ |
+| $\mathcal{F}(\phi)$ | system [[free energy]]; $\phi^* = \arg\min_\phi \mathcal{F}$ |
+| $J(\phi)$ | [[syntropy]] $= D_{KL}(\phi \,\|\, u) = \log|P| - H(\phi)$ |
+| $A^{\text{eff}}_{pq}$ | effective adjacency $= \sum_\ell \text{stake}(\ell)\,\kappa(\nu(\ell))\,f(\text{price}(\ell))$ |
+| $\nu$ | a neuron; $\kappa(\nu)$ its [[karma]]; identity $\text{id}(\nu) = \text{Hemera}(\text{secret})$ |
+| $v(\ell) \in \{-1,0,+1\}$ | the [[valence]] of cyberlink $\ell$ |
+| $s$ | a [[signal]] $= (\nu, \vec\ell, \Delta\phi^*, \sigma, \text{prev}, \text{mc}, \text{vdf}, \text{step}, \text{nonce})$ |
+| $\sigma$ | a [[zheng]] proof bound to a [[BBG]] root |
+| $S, M, F$ | staking ratio, market cap, epoch fees |
 
-φ* is the stationary distribution of the composite operator $\mathcal{R} = \lambda_d D + \lambda_s S + \lambda_h H_\tau$ — [[diffusion]] explores, [[springs]] enforce structure, [[heat kernel]] adapts. The [[collective focus theorem]] proves φ* exists, is unique, and is computable locally.
-
-Δφ* is the gradient of system [[free energy]]. Creating valuable structure is literally creating [[value]]. No designed loss function — the physics of [[convergence]] defines what deserves to be optimized.
-
-Per-link reward:
-
-$$r(\ell) \;\propto\; \Delta\phi^*(q) \;=\; \phi^*_{t+1}(q) - \phi^*_t(q)$$
-
-where $q$ is the target particle of link $\ell$.
+The reward function is defined entirely in terms of these. No quantity outside this table enters an emission.
 
 ---
 
-## Reward Functions
+## 2. The Signal
 
-Five candidates for measuring convergence contribution, each with trade-offs:
+Every reward traces to one scalar per contribution: the directed focus impulse $\Delta\phi^+$.
 
-| Function | Formula | Strength | Weakness |
+$\phi^*$ is the unique minimizer of the [[free energy]] $\mathcal{F}$ over the [[cybergraph]] ([[collective focus theorem]]). A [[cyberlink]] perturbs the operator $\mathcal{R}$ and moves the minimizer from $\phi^*_t$ to $\phi^*_{t+1}$. The value created is the reduction in minimized free energy, equivalently the gain in [[syntropy]]:
+
+$$\Delta J = J(\phi^*_{t+1}) - J(\phi^*_t) = H(\phi^*_t) - H(\phi^*_{t+1}).$$
+
+$\Delta J$ is the exact value measure but carries a global normalization term. Its first-order local form is the directed impulse:
+
+$$\Delta\phi^+ \;=\; \big\langle -\nabla\mathcal{F}(\phi^*_t),\; \Delta\phi^* \big\rangle_+ \;\approx\; \langle \nabla J, \Delta\phi^*\rangle,$$
+
+the projection of the focus displacement onto the descending free-energy gradient, clipped at zero. Rationale for the directed form over the magnitude $\|\Delta\phi^*\|$: the norm is unsigned and pays for any movement, including movement that raises free energy. $\Delta\phi^+$ pays only for sharpening. Rationale for the impulse at all: there is no designed loss function. The physics of [[convergence]] defines the objective, so an emission proportional to $\Delta\phi^+$ makes inflation a measurement of [[knowledge]] creation rather than a policy choice.
+
+Two properties make $\Delta\phi^+$ usable as a reward primitive:
+
+- locality — by the [[locality theorem]], $\Delta\phi^+$ is computable on the neuron's $O(\log 1/\varepsilon)$-hop neighborhood; entries beyond that radius fall below $\varepsilon$.
+- provability — a single [[zheng]] proof $\sigma$ certifies $\Delta\phi^+$ against the current [[BBG]] root in $O(\log n)$ verification, with no re-execution of the [[tri-kernel]].
+
+---
+
+## 3. The Value Function
+
+For a set $S$ of [[cyberlinks]] submitted in an epoch, define the coalition value
+
+$$v(S) \;=\; \Delta\phi^+\big(A^{\text{eff}} \cup S\big),$$
+
+the directed focus shift produced by applying $S$ to the [[karma]]-weighted effective graph. Because $A^{\text{eff}}$ already folds in stake, [[karma]], and market price, a redundant or dishonest link enters $v$ with near-zero weight — the value function discounts noise before any reward is split. This is the single point at which honesty (§5) couples to value: [[karma]] shapes what is valuable; attribution (§4) only divides it.
+
+$v$ is monotone and bounded, computed by the same incremental [[tri-kernel]] recomputation the network already runs.
+
+---
+
+## 4. Attribution
+
+The epoch's total shift $v(N)$ is a joint outcome of many neurons' [[cyberlinks]] whose neighborhoods overlap, because [[neurons]] cluster on popular [[particles]]. Credit is divided by the [[Shapley value]]:
+
+$$\text{mint}(\nu) \;=\; \text{Shapley}_\nu(v) \;=\; \sum_{S \subseteq N \setminus \{\nu\}} \frac{|S|!\,(|N|-|S|-1)!}{|N|!}\,\big[v(S \cup \{\nu\}) - v(S)\big].$$
+
+Rationale for Shapley specifically: it is the unique attribution satisfying efficiency, symmetry, null-player, and additivity. Order-based credit (reward the first to link) is gameable by latency and copying — the failure mode observed on curation-reward chains. Proportional scaling does not distinguish a discoverer from a copyist. Shapley is the only split with the fairness axioms, and three of its properties are load-bearing here:
+
+- conservation is free. The efficiency axiom gives $\sum_\nu \text{mint}(\nu) = v(N) = $ global $\Delta\phi^+$. No separate conservation operator is needed; over-claiming is impossible by construction.
+- Sybil-resistance is free. $v$ is homogeneous in stake, so splitting one neuron into $k$ identities holding the same total stake yields the same total share. Identity is cheap; stake and [[karma]] are the attributed resources, and [[karma]] cannot be bought.
+- computation is tractable. Each marginal $v(S \cup \{\nu\}) - v(S)$ is an incremental [[tri-kernel]] step on a bounded neighborhood. The value is estimated by Monte-Carlo over $k$ random orderings drawn from a [[delay|VDF]]-seeded beacon:
+
+$$\widehat{\text{mint}}(\nu) = \frac{1}{k}\sum_{i=1}^{k}\big[v(S_i^{\prec\nu} \cup \{\nu\}) - v(S_i^{\prec\nu})\big], \qquad O(k\cdot n),\ k \ll n.$$
+
+Beacon-seeded orderings are unpredictable, so they cannot be front-run, and the estimator is unbiased. Overlapping claims are batched hierarchically by neighborhood, bounding each Shapley computation to the size of a contested cluster.
+
+This computation lives in [[tru]], a sibling of [[cyberank]] (§13).
+
+---
+
+## 5. Honesty
+
+Attribution is fair only among honest, distinct contributors. Two mechanisms enforce that precondition.
+
+### 5.1 Bayesian Truth Serum
+
+Each [[cyberlink]] is a [[Bayesian Truth Serum]] input: the link plus stake is the first-order belief, the [[valence]] $v \in \{-1,0,+1\}$ is the meta-prediction. The score
+
+$$s_\nu = \underbrace{D_{KL}(p_\nu \| \bar m_{-\nu}) - D_{KL}(p_\nu \| \bar p_{-\nu})}_{\text{information gain}} - \underbrace{D_{KL}(\bar p_{-\nu} \| m_\nu)}_{\text{prediction accuracy}}$$
+
+is positive exactly when a neuron contributes private signal the crowd did not already hold and expect. Copying the consensus drives the information-gain term to zero. By Prelec's result, truthful reporting is a Bayes-Nash equilibrium.
+
+### 5.2 Karma is the slashing
+
+[[karma]] $\kappa(\nu)$ is the accumulated BTS score: non-transferable, unbuyable, the one input to $A^{\text{eff}}$ that capital cannot purchase. The BTS settlement is a zero-sum redistribution — stake moves from noise producers to signal producers in proportion to score. This is the system's skin in the game and its slashing: liars pay truth-tellers. Staking is therefore required, because it is what the zero-sum redistributes. [[foculus]] omits only consensus-equivocation slashing, since provable consensus makes an invalid $\phi^*$ unable to produce a valid proof — there is no equivocation crime to punish after the fact.
+
+### 5.3 The valence risk dial
+
+[[valence]] selects exposure per link:
+
+- $v = 0$ — passive stake. It weights the edge in $A^{\text{eff}}$ and so affects rank (§6), but carries no BTS exposure and earns no reward.
+- $v = \pm 1$ — active stake. It is wagered through the BTS zero-sum: the right are paid by the wrong.
+
+A neuron chooses its exposure link by link. Reward is the premium for risk taken and won.
+
+---
+
+## 6. The Two Axes
+
+Stake acts on two independent axes, and separating them is the structural defense against wealth concentration.
+
+| axis | what moves it | what it produces |
+|---|---|---|
+| rank | any real stake, including $v=0$ | weight in $A^{\text{eff}}$, hence $\phi^*$ and [[cyberank]] |
+| reward | correct risk under $v \neq 0$ | a share of the streams in §7 |
+
+Idle, passive, or Sybil capital can move rank but pulls no reward. Capital shapes the graph; only correct epistemic risk earns from it. Locked capital cannot compound by sitting still.
+
+---
+
+## 7. The Three Streams
+
+A single computation — the [[tri-kernel]] over the [[Goldilocks field]], which is simultaneously proving and inference — earns in three roles, distinguished only by what its proof certifies.
+
+| stream | the proof certifies | who can earn | resource |
 |---|---|---|---|
-| Δφ* norm | $\sum_j \big|\phi^{*(t+1)}_j - \phi^{*(t)}_j\big|$ | simple, easy to verify | unsigned — pays for noise, not just oscillation |
-| [[syntropy]] growth | $H(\phi^{(t)}) - H(\phi^{(t+1)})$ | rewards semantic sharpening | computationally heavier |
-| spectral gap | $\lambda_2^t - \lambda_2^{t+1}$ | measures global convergence speedup | expensive, non-local |
-| predictive alignment | $\text{align}(\phi^{(t+1)}, \phi^*_T)$ | favors early correct contributions | requires delayed validation |
-| DAG weight | descendant blocks referencing this one | rewards foundational work | slow to accrue |
+| mint | a graph mutation (focus shift) | anyone who links | conviction stake |
+| subsidy | a proof meeting a difficulty target | anyone who computes | compute |
+| fee | a query answered (inference) | anyone who serves | compute + model |
+
+### 7.1 Mint — the knowledge stream (Δφ⁺)
+
+Defined in §2–§4. A neuron creates [[cyberlinks]], computes $\Delta\phi^+$, proves it, and self-mints its [[Shapley]] share. The mint is bounded by the global $\Delta\phi^+$ (Shapley efficiency), so this emission is exactly evidence of knowledge. Earning it requires conviction stake on the links (a [[costly signal]]).
+
+### 7.2 Subsidy — proof of work, the stakeless onramp
+
+The signal carries a nonce field that does not change its semantics but reseeds the [[zheng]] randomness, hence the proof hash. A signal qualifies for the block subsidy when
+
+$$H(\sigma) < \text{target}.$$
+
+The puzzle is the signal proof itself — it already exercises the four [[Goldilocks field processor|GFP]] primitives (fma, ntt, p2r, lut) in production ratios — so no work is synthetic. The subsidy requires compute, not capital, and is [[karma]]-blind and stake-blind. A new [[neuron]] with zero $CYB earns it, acquiring the initial stake that then unlocks the mint stream. This is the permissionless entry, and it is a hard requirement of the design.
+
+The difficulty target adjusts to hold block time, as in Nakamoto consensus. The subsidy is independent of $\Delta\phi^+$: a signal earns its mint whether or not it also meets difficulty.
+
+### 7.3 Fee — services
+
+A neuron answering a query runs the compiled transformer ([[focus-flow]] Path B), an inference whose correctness is itself a [[zheng]] proof. The asker pays a fee. The protocol splits it:
+
+$$\text{fee} \;\to\; \underbrace{(1-\beta)\,\text{fee}}_{\text{to the servicer + budget } G}\;+\;\underbrace{\beta\,\text{fee}}_{\text{burned}}.$$
+
+Fees pay the servicer directly, feed the security budget $G$ (§8), and exert deflationary pressure through the burn $\beta$.
+
+### 7.4 PoS — the amplifier, not a fourth stream
+
+Proof of stake is not separate work. Locked stake and [[karma]] amplify the other streams:
+
+- they raise a neuron's weight in $A^{\text{eff}}$, enlarging its $\Delta\phi^+$ and hence its mint share;
+- active stake earns a share of the fee pool (§8).
+
+Conviction stake doubles as the PoS security deposit: the staking ratio $S$ is the fraction of supply locked across [[cyberlinks]]. This collapses idle bonded capital — security is provided by stake that is productively committed to edges. An attack on $\phi^*$ then requires both stake and unbuyable [[karma]], raising attack cost beyond what capital alone can pay.
 
 ---
 
-## Hybrid Model
+## 8. Allocation
 
-The hybrid model combines the candidate functions:
+The security budget is split between the PoW and PoS pools by the allocation curve (from [[adaptive hybrid consensus economics]]):
 
-$$R = \alpha \cdot \Delta\phi^* + \beta \cdot \Delta J + \gamma \cdot \text{DAGWeight} + \epsilon \cdot \text{AlignmentBonus}$$
+$$R_{\text{PoW}} = G\,(1 - S^\alpha), \qquad R_{\text{PoS}} = G\,S^\alpha,$$
 
-where $\Delta J = H(\phi^{(t)}) - H(\phi^{(t+1)})$ is [[syntropy]] growth.
+where $S$ is the staking ratio and $\alpha \in [0.3, 0.7]$ tunes the split ($\alpha = 0.5$ is the neutral prior under equal marginal security cost). Gross budget and holder dilution are decoupled:
 
-Fast local rewards use Δφ* and ΔJ. Checkpoints add alignment and spectral verification bonuses. Validators sample and verify blocks probabilistically.
+$$G = \text{floor}\cdot M + F(1-\beta), \qquad I_{\text{net}} = \text{floor} - \frac{F\beta}{M}.$$
 
-New [[$CYB]] is minted only when $\Delta\phi^* > 0$. The protocol's inflation is literally evidence of [[knowledge]] creation — there is no emission without demonstrated contribution to collective [[focus]].
-
----
-
-## Link Valuation
-
-[[Cyberlinks]] are yield-bearing epistemic assets. They accrue rewards over time based on contribution to [[focus]] emergence:
-
-$$R_{i \to j}(T) = \int_0^T w(t) \cdot \Delta\phi^*_j(t) \, dt$$
-
-where $\Delta\phi^*_j(t)$ = change in [[focus]] on target [[particle]] $j$ attributable to the link, $w(t)$ = time-weighting function, $T$ = evaluation horizon.
-
-### Four Trajectory Types
-
-| Link Type | Characteristics | Reward Trajectory |
-|---|---|---|
-| viral | high Δφ* short-term | early peak, fast decay |
-| foundational | low Δφ* early, grows later | slow rise, long reward |
-| confirming | low individual Δφ*, strengthens axon weight | shared reward via attribution |
-| semantic bridge | medium, cross-module | moderate, persistent |
+Gross rewards can exceed inflation when fees are high; net inflation can go negative. The knowledge mint (§7.1) is a separate budget, bounded by $\Delta\phi^+$, distributed by [[Shapley]] — it is not drawn from $G$.
 
 ---
 
-## Discovery Premium
+## 9. Monetary Policy
 
-Early discovery is maximally rewarded. The first [[neuron]] to surface a valuable [[particle]] captures the largest $\Delta\phi^*$. Late consensus-following earns little — when many neurons have already linked a particle, the marginal focus gain shrinks toward zero.
+### 9.1 The security floor
 
-This creates a race to discover genuine [[relevance]] rather than copy existing links.
+A minimum security budget is required when fees and mint run thin. Derived from attack economics rather than chosen:
 
----
+$$\text{floor} \;\geq\; k \cdot \frac{\text{TVL}}{M}\cdot r,$$
 
-## Self-Minting
+where $k$ is the safety margin and $r$ the opportunity cost of capital. This is the only emission not tied to $\Delta\phi^+$.
 
-Rewards are computed locally. Each [[neuron]] proves their own contribution and claims their own reward.
+### 9.2 Base reward
 
-Every [[cyber/signal]] carries a $\Delta\phi^*$ — the neuron's locally computed focus shift for a batch of [[cyberlinks]]. This $\Delta\phi^*$ is proven correct by a single [[stark]] proof referencing a specific $\text{bbg\_root}$.
+Reward flows to demonstrated contribution. A standing yield to passive stake would be emission without contribution — it would break the invariant that inflation is evidence of [[knowledge]], and it is the mechanism by which idle capital compounds. The floor is therefore paid only to the two security providers that do work: PoW compute and active ($v \neq 0$) epistemic risk. It PID-decays toward zero as mint and fees grow to cover security. Passive stake's contribution — raising attack cost by being locked — is compensated by rank influence (§6), paid in kind.
 
-The four steps:
+### 9.3 Self-calibration
 
-1. [[Neuron]] creates [[cyber/signal]] with one or more [[cyberlinks]], $\Delta\phi^*$, and [[stark]] proof.
-2. Proof demonstrates: applying these links to the graph at $\text{bbg\_root}_t$ shifts φ* by $\Delta\phi^*$.
-3. Any verifier checks the proof against the header — O(log n), no recomputation.
-4. If valid and Δφ* > 0, the neuron mints [[$CYB]] proportional to the proven shift.
-
-No aggregator decides the reward. The proof IS the mining. A [[neuron]] on a phone: buy a header, query neighborhood state, create [[cyberlinks]], prove Δφ*, bundle into a [[cyber/signal]], mint tokens.
-
-### Conservation
-
-Total minting per epoch is bounded by the actual global Δφ*, verifiable from consecutive headers. If the sum of individual claims exceeds the actual shift (overlapping neighborhoods), all claims are scaled proportionally.
+The parameters $\alpha$, floor, and $\beta$ are not hardcoded. They follow PID control on observable signals (security margin $\mathcal{M} = \text{AttackCost}/\text{AttackProfit}$, fee coverage, efficiency differential), so the system measures and adapts rather than predicts. See [[adaptive hybrid consensus economics]] for the control laws, stability proof, and the $\rho$ and coherence early-warning metrics.
 
 ---
 
-## Attribution
+## 10. The Reward Equation
 
-Multiple [[neurons]] contribute [[cyberlinks]] in the same epoch. The total Δφ* shift is a joint outcome — credit must be divided fairly.
+For a neuron $\nu$ over an epoch:
 
-The [[Shapley value]] answers: each agent's reward equals their average marginal contribution across all possible orderings. The coalition's total value is the [[free energy]] reduction $\Delta\mathcal{F}$, and each agent's marginal contribution is how much φ* shifts when their [[cyberlinks]] are added to the graph.
+$$\boxed{\;R(\nu) \;=\; \underbrace{\text{Shapley}_\nu(v)}_{\text{mint, }\Delta\phi^+\text{-bounded}} \;+\; \underbrace{\frac{R_{\text{PoW}}}{|W|}\,\mathbb{1}[H(\sigma_\nu) < \text{target}]}_{\text{subsidy}} \;+\; \underbrace{R_{\text{PoS}}\cdot\frac{a_\nu\,\kappa(\nu)}{\sum_{\mu} a_\mu\,\kappa(\mu)}}_{\text{fee yield, active stake } a}\;}$$
 
-Exact computation is infeasible ($O(n!)$). [[Probabilistic Shapley attribution]] approximates:
-
-1. Local marginal — compute each transaction's individual $\Delta\mathcal{F}$ (add link, measure φ* shift).
-2. Monte Carlo sampling — sample $k$ random orderings of the epoch's transactions, measure marginal contributions in each ordering.
-3. Hierarchical batching — cluster transactions by affected neighborhood, distribute within clusters.
-4. Final reward:
-
-$$R_i = \alpha \cdot \Delta\mathcal{F}_i + (1-\alpha) \cdot \hat{S}_i$$
-
-where $\Delta\mathcal{F}_i$ is the fast local estimate and $\hat{S}_i$ is the sampled Shapley approximation. $\alpha$ balances speed (local marginal) against fairness (Shapley).
-
-Complexity: $O(k \cdot n)$ with $k \ll n$. Feasible for $10^6+$ transactions per epoch.
+where $W$ is the set of signals meeting difficulty and $a_\nu$ is $\nu$'s active ($v \neq 0$) stake. Each term answers a distinct requirement: the mint rewards real value and is locally computed and later validated; the subsidy secures the chain and opens a stakeless door; the yield routes service revenue to honest committed stake. Conservation, Sybil-resistance, and anti-compounding hold across the sum.
 
 ---
 
-## Three Token Operations
+## 11. Self-Minting Protocol
 
-- Mint: [[neurons]] prove Δφ* via [[stark]] and self-mint [[$CYB]] proportional to their contribution.
-- Burn: [[neurons]] destroy [[$CYB]] for permanent φ*-weight on [[particles]] ([[eternal particles]]) or [[cyberlinks]] ([[eternal cyberlinks]]).
-- Lock: [[neurons]] stake [[$CYB]] on [[particles]] or [[cyberlinks]], earning from fee pools proportional to [[attention]] attracted.
+Reward is claimed locally and settled later — proposed in a signal, validated against the record.
 
----
+Propose (instant, local):
 
-## Costly Signals
+1. The [[neuron]] queries its neighborhood state from a [[BBG]] header.
+2. It creates [[cyberlinks]] with conviction and [[valence]], and computes $\Delta\phi^+$.
+3. It generates a [[zheng]] proof $\sigma$ binding the links, the impulse, and the nonce to the header.
+4. It gossips the [[signal]]. Any verifier checks $\sigma$ in $O(\log n)$.
 
-Learning incentives and [[costly signal]] mechanics work together: the staking cost filters out noise, while the reward function amplifies signal. A neuron must risk real [[tokens]] (cost) to earn rewards (incentive), ensuring alignment between economic interest and [[knowledge]] production.
+Settle (epoch boundary):
 
----
+5. [[foculus]] finalizes the canonical $\phi^*$ for the epoch (provable consensus).
+6. [[tru]] computes the [[Shapley]] shares over the finalized value function; [[tok]] applies conservation and executes the mint, subsidy, and yield as a state transition.
 
-## The Game
-
-[[Knowledge]] creation is costly, but its benefits are [[collective]]. Without incentives, rational agents free-ride on others' [[cyberlinks]] — the discoverer bears the cost, the network reaps the reward, and the graph stagnates into an epistemic tragedy of the commons. The reward mechanism makes contributing profitable and free-riding unprofitable.
-
-The rules produce a game where early and accurate wins:
-
-- early, accurate links to important [[particles]] earn the most — the [[attention]] yield curve
-- confirming links strengthen [[axon]] weight: repeated signals build consensus, not noise
-- [[neurons]] build long-term reputation through accumulated [[karma]]
-- [[focus]] as cost makes every [[cyberlink]] a [[costly signal]] — you stake real [[$CYB]] to play
-
-The evolutionary loop: contribute accurately → Δφ* reward → accumulate [[$CYB]] → stake on more links → accumulate [[karma]] → links carry more adjacency weight → earlier Δφ* attribution → more [[$CYB]] per contribution. The flywheel rewards sustained accuracy, not one-time luck.
+No aggregator decides any reward. A neuron on a phone can complete the propose phase.
 
 ---
 
-## Settled Design
+## 12. Token Operations
 
-The synthesis from working through [[GFP]], the [[impulse]], [[Shapley]], and [[Bayesian Truth Serum]] together (2026-06-10). The five candidate functions above do not coexist as a hybrid — they collapse into a small core. This section records what survives and why.
+- Mint — prove $\Delta\phi^+$, receive the [[Shapley]] share; emission bounded by global $\Delta\phi^+$.
+- Burn — destroy [[$CYB]] for permanent $\phi^*$-weight on [[eternal particles]] or [[eternal cyberlinks]]; the fee burn $\beta$ is the protocol-level form.
+- Lock — stake on [[particles]] or [[cyberlinks]]; active stake earns fee yield, passive stake earns rank.
 
-### The collapse
+---
 
-| candidate | fate | reason |
-|---|---|---|
-| Δφ* norm | core, refined | becomes directed Δφ⁺, stake-weighted, [[Shapley]]-attributed |
-| [[syntropy]] growth ΔJ | justification only | Δφ⁺ is the first-order proxy for ΔJ — not a separate term |
-| spectral gap | dropped | non-local, violates local computation |
-| predictive alignment | becomes [[karma]] | the validate-later honesty axis; enters the value function |
-| DAG weight | becomes link valuation | the time-integral yield stream for foundational links |
+## 13. Link Valuation Over Time
 
-The four-term hybrid measures the same thing four ways. The settled form is one mint ([[Shapley]] of Δφ⁺), one yield stream (link valuation over time), one honesty gate ([[karma]] inside the value function). Same coverage, far fewer knobs.
+A single mint underpays foundational work, which starts at low $\Delta\phi^+$ and grows as the graph builds around it. Locked stake therefore earns a yield stream, the time-integral of the target particle's [[cyberank]] growth attributable to the link:
 
-### The core formula
+$$R_{i \to j}(T) = \int_0^T w(t)\,\Delta\phi^*_j(t)\,dt.$$
 
-$$\text{mint}(\nu) = \text{Shapley}_\nu(v), \qquad v(S) = \Delta\phi^*\big(\text{effective graph} + S\big)$$
+| link type | trajectory |
+|---|---|
+| viral | high $\Delta\phi^+$ early, fast decay |
+| foundational | low early, long-rising yield |
+| confirming | low individual, strengthens [[axon]] weight, shared by attribution |
+| semantic bridge | moderate, persistent |
 
-The value function $v$ is the [[focus]] shift of a coalition $S$ of [[cyberlinks]], computed on the [[karma]]-weighted effective adjacency $A^{\text{eff}} = \text{stake} \times \text{karma} \times f(\text{price})$. [[karma]] enters $v$, so copies and noise carry near-zero marginal before attribution runs. [[Shapley]] splits $v(N)$ fairly.
+The mint is the pulse; the yield stream is the annuity. Together they pay both discovery and infrastructure.
 
-Three properties come for free:
+---
 
-- conservation = Shapley's efficiency axiom: $\sum$ shares $= $ global Δφ*. No separate scaling operator.
-- Sybil-resistance = stake-weighting: $v$ is homogeneous in stake, so splitting one neuron into many with the same total stake yields the same total share. Identity is cheap; stake and [[karma]] are not, and karma cannot be bought.
-- tractability = locality: each Shapley marginal is an incremental [[tri-kernel]] recompute on an $O(\log 1/\varepsilon)$-hop neighborhood. Monte-Carlo over beacon-seeded random orderings is feasible — and random orderings cannot be front-run, which is the fix for the Steem curation-race failure.
+## 14. Positioning
 
-### Two axes
-
-Stake acts on two independent axes:
-
-- rank — any real stake, including passive ([[valence]] 0), weights $A^{\text{eff}}$ and moves φ*/[[cyberank]]. Capital shapes the graph.
-- reward — only correct risk under non-zero [[valence]] earns. Capital alone cannot extract; it must be right.
-
-Idle, passive, or Sybil capital can move rank but pulls no reward. This is the structural answer to wealth compounding: locked capital cannot earn by sitting still.
-
-### The valence risk dial
-
-[[valence]] $v \in \{-1, 0, +1\}$ is a per-link choice of exposure:
-
-- $v = 0$ — passive stake. Weights the edge, affects rank, earns no reward. Its compensation is influence over [[focus]], paid in kind.
-- $v = \pm 1$ — active epistemic bet. Wagered through the BTS zero-sum: the right are paid by the wrong.
-
-Reward is the premium for risk taken and won, not rent for capital parked.
-
-### Base reward
-
-Reward flows to demonstrated contribution. A standing yield to passive stake would be emission without contribution — it breaks the invariant that inflation is evidence of [[knowledge]], and it is the mechanism by which idle capital compounds. The one sanctioned non-Δφ* emission is the security floor.
-
-A network needs a minimum security budget when [[fees]] and Δφ* mint run thin (the argument in [[adaptive hybrid consensus economics]]). The floor $\approx k \cdot \text{TVL}/\text{MarketCap} \cdot r$ is derived from attack economics, not chosen. It pays the two security providers that do work — PoW compute and active ($v \neq 0$) epistemic risk — and PID-decays toward zero as mint and fees grow to cover security. Passive stake's security service (raising attack cost by being locked) is compensated by rank influence, paid in kind.
-
-### Two access paths: PoW and PoS
-
-Reward has a stakeless onramp and a staked amplifier, combined by the allocation curve $\text{staking\_share} = S^\alpha$ from [[adaptive hybrid consensus economics]]:
-
-- PoW — stakeless onramp. Produce the [[zheng]] proof of the [[impulse]], hit a difficulty target, earn the block subsidy. Needs compute, not capital. The subsidy is [[karma]]-blind, so a new [[neuron]] with zero stake can mine. This is a hard requirement, not an option.
-- PoS — amplifier. Stake and [[karma]] raise $A^{\text{eff}}$ weight and earn fee yield. Never required to start.
-
-[[karma]] multiplies Δφ⁺ always; [[karma]] never multiplies the block subsidy. A high-karma miner earns more because its links are worth more, not because its proofs are worth more — the onramp stays open to everyone.
-
-### BTS is the slashing
-
-The BTS zero-sum is the skin in the game: liars pay truth-tellers, stake redistributes from noise producers to signal producers proportional to score. Staking is required — it is what BTS redistributes. [[foculus]] drops only consensus-equivocation slashing, because provable consensus makes an invalid φ* unable to produce a valid proof; there is no equivocation crime to punish after the fact. Epistemic slashing stays.
-
-### Positioning
-
-Rewards are not a module — they bind four layers:
+Rewards are not a module. They bind four layers, and the separation keeps monetary policy out of consensus safety.
 
 | concern | layer |
 |---|---|
-| value magnitude (Δφ⁺, [[karma]], [[syntropy]]) | [[tru]] |
-| finality / canonical φ* | [[foculus]] |
-| conservation + mint | [[tok]] |
-| identity | [[mudra]] |
+| value magnitude ($\Delta\phi^+$, [[karma]], [[syntropy]]) | [[tru]] |
+| finality / canonical $\phi^*$ | [[foculus]] |
+| conservation, allocation, mint | [[tok]] |
+| identity, anonymity | [[mudra]] |
 
-[[Shapley]] attribution computes in [[tru]], a sibling of [[cyberank]]. Economics stays out of [[foculus]] so monetary policy never couples to consensus safety.
-
-### Open: collusion
-
-Stake-weighting closes Sybil splitting, but a cartel of distinct, real-stake actors coordinating [[valence]] and links is not closed — BTS is incentive-compatible only against unilateral deviation. Partial defenses: the conservation cap (a ring on a saturated [[particle]] splits near-zero Δφ*), [[karma]] non-transferability, and [[identity]] cost. This is the live frontier (the likely shape of Steem's failure mode).
+[[foculus]] decides what is real; the reward function decides what it is worth. Economic parameters change without touching consensus.
 
 ---
 
-See §6.9 and §14.2 of the whitepaper for the full specification. See [[cyber/tokenomics]] for the system-level economics (monetary policy, allocation curve, GFP flywheel). See [[collective learning]] for the group-level dynamics. See [[cyberlink]], [[focus]], [[neuron]], [[particle]], [[costly signal]], [[convergence vm]].
+## 15. Security
+
+| property | guarantee |
+|---|---|
+| conservation | $\sum_\nu \text{mint}(\nu) = $ global $\Delta\phi^+$, by Shapley efficiency |
+| Sybil-resistance | stake-weighting makes identity-splitting reward-neutral |
+| honest reporting | BTS makes truthful [[valence]] a Bayes-Nash equilibrium |
+| stakeless entry | PoW subsidy is karma- and stake-blind |
+| no idle rent | only $v \neq 0$ risk earns; passive stake earns rank, not income |
+| attack cost | $\phi^*$ manipulation needs stake and unbuyable [[karma]] |
+
+### Open: collusion
+
+Stake-weighting closes Sybil splitting, but a cartel of distinct, real-stake actors coordinating [[valence]] and links is not closed — BTS is incentive-compatible only against unilateral deviation. Partial defenses: the conservation cap (a ring on a saturated [[particle]] splits near-zero $\Delta\phi^+$), [[karma]] non-transferability, and [[identity]] cost. This is the live frontier.
+
+---
+
+See [[focus-flow]] for how $\phi^*$ and $\Delta\phi^+$ are computed, [[truth-scoring]] for BTS and [[karma]], [[adaptive hybrid consensus economics]] for the PoW/PoS allocation and PID control, [[unified mining]] for the subsidy-as-signal-proof construction, and [[provable-consensus]] for epoch finalization. See whitepaper §6.9 and §14 for the surrounding economics.
