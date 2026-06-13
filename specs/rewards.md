@@ -183,7 +183,9 @@ Stake acts on two independent axes; separating them is the structural defense ag
 | **rank** | any real stake, including $v=0$ | weight in $A^{\text{eff}}$, hence $\phi^*$ and [[cyberank]] |
 | **reward** | correct risk under $v \neq 0$ | a share of the streams in §8 |
 
-Idle, passive, or Sybil capital can move **rank** but pulls no **reward**. Capital shapes the graph; only correct epistemic risk earns from it. Locked capital cannot compound by sitting still — the precise structural fix for the wealth-compounding failure of stake-weighted systems. Passive stake's compensation is influence over $\phi^*$, paid in kind, never in tokens.
+Idle, passive, or Sybil capital can move **rank** but pulls no **reward**. Capital shapes the graph; only correct epistemic risk earns from it. Locked capital cannot compound by sitting still — the precise structural fix for the wealth-compounding failure of stake-weighted systems.
+
+A $v=0$ link earns nothing by *category*, not by penalty. It is not capital seeking yield but a **purchase**: the time-value of staked [[$CYB]] spent to buy weight over $\phi^*$. This is rational for a [[neuron]] whose use-value of that influence exceeds its capital cost, and unattractive to rent-seekers, who have none — a monetary yield would convert the purchase into an investment and reopen compounding. Nor could it be paid even in principle: minting must separate signal from copying through BTS information-gain (§5), which needs the meta-prediction that $v=0$ declines, so a passive link's $\Delta\phi^+$ is real movement yet unverifiable as knowledge. Influence over $\phi^*$ is the entire return, paid in kind and unpriceable by design.
 
 ---
 
@@ -211,7 +213,7 @@ $$\boxed{\;R(\nu) \;=\; \underbrace{\text{Shapley}_\nu(v)}_{\text{mint, }\Delta\
 
 where $W$ is the set of signals meeting difficulty and $a_\nu$ is $\nu$'s active ($v \neq 0$) stake. Each term answers a distinct requirement: the **mint** rewards real value, locally computed and later validated; the **subsidy** secures the chain and opens a stakeless door; the **yield** routes service revenue to honest committed stake. Conservation, Sybil-resistance, and anti-compounding hold across the sum.
 
-A single mint underpays foundational work, which starts at low $\Delta\phi^+$ and grows as the graph builds around it. So locked stake also earns a **yield stream**, the time-integral of the target particle's [[cyberank]] growth attributable to the link:
+A single mint underpays foundational work, which starts at low $\Delta\phi^+$ and grows as the graph builds around it. So an active ($v \neq 0$) link also earns a **yield stream** — the delayed mint of that foundational work, the time-integral of the target particle's [[cyberank]] growth attributable to the link. Passive ($v=0$) stake earns no part of it; the annuity is realized value, not rent on locked capital:
 
 $$R_{i \to j}(T) = \int_0^T w(t)\,\Delta\phi^*_j(t)\,dt.$$
 
