@@ -8,8 +8,8 @@ convergence and derivation are different computation models. derivation proceeds
 |----|-----------------|--------------|
 | [[nox]] | derivation | confined |
 | [[zheng]] | verification | confined |
-| [[glia]] | forward pass | confined |
-| [[tru]] | field convergence | free |
+| [[glia]] | inference | confined |
+| [[tru]] | convergence | free |
 
 ## field and compile
 
@@ -35,7 +35,7 @@ this is why tru runs locally on every [[neuron]], not only on validators. valida
 
 ## spec map
 
-the specs are organized in dependency order. implement them in the sequence below.
+the specs are organized in dependency order. implement them in the sequence below. the [specs/README.md](specs/README.md) is the full build map — layers, status, and the ct0 pass breakdown.
 
 ### phase 0 — data formats
 
@@ -51,10 +51,12 @@ these two formats are prerequisites for everything else. vocab feeds pass 1; mod
 | spec | what it defines |
 |------|----------------|
 | [specs/tri-kernel.md](specs/tri-kernel.md) | the three operators (diffusion D, springs S, heat H_τ), composite R, fixed-point theorem, convergence proof |
+| [specs/attention.md](specs/attention.md) | per-neuron focus projection — will-share + conviction box, the input term that sums into effective adjacency |
 | [specs/truth-scoring.md](specs/truth-scoring.md) | BTS mechanism, karma accumulation, honesty-weighted effective adjacency |
-| [specs/field.md](specs/field.md) | epoch computation: effective adjacency → tri-kernel → φ*, cyberank, syntropy, Δφ* |
+| [specs/field.md](specs/field.md) | epoch computation: effective adjacency → tri-kernel → φ*, cyberank, syntropy |
+| [specs/impulse.md](specs/impulse.md) | Δφ* — the proven focus shift one signal delivers; locality-bounded sparse vector |
 
-tri-kernel is the mathematical foundation. truth-scoring defines how stake and karma weight the graph. field assembles them into the per-epoch computation.
+tri-kernel is the mathematical foundation. attention defines the per-neuron input; truth-scoring defines how stake and karma weight the graph. field assembles them into the per-epoch computation, and impulse is the per-signal delta Δφ*.
 
 ### phase 2 — model compilation
 
@@ -114,8 +116,12 @@ tru is the only component in the stack that understands graph structure. [[glia]
 
 ## specs
 
-- [specs/field.md](specs/field.md) — effective adjacency, tri-kernel, φ*, eigensolver, cyberank, syntropy, Δφ*
+start with [specs/README.md](specs/README.md) — the build map with layers and status.
+
+- [specs/field.md](specs/field.md) — effective adjacency, tri-kernel, φ*, eigensolver, cyberank, syntropy
 - [specs/tri-kernel.md](specs/tri-kernel.md) — tri-kernel mathematics and convergence proof
+- [specs/attention.md](specs/attention.md) — per-neuron focus projection (will + conviction)
+- [specs/impulse.md](specs/impulse.md) — Δφ*, the proven per-signal focus shift
 - [specs/focus-flow.md](specs/focus-flow.md) — field-to-transformer identity, architecture derivation
 - [specs/ct0.md](specs/ct0.md) — CT-0 pipeline (8 passes); multivector inputs §2.5–§2.6; wedge attention §7.7; Clifford MLP §8
 - [specs/model.md](specs/model.md) — .model container format

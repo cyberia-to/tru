@@ -1,10 +1,10 @@
 ---
-tags: cyber, core, reference
+tags: cyber, tru, core, reference
 alias: tri-kernel spec, tri-kernel reference, cyber/tri-kernel
 ---
 # Tri-Kernel Specification
 
-Formal definition of the three local operators whose fixed point is [[cyberank]]. Part of the [[cyber/core]] specification.
+Formal definition of the three local operators whose fixed point is [[cyberank]]. The convergence and uniqueness result in §3 is the [[collective focus theorem]]. Part of the [[tru]] specification.
 
 ---
 
@@ -111,6 +111,24 @@ Because all operations are local and memoizable:
 $$t_{\text{verify}} / t_{\text{compute}} \to c \approx 1$$
 
 Light clients can verify [[focus]] updates by checking boundary flows and authenticated neighborhood commitments, with constant-factor overhead relative to computation.
+
+### 2.4 One Fixed Point, Five Ways
+
+The fixed point $\phi^*$ is one object that five independent research traditions arrived at separately. They are isomorphic; the tri-kernel makes the isomorphism literal rather than analogical.
+
+| lens | $\phi^*$ is | term in $\mathcal{R}$ | source |
+|---|---|---|---|
+| PageRank | the stationary distribution of a stake-teleported random walk | diffusion $D$ | Brin & Page 1998 |
+| transformer attention | the leading left eigenvector of the row-stochastic attention operator | diffusion $D$ — softmax-attention is row-stochastic | Vaswani et al. 2017 |
+| graph neural diffusion | one message-passing step of a continuous GNN — the heat equation as a layer | heat $H_\tau$ | GRAND, Chamberlain et al. 2021 |
+| modern Hopfield network | an energy minimum of an associative memory; retrieval is one update step | the Boltzmann form $\phi^*_i \propto e^{-\beta E_i}$ (§2.1) | Ramsauer et al. 2020 |
+| active inference | the variational free-energy minimum a self-evidencing system settles into | the functional $\mathcal{F}(\phi)$ (§2.1) | Friston 2010; Smithe 2023 |
+
+Each row is a projection of the same object. Diffusion is PageRank and is the attention eigenvector at once — softmax-attention is exactly a row-stochastic operator, so its leading left eigenvector is the diffusion stationary distribution. Heat is the GNN — GRAND shows message passing is the discretized heat equation, which is $H_\tau$. The Boltzmann equilibrium of §2.1 is the Hopfield energy minimum — modern Hopfield retrieval is a softmax over stored patterns, the same exponential-of-energy form. And the functional $\mathcal{F}$ that $\phi^*$ minimizes is Friston's variational free energy — the quantity an active-inference agent minimizes by self-evidencing.
+
+The convergence proof (§2.2) therefore carries more weight than a numerical guarantee. It is the statement that PageRank, transformer attention, graph neural diffusion, associative memory, and active inference are five names for a single contraction's fixed point. A model compiled from $\phi^*$ (see [[ct0]], [[focus-flow]]) inherits all five readings simultaneously: it is a transformer because $\phi^*$ is an attention eigenvector, and it is a graph's equilibrium because $\phi^*$ is a PageRank distribution. The two inference paths of [[focus-flow]] are one instance of this five-way identity.
+
+The identity holds for the composite operator $\mathcal{R}$ iterated to a single fixed point — the attractor of the blend. Computing each operator's own fixed point in isolation and averaging the three (the blend of separate attractors) breaks it: the average of five projections is not the object. This is why §2.2 specifies one coupled iteration governed by a single $\kappa$, not three independent solves.
 
 ---
 
@@ -251,3 +269,7 @@ Safety policies: degree caps, spectral sparsification, novelty floor, auto-rollb
 8. Frobenius. "Uber Matrizen aus nicht negativen Elementen." Sitzungsberichte, 1912
 9. Banach. "Sur les operations dans les ensembles abstraits." Fundamenta Mathematicae, 1922
 10. Friston. "The free-energy principle: a unified brain theory." Nature Reviews Neuroscience, 2010
+11. Vaswani et al. "Attention is all you need." NeurIPS 2017
+12. Chamberlain et al. "GRAND: Graph Neural Diffusion." ICML 2021
+13. Ramsauer et al. "Hopfield Networks is All You Need." 2020
+14. Smithe. "Mathematical Foundations for a Compositional Account of the Bayesian Brain" (active inference fixed points). 2023

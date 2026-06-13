@@ -107,6 +107,8 @@ by the banach fixed-point theorem, φ^(t) → φ* at linear rate. the fixed poin
 φ* = norm[R(φ*)]        Σ_i φ*(i) = 1        φ*(i) > 0 ∀ i
 ```
 
+computation is one coupled iteration: each step applies D, S, and H_τ to the same current φ, blends with weights λ, and normalizes — repeat to the fixed point. tru does not solve the three operators independently to their own fixed points and average the results; that is a different, weaker object that minimizes no single free energy and has no single κ (see [[tri-kernel]] §2.4). the contraction κ < 1 governs this coupled iteration, and the [[ct0]] architecture parameters read κ from it.
+
 φ* is the boltzmann equilibrium minimizing the free energy functional:
 
 ```
