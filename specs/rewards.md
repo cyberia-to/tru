@@ -79,9 +79,9 @@ Rationale for Shapley specifically: it is the unique attribution satisfying effi
 
 $$\widehat{\text{mint}}(\nu) = \frac{1}{k}\sum_{i=1}^{k}\big[v(S_i^{\prec\nu} \cup \{\nu\}) - v(S_i^{\prec\nu})\big], \qquad O(k\cdot n),\ k \ll n.$$
 
-Beacon-seeded orderings are unpredictable, so they cannot be front-run, and the estimator is unbiased. Overlapping claims are batched hierarchically by neighborhood, bounding each Shapley computation to the size of a contested cluster.
+Beacon-seeded orderings are unpredictable, so they cannot be front-run, and the estimator is unbiased. Overlapping claims are batched into canonical clusters (§12.2), bounding each Shapley computation to the size of a contested cluster. The estimator is not run by any single actor: each ordering is one ticket in a leaderless mining lottery, and the value is the swarm average of all drawn samples (§12.3).
 
-This computation lives in [[tru]], a sibling of [[cyberank]] (§13).
+This computation lives in [[tru]], a sibling of [[cyberank]] (§14).
 
 ---
 
@@ -141,7 +141,7 @@ Defined in §2–§4. A neuron creates [[cyberlinks]], computes $\Delta\phi^+$, 
 
 ### 7.2 Subsidy — proof of work, the stakeless onramp
 
-The signal carries a nonce field that does not change its semantics but reseeds the [[zheng]] randomness, hence the proof hash. A signal qualifies for the block subsidy when
+The signal carries a nonce field. Each value it takes reseeds the proof hash, and at settlement the nonce doubles as the index of a [[Shapley]] sampling ordering (§12.3) — so a hash attempt is simultaneously a lottery draw and a genuine attribution sample. A signal qualifies for the block subsidy when
 
 $$H(\sigma) < \text{target}.$$
 
@@ -225,14 +225,56 @@ Propose (instant, local):
 
 Settle (epoch boundary):
 
-5. [[foculus]] finalizes the canonical $\phi^*$ for the epoch (provable consensus).
-6. [[tru]] computes the [[Shapley]] shares over the finalized value function; [[tok]] applies conservation and executes the mint, subsidy, and yield as a state transition.
+5. [[foculus]] finalizes the canonical $\phi^*$ and the epoch's claim set (provable consensus).
+6. the claims partition into canonical clusters and a leaderless mining lottery computes the [[Shapley]] shares as a swarm-averaged sample (§12); [[tok]] applies conservation and executes the mint, subsidy, and yield as a state transition.
 
-No aggregator decides any reward. A neuron on a phone can complete the propose phase.
+What a neuron proves at propose time is a *bound* on its reward, not the reward: the settled [[Shapley]] share is at most the proposed $\Delta\phi^+$ (§12.1). No aggregator decides any reward — settlement is a public function computed by a lottery, and a neuron on a phone can complete the propose phase.
 
 ---
 
-## 12. Token Operations
+## 12. Settlement Mining
+
+The propose phase (§11) is agent-local: a neuron computes its own $\Delta\phi^+$ alone. The settle phase cannot be — a neuron's [[Shapley]] share is a function of the *other* contenders, who do not exist until the epoch's claim set is fixed. Settlement is therefore computed with no neuron, leader, or aggregator deciding it: as a leaderless proof-of-useful-work lottery whose tickets are the [[Shapley]] samples themselves.
+
+### 12.1 Propose computes a bound, not the reward
+
+What a neuron proves in §11 is its *standalone* marginal $v(\{\nu\}) - v(\emptyset)$ against the header it observed. The value function $v$ is **submodular** — overlapping links on a saturating [[particle]] have diminishing returns — so the standalone marginal is the largest marginal $\nu$ can ever contribute, and
+
+$$\text{Shapley}_\nu(v) \;\le\; v(\{\nu\}) - v(\emptyset) \;=\; \Delta\phi^+_\nu.$$
+
+The propose proof is a *provable ceiling* on the settled share, not the share. It bounds the claim, it is what conviction stake escrows against, and settlement can only pay $\le$ it — with equality exactly when $\nu$ was alone in its region (the sparse-link case). Propose and settle certify two different facts against two different states: propose proves "my marginal against my header was $X$"; settle proves "the division of the real joint $\Delta\phi^+$ is correct." The beacon that seeds settlement is drawn *after* propose closes, which is what makes the orderings un-front-runnable.
+
+### 12.2 The settlement region
+
+Locality is in graph distance — hops along [[cyberlinks]] — because $\phi^*$ is a heat-kernel fixed point and a single edge perturbs it with exponential spatial decay. The region a claim touches is its **$\varepsilon$-support**: every node whose contribution to $\Delta\phi^+$ is $\ge \varepsilon$, the protocol precision floor.
+
+- radius $r = O(\log 1/\varepsilon)$ hops, $r \approx \log(1/\varepsilon)\,/\,\log(1/\lambda_{\text{local}})$;
+- content-dependent — wide around a hub (slow local mixing, small spectral gap), tiny on the sparse fringe;
+- canonical — the superlevel set is a deterministic function of the edge set and $\varepsilon$, so no miner can draw a self-serving boundary. The settlement proof commits to the support and certifies that boundary nodes are genuinely $< \varepsilon$ — the anti-cheat against excluding a node to inflate a marginal.
+
+A **cluster** is a connected component of overlapping $\varepsilon$-supports: two claims share a cluster iff their supports intersect. The partition of an epoch's claims into clusters is thus canonical, and clusters are independent — non-overlapping regions do not affect each other's [[Shapley]] values. Settlement decomposes per cluster and parallelizes across them.
+
+### 12.3 The ordering-as-ticket lottery
+
+A deterministic "first to compute the settlement wins" is *not* progress-free: the fastest machine finishes first every time, electing a de facto leader and centralizing. The fix does not bolt a random puzzle onto the useful work — it observes that [[Shapley]] estimation (§4) *is already a sampling process*, and makes each sample a lottery ticket. The randomness the estimator needs and the entropy the lottery needs are the same randomness.
+
+For a cluster with beacon seed $\text{b}$:
+
+1. a miner picks a nonce $n$; the ordering is $\pi(n) = \text{VRF}(\text{b} \,\|\, n)$ — miner-independent and public;
+2. it computes the marginal sample $m(n)$ under $\pi(n)$ — a genuine draw of the §4 estimator, and the useful work;
+3. it holds a winning ticket iff $H(\text{b} \,\|\, n \,\|\, \text{id}(\nu)) < \text{target}$, claimed by publishing $(n, m(n), \sigma)$.
+
+Step 3 is a per-miner Poisson test: progress-free, so the winner is random in proportion to throughput, leaderless, and poolable on the same terms as Nakamoto PoW. The **settlement itself is the average of every published sample** across all miners — more mining means more independent draws and a tighter estimate (Hoeffding). No single actor produces the answer; it converges out of the swarm, and security spend converts directly into attribution precision with no synthetic work.
+
+This collapses the §7.2 subsidy into the same act. The nonce §7.2 grinds to reseed a proof hash *is* the ordering index $n$: every hash attempt is now a real [[Shapley]] sample rather than an empty reseed. Securing the chain and computing the fair division become one computation. Settlement mining is therefore not a fourth stream — it is the *content* of the PoW subsidy $R_{\text{PoW}}$ (§8); whether a miner also proposes its own links or only settles others' is left to the market, since both are [[karma]]- and stake-blind compute.
+
+### 12.4 Withholding (residual)
+
+The lottery is not fully closed against a miner that is *also a contender* in the cluster it settles. Such a miner can compute $m(n)$, see that it lowers its own share, and decline to publish even a winning ticket — biasing the swarm average by omission. To claim any ticket it must publish the true $m(n)$ (verified), so the only freedom is *not playing* a nonce; it cannot lie. A withheld nonce is still a valid ticket for other miners, whose threshold is keyed to their own identity and who re-cover it with probability proportional to their throughput. The injectable bias is therefore **bounded by the attacker's share** of settlement compute — negligible for a minority, and a majority already breaks consensus. The tightening is to require a miner to commit to $n$ before it learns $m(n)$, so withholding cannot be conditioned on the outcome. This sits alongside collusion (§16) as a bounded, not-yet-closed frontier.
+
+---
+
+## 13. Token Operations
 
 - Mint — prove $\Delta\phi^+$, receive the [[Shapley]] share; emission bounded by global $\Delta\phi^+$.
 - Burn — destroy [[$CYB]] for permanent $\phi^*$-weight on [[eternal particles]] or [[eternal cyberlinks]]; the fee burn $\beta$ is the protocol-level form.
@@ -240,7 +282,7 @@ No aggregator decides any reward. A neuron on a phone can complete the propose p
 
 ---
 
-## 13. Link Valuation Over Time
+## 14. Link Valuation Over Time
 
 A single mint underpays foundational work, which starts at low $\Delta\phi^+$ and grows as the graph builds around it. Locked stake therefore earns a yield stream, the time-integral of the target particle's [[cyberank]] growth attributable to the link:
 
@@ -257,7 +299,7 @@ The mint is the pulse; the yield stream is the annuity. Together they pay both d
 
 ---
 
-## 14. Positioning
+## 15. Positioning
 
 Rewards are not a module. They bind four layers, and the separation keeps monetary policy out of consensus safety.
 
@@ -272,7 +314,7 @@ Rewards are not a module. They bind four layers, and the separation keeps moneta
 
 ---
 
-## 15. Security
+## 16. Security
 
 | property | guarantee |
 |---|---|
@@ -282,10 +324,13 @@ Rewards are not a module. They bind four layers, and the separation keeps moneta
 | stakeless entry | PoW subsidy is karma- and stake-blind |
 | no idle rent | only $v \neq 0$ risk earns; passive stake earns rank, not income |
 | attack cost | $\phi^*$ manipulation needs stake and unbuyable [[karma]] |
+| leaderless settlement | attribution is a swarm-averaged sampling lottery (§12.3); no producer or leader computes it |
 
-### Open: collusion
+### Open: collusion and withholding
 
-Stake-weighting closes Sybil splitting, but a cartel of distinct, real-stake actors coordinating [[valence]] and links is not closed — BTS is incentive-compatible only against unilateral deviation. Partial defenses: the conservation cap (a ring on a saturated [[particle]] splits near-zero $\Delta\phi^+$), [[karma]] non-transferability, and [[identity]] cost. This is the live frontier.
+Stake-weighting closes Sybil splitting, but a cartel of distinct, real-stake actors coordinating [[valence]] and links is not closed — BTS is incentive-compatible only against unilateral deviation. Partial defenses: the conservation cap (a ring on a saturated [[particle]] splits near-zero $\Delta\phi^+$), [[karma]] non-transferability, and [[identity]] cost.
+
+Settlement withholding (§12.4) is the second residual: a contender-miner can bias the swarm average by declining to publish winning tickets unfavorable to itself. It cannot lie, only abstain, so the injectable bias is bounded by its share of settlement compute; the commit-before-marginal rule tightens it further. Both are bounded, not-yet-closed frontiers.
 
 ---
 
