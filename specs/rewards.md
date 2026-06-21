@@ -52,13 +52,23 @@ Everything paid by the protocol traces to this one scalar.
 
 ## 3. The Value Function
 
-Contributions are not independent — [[neurons]] cluster on popular [[particles]], so their neighborhoods overlap and credit must be shared. Define the value of a coalition $S$ of [[cyberlinks]] submitted in an epoch:
+§2 priced *one* link. But [[neurons]] cluster on popular [[particles]], so two links into the same region partly create the *same* focus shift — value is **joint, not additive**. Paying each link its own $\Delta\phi^+$ would pay twice for shared work. So the unit of value cannot be a link; it must be a *set* of links.
+
+For any coalition $S$ of an epoch's [[cyberlinks]], define the value it jointly produces:
 
 $$v(S) \;=\; \Delta\phi^+\!\big(A^{\text{eff}} \cup S\big),$$
 
-the directed focus shift produced by applying $S$ to the **[[karma]]-weighted effective graph** $A^{\text{eff}}_{pq} = \sum_\ell \text{stake}(\ell)\,\kappa(\nu(\ell))\,f(\text{price}(\ell))$.
+the directed focus shift from applying $S$ to the [[karma]]-weighted effective graph $A^{\text{eff}}_{pq} = \sum_\ell \text{stake}(\ell)\,\kappa(\nu(\ell))\,f(\text{price}(\ell))$.
 
-This is the single point where honesty couples to value. Because $A^{\text{eff}}$ already folds in stake, [[karma]], and market price, a redundant or dishonest link enters $v$ with near-zero weight — **[[karma]] shapes what is valuable; attribution (§4) only divides it.** $v$ is monotone, bounded, and submodular: overlapping links on a saturating particle have diminishing returns. That submodularity is used twice below — it caps the propose-time claim (§6) and it makes settlement an honest sampling problem (§7).
+**This is the move the whole specification turns on: $v$ makes the economy a cooperative game.** As a set-function $v : 2^N \to \mathbb{R}$ it is that game's *characteristic function* — the worth of every possible coalition of contributors — and the reward (§4) is nothing more than its fair division. Once value is a set-function, every result downstream is a property of $v$.
+
+Three of those properties are load-bearing, each invoked by name later:
+
+- **honesty enters here, and only here.** $A^{\text{eff}}$ already folds in stake, [[karma]], and market price, so a redundant or dishonest link joins $v$ with near-zero weight. [[karma]] shapes *what is valuable*; attribution (§4) only *divides* it — the single seam between truth and value.
+- **submodular** — overlapping links on a saturating particle have diminishing returns. Used twice: it caps each link's propose-time claim to its standalone marginal (§6), and it turns settlement into an honest sampling problem (§7).
+- **monotone and bounded** — a true contribution never lowers value and value never runs away, so the game has a well-defined, finite [[Shapley]] solution (§4).
+
+$v$ is not a new quantity to compute — only $\Delta\phi^+$ (§2) read over sets, by the same incremental [[tri-kernel]] recomputation the network already runs.
 
 ---
 
