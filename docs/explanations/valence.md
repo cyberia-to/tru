@@ -123,7 +123,7 @@ $$\text{binary} \;\to\; \text{ternary} \;\to\; \text{continuous} \;\to\; \phi^*$
 | structural | link exists / doesn't | binary |
 | epistemic seed | $v \in \{-1, 0, +1\}$ | ternary |
 | market | ICBS price $m(\ell) \in (0,1)$ | continuous |
-| field | focus distribution $\phi^*$ | convergent |
+| focusing | focus distribution $\phi^*$ | convergent |
 
 each layer requires the one below it. the market cannot initialize without the ternary seed. $\phi^*$ cannot converge without the market weights. the ternary is not redundant with the continuous layer — it is the discrete prior that the continuous layer refines.
 

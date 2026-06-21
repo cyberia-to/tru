@@ -2,7 +2,7 @@
 tags: cyber, tru, core, spec
 crystal-type: process
 crystal-domain: cyber
-alias: convergence, field convergence
+alias: convergence, focus convergence
 ---
 # convergence
 

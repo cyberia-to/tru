@@ -39,7 +39,7 @@ valence is the ternary economic layer over a binary topology — the same archit
 
 the zero state carries information without carrying directional belief: a void-valence link holds the structural channel open — the connection exists, the topic is raised — without forcing an epistemic commitment. for the full accounting frame of $v$ as debit / credit / hold, see [[tru/docs/explanations/valence|valence as accounting]].
 
-## effect on the field
+## effect on focusing
 
 valence does not enter effective adjacency directly. it seeds the market whose price $m(\ell)$ weights the edge:
 
