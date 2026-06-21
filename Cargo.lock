@@ -310,11 +310,11 @@ dependencies = [
  "serde",
  "thiserror",
  "toml",
- "tru-field",
+ "tru-focusing",
 ]
 
 [[package]]
-name = "tru-field"
+name = "tru-focusing"
 version = "0.1.0"
 
 [[package]]

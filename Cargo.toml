@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "crates/field"]
+members = [".", "crates/focusing"]
 resolver = "2"
 
 [package]
@@ -19,7 +19,7 @@ name = "tru"
 path = "src/lib.rs"
 
 [dependencies]
-tru-field = { path = "crates/field" }
+tru-focusing = { path = "crates/focusing" }
 anyhow = "1"
 thiserror = "2"
 clap = { version = "4", features = ["derive"] }

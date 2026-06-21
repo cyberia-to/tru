@@ -47,11 +47,11 @@ fn inspect(path: &std::path::Path) -> anyhow::Result<()> {
 }
 
 fn compile(input: &std::path::Path, _output: &std::path::Path) -> anyhow::Result<()> {
-    use tru_field::{compute_field, FieldGraph, FieldParams, Link};
+    use tru_focusing::{compute_focusing, FocusingGraph, FocusingParams, Link};
 
     let g = Graph::open(input)?;
     let n_links = g.cyberlinks()?.len();
-    eprintln!("pass 0: building field graph from {n_links} cyberlinks…");
+    eprintln!("pass 0: building focusing graph from {n_links} cyberlinks…");
 
     let links = g.cyberlinks()?.map(|cl| Link {
         from: cl.from,
@@ -60,10 +60,10 @@ fn compile(input: &std::path::Path, _output: &std::path::Path) -> anyhow::Result
         valence: cl.valence,
     });
 
-    let fg = FieldGraph::build(links);
+    let fg = FocusingGraph::build(links);
     eprintln!("        {} particles, {} edges", fg.n(), n_links);
 
-    let result = compute_field(&fg, &FieldParams::default());
+    let result = compute_focusing(&fg, &FocusingParams::default());
 
     // Print top-10 by focus
     let mut ranked: Vec<(usize, f64)> = result.focus.iter().copied().enumerate().collect();
@@ -74,5 +74,5 @@ fn compile(input: &std::path::Path, _output: &std::path::Path) -> anyhow::Result
         eprintln!("  {:016x}…  φ*={:.6}", u64::from_le_bytes(hash[..8].try_into().unwrap()), phi);
     }
 
-    anyhow::bail!("CT-0 passes 1–8 not yet implemented; field computed above")
+    anyhow::bail!("CT-0 passes 1–8 not yet implemented; focus computed above")
 }
