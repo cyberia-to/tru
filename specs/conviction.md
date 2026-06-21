@@ -32,7 +32,7 @@ conviction is expressed by how much and how long capital is tied up, not by dest
 
 ## what conviction weighs
 
-conviction is one of the three factors in effective adjacency (see [[field]]):
+conviction is one of the three factors in effective adjacency (see [[focusing]]):
 
 $$A^{\text{eff}}_{pq} = \sum_{\substack{\ell \in L \\ \text{src}(\ell)=p,\;\text{tgt}(\ell)=q}} a(\ell)\cdot\kappa(\nu(\ell))\cdot f\big(m(\ell)\big)$$
 
@@ -40,6 +40,6 @@ $a(\ell)$ is the conviction (box magnitude); $\kappa$ is the neuron's [[karma]];
 
 conviction is distinct from [[valence]]: valence is the epistemic prediction ($v \in \{-1,0,+1\}$), conviction is the economic depth ($a \in \mathbb{R}_+$). a neuron can hold high conviction with any valence — betting heavily that a link is true, or betting heavily while predicting the market will judge it false.
 
-see [[will]] for the broad budget · [[box]] for the concrete container and its lifecycle · [[attention]] for how will and conviction combine · [[valence]] for the orthogonal epistemic field · [[field]] for effective adjacency.
+see [[will]] for the broad budget · [[box]] for the concrete container and its lifecycle · [[attention]] for how will and conviction combine · [[valence]] for the orthogonal epistemic field · [[focusing]] for effective adjacency.
 
 discover all [[concepts]]

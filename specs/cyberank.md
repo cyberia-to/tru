@@ -22,6 +22,6 @@ cyberank is the canonical ordering of knowledge: [[search]] results, feed rankin
 
 when a [[neuron]] creates a new [[cyberlink]], it redistributes focus across the graph and [[tru]] recomputes cyberank at the next epoch. the per-signal change is an [[impulse]] $\Delta\phi^*$.
 
-see [[focus]] for the full distribution · [[karma]] for the per-neuron projection · [[tri-kernel]] for the operators · [[field]] for the epoch computation.
+see [[focus]] for the full distribution · [[karma]] for the per-neuron projection · [[tri-kernel]] for the operators · [[focusing]] for the epoch computation.
 
 discover all [[concepts]]

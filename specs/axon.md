@@ -16,7 +16,7 @@ the axon weight for the directed pair $(p, q)$ aggregates every cyberlink from $
 
 $$w_{\text{axon}}(p, q) = \sum_{\substack{\ell \in L \\ \operatorname{src}(\ell)=p,\; \operatorname{tgt}(\ell)=q}} r(\tau(\ell)) \cdot a(\ell)$$
 
-where $a(\ell)$ is the [[box]] stake and $r(\tau(\ell))$ the token weight of the denomination. this is the raw bundle weight; the [[field]] refines it into effective adjacency $A^{\text{eff}}_{pq}$ by further weighting each summand with the neuron's [[karma]] $\kappa(\nu(\ell))$ and the [[inversely coupled bonding surface|ICBS]] price $f(m(\ell))$.
+where $a(\ell)$ is the [[box]] stake and $r(\tau(\ell))$ the token weight of the denomination. this is the raw bundle weight; [[focusing]] refines it into effective adjacency $A^{\text{eff}}_{pq}$ by further weighting each summand with the neuron's [[karma]] $\kappa(\nu(\ell))$ and the [[inversely coupled bonding surface|ICBS]] price $f(m(\ell))$.
 
 ## homoiconicity — axon as particle
 
@@ -26,6 +26,6 @@ every axon is itself a [[particle]]: $H(\text{from}, \text{to}) \in P$. the hash
 
 because an axon is a particle, a neuron can [[cyberlink]] to an axon — meta-annotating a relationship — and stake on axon-particles, betting on the importance of a connection. [[focus]] flows through axon-particles alongside content-particles, so the [[tri-kernel]] ranks relationships and things on the same footing. an [[attention]] write can target an axon as readily as a content particle.
 
-see [[cybergraph]] axiom A6 for the record-level definition · [[cyberlink]] for the atomic assertion · [[field]] for effective adjacency · [[focus]] for what flows through axons.
+see [[cybergraph]] axiom A6 for the record-level definition · [[cyberlink]] for the atomic assertion · [[focusing]] for effective adjacency · [[focus]] for what flows through axons.
 
 discover all [[concepts]]

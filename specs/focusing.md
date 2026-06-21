@@ -2,11 +2,11 @@
 tags: cyber, tru, core, spec
 crystal-type: spec
 crystal-domain: cyber
-alias: field computation, tru field, focus computation, tri-kernel computation, cyberank computation
+alias: focusing, field computation, focus computation, tri-kernel computation, cyberank computation
 ---
-# field
+# focusing
 
-tru's continuous computation. every epoch: read signals from [[cybergraph]], build effective adjacency, run [[tri-kernel]], emit φ* and derivatives.
+focusing is tru's continuous computation — the act whose output is [[focus]] ($\phi^*$). every epoch: read signals from [[cybergraph]], build effective adjacency, run [[tri-kernel]], emit $\phi^*$ and derivatives.
 
 ## inputs
 

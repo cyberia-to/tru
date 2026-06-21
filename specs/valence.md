@@ -51,6 +51,6 @@ $v$ is the input to [[Bayesian Truth Serum]] scoring — it is $m_i$ in the BTS 
 
 valence-seeded prices, once resolved, raise [[syntropy]] when predictors are accurate — $\phi^*$ sharpens around true structure, $J(\phi^*)$ rises — and lower it when markets stay divided. a neuron whose $v$ predictions proved correct earned positive BTS score and raised the graph's order.
 
-see [[Bayesian Truth Serum]] for the scoring formula · [[truth-scoring]] for karma accumulation · [[inversely coupled bonding surface]] for the market substrate · [[field]] for effective adjacency · [[syntropy]] for what accurate valence grows.
+see [[Bayesian Truth Serum]] for the scoring formula · [[truth-scoring]] for karma accumulation · [[inversely coupled bonding surface]] for the market substrate · [[focusing]] for effective adjacency · [[syntropy]] for what accurate valence grows.
 
 discover all [[concepts]]

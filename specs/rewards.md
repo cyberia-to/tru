@@ -18,7 +18,7 @@ The design follows from four requirements, in order of force:
 
 ## 1. The Principle — pay for descent
 
-[[focus]] $\phi$ is a distribution of attention over [[particles]]. Left alone on the [[cybergraph]], it flows downhill on a landscape — the [[free energy]] $\mathcal{F}$ — and settles at the unique low point $\phi^*$, the [[tri-kernel]] fixed point ([[collective focus theorem]]). A [[cyberlink]] reshapes the landscape; the focus rolls to a new resting place; the **drop in free energy is the value created**, equivalently the gain in [[syntropy]]:
+[[focus]] $\phi$ is a distribution of attention over [[particles]]. Left alone on the [[cybergraph]], it flows downhill on a landscape — the [[free energy]] $\mathcal{F}$ — and settles at the unique low point $\phi^*$, the [[tri-kernel]] fixed point. A [[cyberlink]] reshapes the landscape; the focus rolls to a new resting place; the **drop in free energy is the value created**, equivalently the gain in [[syntropy]]:
 
 $$\Delta J = J(\phi^*_{t+1}) - J(\phi^*_t) = H(\phi^*_t) - H(\phi^*_{t+1}).$$
 

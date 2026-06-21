@@ -22,7 +22,7 @@ focus is computed, never assigned. no one votes on it. it is the unique fixed po
 | focus | collective attention | [[particle]] |
 | [[cyberank]] | focus read at one particle | [[particle]] |
 
-[[neurons]] lock [[balance]] to create [[will]]. will auto-distributes across the [[cyberlinks]] a neuron creates, producing [[attention]] at target particles. the [[tri-kernel]] aggregates all attention — weighted by [[karma]] and [[inversely coupled bonding surface|ICBS]] price into effective adjacency (see [[field]]) — into a single probability distribution $\phi^*$. that distribution is focus.
+[[neurons]] lock [[balance]] to create [[will]]. will auto-distributes across the [[cyberlinks]] a neuron creates, producing [[attention]] at target particles. the [[tri-kernel]] aggregates all attention — weighted by [[karma]] and [[inversely coupled bonding surface|ICBS]] price into effective adjacency (see [[focusing]]) — into a single probability distribution $\phi^*$. that distribution is focus.
 
 ## conservation
 
@@ -42,6 +42,6 @@ focus is the whole distribution. its named projections:
 
 every [[cyberlink]] shifts $\phi^*$; the proven shift is an [[impulse]] $\Delta\phi^*$. learning and ranking are the same operation. focus feeds [[ct0]] model compilation (the embedding is built from $\phi^*$-weighted adjacency), [[foculus]] finality, [[mir]] world geometry, and [[glia]] routing. it is the single output everything downstream reads.
 
-see [[syntropy]] for the order focus carries · [[cyberank]] for focus per particle · [[will]] for how attention is funded · [[tri-kernel]] and [[collective focus theorem]] for the convergence · [[field]] for the per-epoch computation.
+see [[syntropy]] for the order focus carries · [[cyberank]] for focus per particle · [[will]] for how attention is funded · [[tri-kernel]] and [[collective focus theorem]] for the convergence · [[focusing]] for the per-epoch computation.
 
 discover all [[concepts]]

@@ -16,7 +16,7 @@ where $\phi^*$ is the [[tri-kernel]] fixed point, $u$ is the uniform distributio
 
 [[intelligence]] is the capacity to compress experience into structure that predicts. syntropy measures that structure directly. a graph with high syntropy has found the patterns that matter; a graph with low syntropy is still dominated by spam, redundancy, and noise. maximizing syntropy is maximizing the graph's predictive grip on its domain — it is the [[key metabolic factor]] of [[superintelligence]].
 
-[[tru]] recomputes syntropy every epoch alongside $\phi^*$ (see [[field]]). it is the network's vital sign: high and rising means the collective is learning; falling means noise is winning.
+[[tru]] recomputes syntropy every epoch alongside $\phi^*$ — both emitted by [[focusing]]. it is the network's vital sign: high and rising means the collective is learning; falling means noise is winning.
 
 ## relation to free energy and reward
 
