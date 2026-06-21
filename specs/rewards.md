@@ -108,7 +108,7 @@ Shapley is fair only among honest, distinct contributors. Two mechanisms enforce
 
 $$s_\nu = \underbrace{D_{KL}(p_\nu \,\|\, \bar m_{-\nu}) - D_{KL}(p_\nu \,\|\, \bar p_{-\nu})}_{\text{information gain}} - \underbrace{D_{KL}(\bar p_{-\nu} \,\|\, m_\nu)}_{\text{prediction accuracy}}$$
 
-is positive exactly when a neuron contributes private signal the crowd did not already hold and expect. Copying the consensus drives the information-gain term to zero. By Prelec's theorem, truthful reporting is a Bayes–Nash equilibrium.
+is positive exactly when a neuron contributes private signal the crowd did not already hold and expect. Copying the consensus drives the information-gain term to zero. By [[Prelec's theorem]], truthful reporting is a Bayes–Nash equilibrium.
 
 [[karma]] is the slashing. $\kappa(\nu)$ is the accumulated BTS score: non-transferable, unbuyable, the one input to $A^{\text{eff}}$ that capital cannot purchase. The BTS settlement is a zero-sum redistribution — stake moves from noise producers to signal producers in proportion to score. This is the skin in the game and the slashing: liars pay truth-tellers. Staking is therefore required, because it is what the zero-sum redistributes. [[foculus]] omits only consensus-equivocation slashing — provable consensus makes an invalid $\phi^*$ unable to produce a valid proof, so there is no equivocation crime to punish.
 
@@ -172,13 +172,13 @@ The lottery is not fully closed against a miner that is also a contender in the 
 
 ## 8. The Three Roles
 
-A single computation — the [[tri-kernel]] over the [[Goldilocks field]], simultaneously learning, proving, and inference — earns in three roles, distinguished only by what its proof certifies. This is requirement 4 at the economic level: one chip, one kind of work, three economic faces.
+A single computation — the [[tri-kernel]] over the [[Goldilocks field]], simultaneously learning, proving, and inference — earns in three roles, distinguished only by what its proof certifies. This is requirement 4 at the economic level: one chip, one kind of work, three economic faces, earned on three bases — stake, work, fee.
 
-| role | the proof certifies | who earns | resource |
+| role | the proof certifies | who earns | basis |
 |---|---|---|---|
-| mint | a graph mutation (focus shift) | anyone who links | conviction stake |
-| subsidy | a proof meeting a difficulty target | anyone who computes | compute |
-| fee | a query answered (inference) | anyone who serves | compute + model |
+| mint | a graph mutation (focus shift) | anyone who links | stake |
+| subsidy | a proof meeting a difficulty target | anyone who computes | work |
+| fee | a query answered (inference) | anyone who serves | fee |
 
 ### Mint — the knowledge stream
 
