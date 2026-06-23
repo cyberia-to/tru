@@ -18,13 +18,15 @@ The design follows from four requirements, in order of force:
 
 ## 1. The Principle — pay for descent
 
-[[focus]] $\phi$ is a distribution of attention over [[particles]]. Left alone on the [[cybergraph]], it flows downhill on a landscape — the [[free energy]] $\mathcal{F}$ — and settles at the unique low point $\phi^*$, the [[tri-kernel]] fixed point. A [[cyberlink]] reshapes the landscape; the focus rolls to a new resting place; the drop in free energy is the value created, equivalently the gain in [[syntropy]]:
+[[focus]] $\phi$ is a distribution of attention over [[particles]]. Left alone on the [[cybergraph]], it flows downhill on a landscape — the [[free energy]] $\mathcal{F}$ — and settles at $\phi^*$, the [[tri-kernel]] fixed point — unique when the tri-kernel is a contraction, which [[tri-kernel]] establishes. A [[cyberlink]] reshapes the landscape; the focus rolls to a new resting place; the drop in free energy is the value created, equivalently the gain in [[syntropy]]:
 
-$$\Delta J = J(\phi^*_{t+1}) - J(\phi^*_t) = H(\phi^*_t) - H(\phi^*_{t+1}).$$
+$$\Delta J = J(\phi^*_{t+1}) - J(\phi^*_t) = \big(H(\phi^*_t) - H(\phi^*_{t+1})\big) + \log\frac{|P_{t+1}|}{|P_t|}.$$
+
+The entropy drop is the locally-attributable part; the $\log(|P_{t+1}|/|P_t|)$ term appears only when a link introduces new [[particles]] (discovery) and is a global, non-attributable shift — which is why the local impulse (§2) keeps the entropy part and drops it.
 
 There is no designed loss function, and this is the load-bearing choice, so state it exactly. A supervised loss points outside the system at a target somebody supplied ("this input should output cat"); it is one arbitrary goal per example, and it can be gamed by forging the answer key. $\mathcal{F}$ points only at the system's own internal consistency — there is no external target anywhere, so there is no answer key to design or to forge. The focus value $\phi^*$ is emergent: it falls out of the law and the data, the way a marble's resting spot falls out of the bowl, not out of anyone's wish.
 
-One criterion is chosen, and honesty demands naming it: descent is value — focus concentrating, the graph agreeing with itself, is the thing worth paying for. This is a single uniform law, content-blind, applied identically to everything. And it is less invented than discovered — free-energy minimization is the same principle statistical inference, thermodynamics, and the Bayesian brain independently converge on. It is designed the way $F=ma$ is designed: a law one discovers, not a knob one tunes.
+One criterion is chosen, and honesty demands naming it: descent is value — focus concentrating, the graph agreeing with itself, is the thing worth paying for. This is a single uniform law, content-blind, applied identically to everything. And it is less invented than discovered — free-energy minimization is the principle that statistical inference, thermodynamics, and the Bayesian brain are each read as, a convergence the design leans on as motivation rather than proof. It is meant the way $F=ma$ is meant: a law one discovers, not a knob one tunes.
 
 So inflation measures knowledge creation rather than expressing a policy. That is the whole foundation. The rest is consequence.
 
@@ -32,11 +34,11 @@ So inflation measures knowledge creation rather than expressing a policy. That i
 
 ## 2. The Measure — the directed impulse
 
-$\Delta J$ is the exact value, but it carries a global normalization term, so a neuron computes its first-order local form instead, the directed focus impulse:
+$\Delta J$ is the exact value, but it carries the global $\log|P|$ term, so a neuron computes its first-order local form instead, the directed focus impulse:
 
-$$\Delta\phi^+ \;=\; \big\langle -\nabla\mathcal{F}(\phi^*_t),\; \Delta\phi^* \big\rangle_+ \;\approx\; \langle \nabla J, \Delta\phi^*\rangle,$$
+$$\Delta\phi^+ \;=\; \big[\,J(\phi^*_{t+1}) - J(\phi^*_t)\,\big]_+ \;\approx\; \big\langle \nabla_{\!A}\, J(\phi^*_t),\; \Delta A \big\rangle_+,$$
 
-the projection of the focus displacement onto the descending free-energy gradient, clipped at zero. Two rationales:
+the increase in [[syntropy]] caused by the new links' perturbation $\Delta A$ of the effective graph — to first order the gradient of $J$ with respect to the edge weights, propagated through the fixed-point map by its adjoint, clipped at zero. The naive state-displacement form $\langle -\nabla\mathcal{F}(\phi^*_t), \Delta\phi^*\rangle$ is degenerate: at the constrained minimizer $\phi^*$ the projected state-gradient vanishes (envelope theorem), so the value comes from the new edge reshaping the landscape ($\Delta A$), not from the induced $\phi$-shift. Two rationales:
 
 - directed, not magnitude. The norm $\|\Delta\phi^*\|$ is unsigned — it pays for any movement, including movement that raises free energy (adding noise). $\Delta\phi^+$ pays only for the downhill component, only for sharpening.
 - a gradient, not a loss. $\Delta\phi^+$ is a gradient — the slope of the intrinsic landscape of §1, the system's own energy. "No designed loss" never meant "no gradient."
@@ -84,8 +86,8 @@ $$\text{mint}(\nu) \;=\; \text{Shapley}_\nu(v^\star) \;=\; \sum_{S \subseteq N \
 
 Shapley is the unique attribution satisfying efficiency, symmetry, null-player, and additivity. The alternatives fail concretely: order-based credit ("reward whoever links first") is gameable by latency and copying — the curation-reward death spiral seen on social chains; proportional scaling cannot tell a discoverer from a copyist. Three of Shapley's properties are load-bearing, and each answers a requirement for free:
 
-- conservation is the efficiency axiom. $\sum_\nu \text{mint}(\nu) = v^\star(N) \le $ global $\Delta\phi^+$ — the slack is copied or predictable syntropy, left unminted (§6). No separate conservation operator is needed; over-claiming is impossible by construction. This is requirement 3.
-- Sybil-resistance is stake conservation. $\phi^*$ is the normalized fixed point, so it is invariant to scaling $A^{\text{eff}}$; the resistance therefore rests not on degree-1 homogeneity but on per-edge stake conservation. Split a neuron into $k$ identities that hold the same total stake on the same links, and $A^{\text{eff}}$ — and so every $\Delta\phi^+$ — is unchanged, while the $k$ Sybil shares sum to the one original share. Fragmenting identity multiplies nothing because stake, not identity count, is the attributed resource and cannot be fabricated by splitting. Karma compounds the defense: a fresh identity starts at zero karma, so fragmenting only dilutes the one input capital cannot buy.
+- conservation is the efficiency axiom — for the exact Shapley value, $\sum_\nu \text{Shapley}_\nu(v^\star) = v^\star(N)$. Two caveats make it an enforced step rather than a free one: the lottery (§7) computes an *estimate*, whose published shares need not sum exactly; and $v^\star$ re-runs a nonlinear normalized fixed point on a $\rho$-reweighted graph, so $v^\star(N) \le \Delta\phi^+(N)$ is not automatic (a normalized fixed point is not monotone in edge weights). [[tok]] therefore renormalizes the settled shares to $\min(v^\star(N),\, \Delta\phi^+(N))$ at settlement, the proportional clip of [[impulse]]. With that step, $\sum_\nu \text{mint}(\nu) \le $ global $\Delta\phi^+$ and over-claiming cannot exceed realized value. This is requirement 3.
+- Sybil-resistance is stake conservation plus karma non-transferability. Stake enters $A^{\text{eff}}$ linearly, so splitting a neuron's stake across $k$ identities on the same links conserves the per-edge stake sum, and the $k$ Sybil shares sum to the one original share — identity count buys nothing. Karma strengthens this rather than merely compounding it: karma multiplies stake and cannot be transferred, so fresh identities start at zero karma and their $A^{\text{eff}}$ weight *falls* — fragmenting is a penalty, not a wash. Stake is the attributed resource and cannot be fabricated by splitting; karma is the one input capital cannot buy.
 - tractability is locality. Each marginal $v(S \cup \{\nu\}) - v(S)$ is an incremental [[tri-kernel]] step on a bounded neighborhood, estimated by Monte-Carlo over $k$ random orderings seeded by a [[delay|VDF]] beacon — $O(k\cdot n)$, $k \ll n$. The beacon is drawn after submission, so orderings cannot be front-run.
 
 ### The gradient correspondence
@@ -106,21 +108,21 @@ This computation lives in [[tru]], a sibling of [[cyberank]].
 
 Shapley is fair only among honest, distinct contributors. Three signals enforce that precondition, and all of them feed the value the mint divides: the accumulated [[karma]] of the contributor, the per-contribution surprise $\rho$ of the claim, and the [[inversely coupled bonding surface|ICBS]] price of the link.
 
-[[Bayesian Truth Serum]] scores honesty. Each [[cyberlink]] is a BTS input: the link-plus-stake is the first-order belief, the [[valence]] $v \in \{-1,0,+1\}$ is the meta-prediction. The score
+[[Bayesian Truth Serum]] scores honesty. Each [[cyberlink]] is a BTS input: the link-plus-stake is the first-order belief, the [[valence]] $v_\ell \in \{-1,0,+1\}$ is the meta-prediction. The score
 
-$$s_\nu = \underbrace{D_{KL}(p_\nu \,\|\, \bar m_{-\nu}) - D_{KL}(p_\nu \,\|\, \bar p_{-\nu})}_{\text{information gain}} - \underbrace{D_{KL}(\bar p_{-\nu} \,\|\, m_\nu)}_{\text{prediction accuracy}}$$
+$$s^{\text{BTS}}_\nu = \underbrace{D_{KL}(p_\nu \,\|\, \bar m_{-\nu}) - D_{KL}(p_\nu \,\|\, \bar p_{-\nu})}_{\text{information gain}} - \underbrace{D_{KL}(\bar p_{-\nu} \,\|\, m_\nu)}_{\text{prediction accuracy}}$$
 
 is positive exactly when a neuron contributes private signal the crowd did not already hold and expect. Copying the consensus drives the information-gain term to zero. By [[Prelec's theorem]], truthful reporting is a Bayes–Nash equilibrium.
 
-The per-contribution surprise. A single contribution's BTS score, normalized to $\rho_\ell \in [0,1]$, measures how far its report diverged from what the crowd predicted — its information gain. It is the instantaneous counterpart of [[karma]]: karma is a contributor's accumulated surprise (the prior, its reputation), $\rho_\ell$ is this contribution's surprise (the likelihood).
+The per-contribution surprise. A single contribution's BTS score $s^{\text{BTS}}_\nu$, squashed to $\rho_\ell = \text{clip}(s^{\text{BTS}}_\nu / s_{\max},\, 0,\, 1)$, measures how far its report diverged from what the crowd predicted — its information gain. It is the instantaneous counterpart of [[karma]]: karma is a contributor's accumulated surprise (the prior, its reputation), $\rho_\ell$ is this contribution's surprise (the likelihood). The crowd reference $\bar m_{-\nu}$ must be robust to its own contributors: it is taken over distinct karma-bearing predictors who have themselves staked BTS exposure on the cluster, unweighted by stake (or $\sqrt{\text{stake}}$-capped), with $v_\ell=0$ reports excluded. Otherwise a stake-rich actor manufactures surprise by seeding unslashable $v_\ell=0$ decoy predictions that depress the reference — a unilateral attack the plain stake-weighted mean does not resist (§15).
 
 $\rho$ and the [[inversely coupled bonding surface|ICBS]] price answer different questions, and the mint requires both. Price is a validity gate: $f(\text{price}) \in [0,1]$ weights the edge by whether the market believes the link is true, so a market-rejected link carries little weight however surprising. $\rho$ is a novelty score: it asks whether the report beat the crowd's prediction, so a true link nobody found surprising mints nothing however large its $\Delta\phi^+$. The reward is directed syntropy that is at once valid and surprising — surprising syntropy.
 
 The two pull against each other early, and that tension is real. A genuinely novel link has low price before the market catches on, so the validity gate under-weights it exactly when $\rho$ is highest. That lag is the same one §12 names the discovery leak: the formula trusts the market, and the market is late. Closing it is open.
 
-[[karma]] is the slashing. $\kappa(\nu)$ is the accumulated BTS score: non-transferable, unbuyable, the one input to $A^{\text{eff}}$ that capital cannot purchase. The BTS settlement is a zero-sum redistribution — stake moves from noise producers to signal producers in proportion to score. This is the skin in the game and the slashing: liars pay truth-tellers. Staking is therefore required, because it is what the zero-sum redistributes. [[foculus]] omits only consensus-equivocation slashing — provable consensus makes an invalid $\phi^*$ unable to produce a valid proof, so there is no equivocation crime to punish.
+[[karma]] is the slashing. $\kappa(\nu)$ is the accumulated BTS score: non-transferable, unbuyable, the one input to $A^{\text{eff}}$ that capital cannot purchase. The BTS settlement is a zero-sum redistribution — stake moves from noise producers to signal producers in proportion to score. This is the skin in the game and the slashing: liars pay truth-tellers. Staking is therefore required, because it is what the zero-sum redistributes. [[foculus]] omits only consensus-equivocation slashing — provable consensus makes an invalid $\phi^*$ unable to produce a valid proof, so proof-forgery equivocation cannot occur. Behavioral deviations (withholding, §7) remain and are priced separately.
 
-[[valence]] is the risk dial. Exposure is chosen per link: $v = 0$ is passive stake — it weights the edge in $A^{\text{eff}}$ and so moves rank (§9), but takes no BTS exposure and earns no reward; $v = \pm 1$ is active stake, wagered through the zero-sum. Reward is the premium for risk taken and won.
+[[valence]] is the risk dial. Exposure is chosen per link: $v_\ell = 0$ is passive stake — it weights the edge in $A^{\text{eff}}$ and so moves rank (§9), but takes no BTS exposure and earns no reward; $v_\ell = \pm 1$ is active stake, wagered through the zero-sum. Reward is the premium for risk taken and won.
 
 ---
 
@@ -134,7 +136,7 @@ A neuron computes its own standalone marginal $\Delta\phi^+_\nu = v(\{\nu\}) - v
 
 $$\text{Shapley}_\nu(v^\star) \;\le\; \Delta\phi^+_\nu \qquad \text{(substitutes; surprise } \rho \le 1 \text{ only tightens it).}$$
 
-So in the saturating regime the proposed marginal is a ceiling, which is what conviction stake escrows against. Complementary contributions are the exception: a link that enables others can settle for more than it proposed, and that surplus is granted by the protocol's own Shapley computation, never claimed by the neuron — so a contributor still cannot inflate its own number, only earn what its complementarity is worth. The universal bound is conservation, not the per-link ceiling: the cluster's shares sum to its realized $\Delta\phi^+$ (§4), so no claim escapes the value that was actually created. A phone completes this phase.
+So in the saturating regime the proposed marginal is a ceiling. Complementary contributions are the exception: a link that enables others can settle for more than it proposed, and that surplus is granted by the protocol's own Shapley computation, never claimed by the neuron — so a contributor still cannot inflate its own number, only earn what its complementarity is worth. Because of this exception, conviction stake escrows against the cluster's conservation bound (§4), not the per-link ceiling: the cluster's shares sum to its realized $\Delta\phi^+$, so no claim escapes the value that was actually created. A phone completes this phase.
 
 ### Settle — epoch boundary
 
@@ -168,9 +170,9 @@ A deterministic "first to compute the settlement wins" is not progress-free — 
 
 For a cluster with beacon seed $\mathrm{b}$, a miner:
 
-1. picks a nonce $n$; the ordering is $\pi(n) = \mathrm{VRF}(\mathrm{b} \,\|\, n)$ — public and miner-independent;
+1. picks a nonce $n$; the ordering is $\pi(n) = H(\mathrm{b} \,\|\, n)$ — a public random-oracle hash, miner-independent, with no key (the only secret is the beacon $\mathrm{b}$, whose definition and unbiasability are an open requirement, §15);
 2. computes the marginal sample $m(n)$ under $\pi(n)$ on the surprise-weighted value $v^\star$ (§6) — so the same draw that settles attribution also applies the BTS gate, with no separate pass; a genuine draw of the §4 estimator, and the useful work;
-3. holds a winning ticket iff $H(\mathrm{b} \,\|\, n \,\|\, \mathrm{id}(\nu)) < \text{target}$, claimed by publishing $(n, m(n), \sigma)$.
+3. holds a winning ticket iff $H(\mathrm{b} \,\|\, n \,\|\, \mathrm{id}(\nu) \,\|\, \mathrm{commit}(m(n))) < \text{target}$, claimed by publishing $(n, m(n), \sigma)$. Binding $m(n)$ into the win-test makes a ticket valid for *this* marginal, not the nonce alone, so a contender cannot grind nonces and publish only self-favoring samples.
 
 Step 3 is a per-miner Poisson test: progress-free, leaderless, poolable on the same terms as Nakamoto consensus, and random in proportion to throughput. The settlement itself is the average of every published sample — more mining means more independent draws and a tighter estimate ([[Hoeffding]]). No actor produces the answer; it converges out of the swarm, and security spend converts directly into attribution precision with zero synthetic work.
 
@@ -204,7 +206,7 @@ The [[signal]] carries a nonce; a signal qualifies for the block subsidy when $H
 
 ### Fee — services
 
-A neuron answering a query runs the compiled transformer ([[focus-flow]] Path B), an inference whose correctness is itself a [[zheng]] proof. The asker pays; the protocol splits the fee to the servicer and the security budget $B$, and burns a fraction $\beta$.
+A neuron answering a query runs the compiled transformer ([[focus-flow]] Path B), an inference whose correctness is itself a [[zheng]] proof. The asker pays; the protocol burns a fraction $\beta$, pays the servicer $\gamma(1-\beta)$, and routes the remaining $(1-\gamma)(1-\beta)$ into the security budget $B$ — one fee, three disjoint slices.
 
 ### PoS — the amplifier
 
@@ -218,12 +220,12 @@ Stake acts on two independent axes; separating them is the structural defense ag
 
 | axis | what moves it | what it produces |
 |---|---|---|
-| rank | any real stake, including $v=0$ | weight in $A^{\text{eff}}$, hence $\phi^*$ and [[cyberank]] |
-| reward | correct risk under $v \neq 0$ | a share of the streams in §8 |
+| rank | any real stake, including $v_\ell=0$ | weight in $A^{\text{eff}}$, hence $\phi^*$ and [[cyberank]] |
+| reward | correct risk under $v_\ell \neq 0$ | a share of the streams in §8 |
 
 Idle, passive, or Sybil capital can move rank but pulls no reward. Capital shapes the graph; only correct epistemic risk earns from it. Locked capital cannot compound by sitting still — the precise structural fix for the wealth-compounding failure of stake-weighted systems.
 
-A $v=0$ link earns nothing by category, not by penalty. It is a purchase, not an investment: the time-value of staked [[$CYB]] spent to buy weight over $\phi^*$. This is rational for a [[neuron]] whose use-value of that influence exceeds its capital cost, and unattractive to rent-seekers, who have none — a monetary yield would convert the purchase into an investment and reopen compounding. The protocol also cannot pay it in principle: minting must separate signal from copying through BTS information-gain (§5), which needs the meta-prediction that $v=0$ declines, so a passive link's $\Delta\phi^+$ is real movement that stays unverifiable as knowledge. Influence over $\phi^*$ is the entire return, paid in kind and unpriceable by design.
+A $v_\ell=0$ link earns nothing by category, not by penalty. It is a purchase, not an investment: the time-value of staked [[$CYB]] spent to buy weight over $\phi^*$. This is rational for a [[neuron]] whose use-value of that influence exceeds its capital cost, and unattractive to rent-seekers, who have none — a monetary yield would convert the purchase into an investment and reopen compounding. The protocol also cannot pay it in principle: minting must separate signal from copying through BTS information-gain (§5), which needs the meta-prediction that $v_\ell=0$ declines, so a passive link's $\Delta\phi^+$ is real movement that stays unverifiable as knowledge. Influence over $\phi^*$ is the entire return, paid in kind and unpriceable by design.
 
 ---
 
@@ -235,11 +237,11 @@ $$R_{\text{PoW}} = B\,(1 - \theta^\alpha), \qquad R_{\text{PoS}} = B\,\theta^\al
 
 with $\alpha = 0.5$ the neutral prior under equal marginal security cost. Gross budget and holder dilution are decoupled:
 
-$$B = \text{floor}\cdot M + F(1-\beta), \qquad I_{\text{net}} = \text{floor} - \frac{F\beta}{M}.$$
+$$B = \text{floor}\cdot M + (1-\gamma)(1-\beta)F, \qquad I_{\text{net}} = \text{floor} - \frac{F\beta}{M}.$$
 
-Gross rewards can exceed inflation when fees are high; net inflation can go negative. The security floor is derived from attack economics rather than chosen — $\text{floor} \ge k\cdot(\text{TVL}/M)\cdot r$, the one emission untied to $\Delta\phi^+$.
+Gross rewards can exceed inflation when fees are high; net inflation can go negative. The security floor is derived from attack economics rather than chosen — $\text{floor} \ge c_{\text{sec}}\cdot(\text{TVL}/M)\cdot r_{\text{atk}}$, where $c_{\text{sec}}$ is the safety margin and $r_{\text{atk}}$ an attacker's cost of capital per epoch (distinct from the §7 hop radius $r$ and the §4 sample count $k$); here $M$ is circulating supply. This is the one emission untied to $\Delta\phi^+$.
 
-Base emission goes to work and risk only. A standing yield to passive stake would be emission without contribution — it would break the invariant that inflation is [[knowledge]], and it is the mechanism by which idle capital compounds. The floor is paid only to the two providers that do work: PoW compute and active ($v \neq 0$) epistemic risk. It PID-decays toward zero as mint and fees grow to cover security. The parameters $\alpha$, floor, and $\beta$ follow PID control on observable signals (security margin, fee coverage, efficiency differential), so the system measures and adapts rather than predicts.
+Base emission goes to work and risk only. A standing yield to passive stake would be emission without contribution — it would break the invariant that inflation is [[knowledge]], and it is the mechanism by which idle capital compounds. The floor is paid only to the two providers that do work: PoW compute and active ($v_\ell \neq 0$) epistemic risk. It PID-decays toward zero as mint and fees grow to cover security. The parameters $\alpha$, floor, and $\beta$ follow PID control on observable signals (security margin, fee coverage, efficiency differential), so the system measures and adapts rather than predicts.
 
 ---
 
@@ -247,11 +249,11 @@ Base emission goes to work and risk only. A standing yield to passive stake woul
 
 For a neuron $\nu$ over an epoch, the whole specification assembles into one line:
 
-$$\boxed{\;R(\nu) \;=\; \underbrace{\text{Shapley}_\nu(v^\star)}_{\text{mint}} \;+\; \underbrace{R_{\text{PoW}}\cdot\frac{w_\nu}{\sum_\mu w_\mu}}_{\text{subsidy}} \;+\; \underbrace{\sum_{q\,\in\,Q_\nu}(1-\beta)\,\text{fee}_q}_{\text{service fees}} \;+\; \underbrace{R_{\text{PoS}}\cdot\frac{a_\nu\,\kappa(\nu)}{\sum_{\mu} a_\mu\,\kappa(\mu)}}_{\text{stake yield}}\;}$$
+$$\boxed{\;R(\nu) \;=\; \underbrace{\text{Shapley}_\nu(v^\star)}_{\text{mint}} \;+\; \underbrace{R_{\text{PoW}}\cdot\frac{w_\nu}{\sum_\mu w_\mu}}_{\text{subsidy}} \;+\; \underbrace{\sum_{q\,\in\,Q_\nu}\gamma(1-\beta)\,\text{fee}_q}_{\text{service fees}} \;+\; \underbrace{R_{\text{PoS}}\cdot\frac{a_\nu\,\kappa(\nu)}{\sum_{\mu} a_\mu\,\kappa(\mu)}}_{\text{stake yield}}\;}$$
 
-where $w_\nu$ is $\nu$'s proven settlement work this epoch, $Q_\nu$ the queries it answered, and $a_\nu$ its active ($v \neq 0$) stake. Four terms, four requirements: the mint rewards real value, locally computed and later validated; the subsidy secures the chain and opens a stakeless door, shared in proportion to work done so splitting a signal into many earns nothing extra; the service fees pay whoever served a query directly; the stake yield routes the fee pool to committed stake, weighted by [[karma]] so the share still tracks a record of being right. Sybil-resistance and anti-compounding hold across the sum; conservation binds the mint term specifically, $\sum_\nu \text{Shapley}_\nu(v^\star) = v^\star(N)$.
+where $w_\nu$ is $\nu$'s proven settlement work this epoch, $Q_\nu$ the queries it answered, and $a_\nu$ its active ($v_\ell \neq 0$) stake. Four terms, four requirements: the mint rewards real value, locally computed and later validated; the subsidy secures the chain and opens a stakeless door, shared in proportion to work done so splitting a signal into many earns nothing extra; the service fees pay whoever served a query directly; the stake yield routes the fee pool to committed stake, weighted by [[karma]] so the share still tracks a record of being right. Sybil-resistance and anti-compounding hold across the sum; conservation binds the mint term specifically, $\sum_\nu \text{Shapley}_\nu(v^\star) = v^\star(N)$.
 
-A single mint underpays foundational work, which starts at low $\Delta\phi^+$ and grows as the graph builds around it. So an active ($v \neq 0$) link also earns a yield stream — the delayed mint of that foundational work, the time-integral of the target particle's [[cyberank]] growth attributable to the link. Passive ($v=0$) stake earns no part of it; the annuity is realized value, not rent on locked capital:
+A single mint underpays foundational work, which starts at low $\Delta\phi^+$ and grows as the graph builds around it. So an active ($v_\ell \neq 0$) link also earns a yield stream — the delayed mint of that foundational work, the time-integral of the target particle's [[cyberank]] growth attributable to the link. Passive ($v_\ell=0$) stake earns no part of it; the annuity is realized value, not rent on locked capital:
 
 $$R_{i \to j}(T) = \int_0^T \omega(t)\,\Delta\phi^*_j(t)\,dt.$$
 
@@ -308,9 +310,9 @@ Rewards are an emergent binding of four layers, and the separation keeps monetar
 |---|---|
 | conservation | $\sum_\nu \text{mint}(\nu) = v^\star(N) \le $ global $\Delta\phi^+$, by Shapley efficiency |
 | Sybil-resistance | stake-weighting makes identity-splitting reward-neutral |
-| honest reporting | BTS makes truthful [[valence]] a Bayes–Nash equilibrium |
+| honest reporting | BTS makes truthful [[valence]] a Bayes–Nash equilibrium for the report in isolation; the composite mint+fee payoff is assumed, not proven (below) |
 | stakeless entry | the PoW subsidy is karma- and stake-blind |
-| no idle rent | only $v \neq 0$ risk earns; passive stake earns rank, not income |
+| no idle rent | only $v_\ell \neq 0$ risk earns; passive stake earns rank, not income |
 | attack cost | $\phi^*$ manipulation needs stake and unbuyable [[karma]] |
 | leaderless settlement | attribution is a swarm-averaged sampling lottery; no producer decides it |
 
@@ -319,6 +321,14 @@ Collusion remains open. Stake-weighting closes Sybil splitting, but a cartel of 
 Withholding remains open. A contender-miner can bias the settlement average by declining to publish unfavorable winning tickets (§7). It cannot lie, only abstain, so the bias is bounded by its share of settlement compute; pricing and role-separation tighten it, commit-before-marginal closes it at a synchrony cost. Both biases are bounded and still open.
 
 The discovery leak remains open (§5, §12). The validity gate under-weights a novel link while its market price lags, and the pulse under-pays the early contrarian, deferring the discovery premium into the slow annuity. A retroactive discovery bonus is the candidate fix and is unbuilt.
+
+Settlement soundness is the boldest claim and the least proven (§7). Three pieces are required and not yet pinned: the beacon $\mathrm{b}$ — its source, cadence, and unbiasability, drawn from entropy independent of the propose set — without which the un-front-runnability of every ordering is unestablished; a single canonical PoW preimage, since the subsidy test $H(\sigma)<\text{target}$ and the lottery test over $(\mathrm{b},n,m(n))$ are different hashes the spec treats as one act; and an aggregation of the per-ticket proofs (fold a cluster's samples into one accumulator) so verification cost does not scale with attacker-inflatable ticket count. Until these are specified, settlement mining is a sketch, not a protocol.
+
+Settlement liveness and fork-safety are unspecified. The cluster average needs a deadline, a minimum sample count $k_{\min}$, and a defined default when too few samples arrive (deferral to the next epoch's annuity, not a stall) — otherwise [[tok]] has no input under thin or partitioned work. And because the pulse is irreversible (§12) while [[foculus]] finality is adaptive, settlement must bind to a $d$-deep stable state with the pulse escrowed until that depth, or a boundary reorg mints CYB against a claim set that is no longer canonical.
+
+Manufactured surprise and self-dealing are blunted, not closed. The crowd-reference hardening (§5) resists a single stake-rich actor depressing the surprise reference, but a coordinated ring still can; and a contributor controlling both endpoints of an edge, its ICBS market, and its predictor pool can mint real $\Delta\phi^+$ on a sparse subgraph only it reads. The structural defense — gating the discovery premium on *external* attention (the share of $\phi^*$ reaching the region from distinct, non-colluding high-[[karma]] neurons) — is sketched and unbuilt.
+
+The honest-reporting guarantee is for the BTS report in isolation. Once $\rho$ gates the mint, the live payoff is mint + subsidy + fee + yield + BTS redistribution, and truthfulness is a best response only if the mint multiplier is monotone in the honest score and $\rho$ and the slash read the *same* meta-prediction (so one cannot be slash-safe and surprising at once). This composite equilibrium is assumed, not proven.
 
 Two economic questions are deferred to a standalone monetary-policy pass: total issuance — the mint runs on its own budget beside the security budget $B$, with no invariant yet capping their sum per epoch — and bootstrap funding, whether the early discovery-premium mint and the security floor can fund the [[Goldilocks field processor|GFP]] hardware before fees arrive.
 
@@ -338,12 +348,17 @@ Two economic questions are deferred to a standalone monetary-policy pass: total 
 | $v^\star(S)$ | surprise-weighted value: $v$ with each contributed link's $A^{\text{eff}}$ weight multiplied by its surprise $\rho$ (§6) |
 | $A^{\text{eff}}_{pq}$ | effective adjacency $= \sum_\ell \text{stake}(\ell)\,\kappa(\nu(\ell))\,f(\text{price}(\ell))$ |
 | $\nu,\ \kappa(\nu)$ | a [[neuron]] and its [[karma]]; $\text{id}(\nu) = \text{Hemera}(\text{secret})$ |
-| $v(\ell) \in \{-1,0,+1\}$ | the [[valence]] of a cyberlink |
+| $v_\ell \in \{-1,0,+1\}$ | the [[valence]] of a cyberlink |
 | $v(S)$ | coalition value function (§3) |
 | $s$ | a [[signal]] $= (\nu, \vec\ell, \Delta\phi^*, \sigma, \text{prev}, \text{mc}, \text{vdf}, \text{step}, \text{nonce})$ |
 | $\sigma$ | a [[zheng]] proof bound to a [[BBG]] root |
 | $\theta, M, F$ | staking ratio, market cap, epoch fees |
 | $B$ | security budget (PoW + PoS pools, §10), distinct from the cybergraph $G$ |
+| $s^{\text{BTS}}_\nu$ | raw [[Bayesian Truth Serum]] score (§5); $\rho_\ell$ is its clip to $[0,1]$ |
+| $a_\nu,\ w_\nu$ | $\nu$'s active ($v_\ell \neq 0$) stake; its accepted settlement samples this epoch (§11) |
+| $\gamma,\ \beta$ | servicer fee share; fee burn fraction (§8) |
+| $\varepsilon$ | precision floor — contributions below it are dropped (§2, §7); a protocol constant |
+| $c_{\text{sec}},\ r_{\text{atk}}$ | security-floor safety margin; attacker cost of capital per epoch (§10) |
 
 ---
 
