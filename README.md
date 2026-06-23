@@ -78,9 +78,13 @@ the render spec lives in [[mir]]:
 
 render depends on tru (for φ*, eigenvectors, cyberank) and on ct0 (§2.6 for bivector adjacency → edge saturation; §7.7 shifted wedge; §8 Clifford block for T∞ render).
 
-### not yet ready — rewards
+### phase 4 — rewards (cross-layer)
 
-[specs/rewards.md](specs/rewards.md) defines the economic incentive model (Δφ* self-minting, attribution, token ops). the current definition is incomplete and this spec is excluded from the v0.1 implementation scope. it will be addressed as a standalone design task.
+| spec | what it defines |
+|------|----------------|
+| [specs/rewards.md](specs/rewards.md) | the reward function: surprising-syntropy mint, stake-weighted Shapley settlement mining, the stake/work/fee streams, timing and accrual |
+
+the reward layer turns φ* into [[CYB]]: a neuron self-mints the surprising syntropy of its links — Δφ* weighted by [[BTS]] surprise — divided by Shapley and settled by a leaderless sampling lottery. it binds three layers, magnitude in tru, finality in [[foculus]], conservation and mint in [[tok]], so it is a complete design spec that spans the stack rather than a single-repo build step.
 
 ## implementation steps
 

@@ -111,7 +111,7 @@ this is the point. tru is not a ranking engine that happens to have rewards bolt
 
 | spec | defines | status |
 |------|---------|--------|
-| [rewards.md](rewards.md) | Δφ* self-minting, attribution, the three streams (mint/subsidy/fee), monetary policy | 🔜 spec incomplete — must be finished before implementation; this is the destination, not a side-car |
+| [rewards.md](rewards.md) | surprising-syntropy self-minting, Shapley attribution + settlement mining, the three streams (mint/subsidy/fee), supply/allocation, timing & accrual | 📐 spec complete — the destination; settlement spans [[foculus]]/[[tok]] |
 
 ---
 
@@ -126,8 +126,8 @@ this is the point. tru is not a ranking engine that happens to have rewards bolt
 | ⬜ | attention + truth-scoring | will/conviction input, BTS → karma, effective adjacency |
 | ⬜ | impulse | Δφ* delta computation |
 | ⬜ | ct0 | all 8 passes (2a–2g) — the bulk of the work |
-| 🔜 | rewards | **finish the spec** — it is the telos, not deferred |
+| 📐 | rewards | spec complete — the telos; cross-layer settlement in foculus/tok |
 
-**built: 1 of 8 active specs. the critical path is** `tri-kernel reconcile → focusing (cyberank, syntropy) → ct0 passes`, with `vocab`/`model` formats needed before pass 1 and after pass 8, and `rewards` the spec that must be completed because it is the reason the pipeline exists.
+**built: 1 of 8 active specs. the critical path is** `tri-kernel reconcile → focusing (cyberank, syntropy) → ct0 passes`, with `vocab`/`model` formats needed before pass 1 and after pass 8, and `rewards` now spec-complete — the reason the pipeline exists, its settlement spanning foculus/tok.
 
 see the [implementation steps table](../README.md#implementation-steps) in the repo readme for the step-by-step build order with verifiable predicates.
