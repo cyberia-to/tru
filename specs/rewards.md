@@ -66,11 +66,13 @@ This is the move the whole specification turns on: $v$ makes the economy a coope
 
 Three of those properties are load-bearing, each invoked by name later:
 
-- honesty enters here, and only here. $A^{\text{eff}}$ already folds in stake, [[karma]], and market price, so a redundant or dishonest link joins $v$ with near-zero weight. [[karma]] shapes what is valuable; attribution (§4) only divides it — the single seam between truth and value.
+- honesty enters here, and only here. $A^{\text{eff}}$ folds in stake, [[karma]], and market price, so a low-reputation or market-doubted link joins $v$ with reduced weight. But [[karma]] is accumulated reputation and price is the standing market belief; neither sees whether the contribution at hand carried information the crowd had not already expected. Since a copy and an original produce the same $\Delta\phi^+$, Shapley's symmetry alone would split their credit equally — so the per-contribution surprise gate (§5) supplies the missing asymmetry. Karma and surprise shape what is valuable; attribution (§4) only divides it.
 - submodular — overlapping links on a saturating particle have diminishing returns. Used twice: it caps each link's propose-time claim to its standalone marginal (§6), and it turns settlement into an honest sampling problem (§7).
 - monotone and bounded — a true contribution never lowers value and value never runs away, so the game has a well-defined, finite [[Shapley]] solution (§4).
 
 $v$ is the same $\Delta\phi^+$ (§2) read over sets, by the incremental [[tri-kernel]] recomputation the network already runs.
+
+For the reward, $v$ is read in its surprise-weighted form $v^\star$: each contribution is scaled by its [[Bayesian Truth Serum|BTS]] surprise $\sigma_\ell \in [0,1]$ (§5), so a copy contributes nothing and the mint divides surprising syntropy — the focus shift the crowd did not predict. Rank reads the unweighted graph (§9), so a copy's capital still ranks even as it mints nothing.
 
 ---
 
@@ -110,6 +112,8 @@ $$s_\nu = \underbrace{D_{KL}(p_\nu \,\|\, \bar m_{-\nu}) - D_{KL}(p_\nu \,\|\, \
 
 is positive exactly when a neuron contributes private signal the crowd did not already hold and expect. Copying the consensus drives the information-gain term to zero. By [[Prelec's theorem]], truthful reporting is a Bayes–Nash equilibrium.
 
+The per-contribution surprise. A single contribution's BTS score, normalized to $\sigma_\ell \in [0,1]$, measures how far its report diverged from what the crowd predicted — its information gain. It is the instantaneous counterpart of [[karma]]: karma is a contributor's accumulated surprise (the prior, its reputation), $\sigma_\ell$ is this contribution's surprise (the likelihood). The [[inversely coupled bonding surface|ICBS]] market price is a second forecaster — the belief capital has already priced into the link. Together karma, price, and $\sigma$ form a prediction baseline, and the reward is the syntropy that beats it: a contribution producing a $\Delta\phi^+$ the crowd and market already expected scores $\sigma \to 0$ and mints nothing, however large its raw focus shift. This is what makes the mint reward surprising syntropy rather than mere movement.
+
 [[karma]] is the slashing. $\kappa(\nu)$ is the accumulated BTS score: non-transferable, unbuyable, the one input to $A^{\text{eff}}$ that capital cannot purchase. The BTS settlement is a zero-sum redistribution — stake moves from noise producers to signal producers in proportion to score. This is the skin in the game and the slashing: liars pay truth-tellers. Staking is therefore required, because it is what the zero-sum redistributes. [[foculus]] omits only consensus-equivocation slashing — provable consensus makes an invalid $\phi^*$ unable to produce a valid proof, so there is no equivocation crime to punish.
 
 [[valence]] is the risk dial. Exposure is chosen per link: $v = 0$ is passive stake — it weights the edge in $A^{\text{eff}}$ and so moves rank (§9), but takes no BTS exposure and earns no reward; $v = \pm 1$ is active stake, wagered through the zero-sum. Reward is the premium for risk taken and won.
@@ -126,11 +130,15 @@ A neuron computes its own standalone marginal $\Delta\phi^+_\nu = v(\{\nu\}) - v
 
 $$\text{Shapley}_\nu(v) \;\le\; \Delta\phi^+_\nu.$$
 
-The propose proof is a provable ceiling on the reward, not the reward itself. It bounds the claim, it is what conviction stake escrows against, and settlement can only ever pay $\le$ it — with equality exactly when the neuron was alone in its region (the sparse-link case). A phone completes this phase.
+The surprise gate (§5) only multiplies by $\sigma \le 1$, so the settled reward obeys $R(\nu) \le \Delta\phi^+_\nu$ as well. The propose proof is a provable ceiling on the reward, not the reward itself. It bounds the claim, it is what conviction stake escrows against, and settlement can only ever pay $\le$ it — with equality exactly when the neuron was alone in its region (the sparse-link case). A phone completes this phase.
 
 ### Settle — epoch boundary
 
-[[foculus]] finalizes the canonical $\phi^*$ and the epoch's claim set; the claims partition into clusters (§7); a leaderless lottery computes the Shapley shares (§7); [[tok]] applies conservation and executes the result as a state transition.
+[[foculus]] finalizes the canonical $\phi^*$ and the epoch's claim set; the claims partition into clusters (§7); a leaderless lottery computes the Shapley shares (§7); [[tok]] applies conservation and executes the result as a state transition. The settled reward is the surprise-weighted Shapley share:
+
+$$R(\nu) \;=\; \text{Shapley}_\nu(v^\star), \qquad v^\star(S) = \Delta\phi^+\big(A^{\text{eff}} \cup S\big)\ \text{scaled per contribution by}\ \sigma_\ell.$$
+
+The surprise $\sigma_\ell$ can only be fixed here, because it compares the contribution to the crowd's collected predictions — which, like the contender set, exist only once the epoch closes. So the overlap division (Shapley) and the surprise gate (BTS) finalize together. Conservation tightens to $\sum_\nu R(\nu) = v^\star(N) \le \Delta\phi^+(N)$; the slack is predictable or copied syntropy, left unminted.
 
 The two phases certify different facts against different states: propose proves "my marginal against my header was $X$" (the ceiling); settle proves "the division of the real joint $\Delta\phi^+$ is correct" (the share). The settlement beacon is drawn after propose closes — which is what makes the orderings un-front-runnable. The distinction that dissolves the apparent conflict: agent-local (one actor, alone — possible for the bound, impossible for the share) versus graph-local (a bounded neighborhood — true for both).
 
@@ -166,7 +174,7 @@ This collapses the proof-of-work subsidy (§8) into the same act. The nonce a mi
 
 ### Residual: withholding
 
-The lottery is not fully closed against a miner that is also a contender in the cluster it settles: it can compute $m(n)$, see that the sample lowers its own share, and decline to publish even a winning ticket. It cannot lie — claiming any ticket requires publishing the verified $m(n)$ — so its only freedom is to abstain from a nonce, and a withheld nonce stays a valid ticket for other miners (their threshold is keyed to their own identity), who re-cover it with probability proportional to their throughput. The injectable bias is therefore bounded by the attacker's share of settlement compute — negligible for a minority, and a majority already breaks consensus. The cheap deterrents are to price it (a withheld ticket forfeits its subsidy; calibrate so the forfeit exceeds the share-gain) and to separate roles (a miner does not settle a cluster it contends in). A commit-to-$n$-before-learning-$m(n)$ round drives the bias to zero in expectation by forcing a non-adaptive adversary, at the cost of a synchronous commit–reveal assumption foreign to the lottery; it is the escalation, not the default. This sits alongside collusion (§14) as a bounded, open frontier.
+The lottery is not fully closed against a miner that is also a contender in the cluster it settles: it can compute $m(n)$, see that the sample lowers its own share, and decline to publish even a winning ticket. It cannot lie — claiming any ticket requires publishing the verified $m(n)$ — so its only freedom is to abstain from a nonce, and a withheld nonce stays a valid ticket for other miners (their threshold is keyed to their own identity), who re-cover it with probability proportional to their throughput. The injectable bias is therefore bounded by the attacker's share of settlement compute — negligible for a minority, and a majority already breaks consensus. The cheap deterrents are to price it (a withheld ticket forfeits its subsidy; calibrate so the forfeit exceeds the share-gain) and to separate roles (a miner does not settle a cluster it contends in). A commit-to-$n$-before-learning-$m(n)$ round drives the bias to zero in expectation by forcing a non-adaptive adversary, at the cost of a synchronous commit–reveal assumption foreign to the lottery; it is the escalation, not the default. This sits alongside collusion (§15) as a bounded, open frontier.
 
 ---
 
@@ -233,7 +241,7 @@ Base emission goes to work and risk only. A standing yield to passive stake woul
 
 For a neuron $\nu$ over an epoch, the whole specification assembles into one line:
 
-$$\boxed{\;R(\nu) \;=\; \underbrace{\text{Shapley}_\nu(v)}_{\text{mint, }\Delta\phi^+\text{-bounded}} \;+\; \underbrace{\frac{R_{\text{PoW}}}{|W|}\,\mathbb{1}[H(\sigma_\nu) < \text{target}]}_{\text{subsidy}} \;+\; \underbrace{R_{\text{PoS}}\cdot\frac{a_\nu\,\kappa(\nu)}{\sum_{\mu} a_\mu\,\kappa(\mu)}}_{\text{fee yield, active stake } a}\;}$$
+$$\boxed{\;R(\nu) \;=\; \underbrace{\text{Shapley}_\nu(v^\star)}_{\text{mint, surprising syntropy}} \;+\; \underbrace{\frac{R_{\text{PoW}}}{|W|}\,\mathbb{1}[H(\sigma_\nu) < \text{target}]}_{\text{subsidy}} \;+\; \underbrace{R_{\text{PoS}}\cdot\frac{a_\nu\,\kappa(\nu)}{\sum_{\mu} a_\mu\,\kappa(\mu)}}_{\text{fee yield, active stake } a}\;}$$
 
 where $W$ is the set of signals meeting difficulty and $a_\nu$ is $\nu$'s active ($v \neq 0$) stake. Each term answers a distinct requirement: the mint rewards real value, locally computed and later validated; the subsidy secures the chain and opens a stakeless door; the yield routes service revenue to honest committed stake. Conservation, Sybil-resistance, and anti-compounding hold across the sum.
 
@@ -245,7 +253,27 @@ The mint is the pulse; the yield is the annuity. Viral links earn the pulse and 
 
 ---
 
-## 12. Token Operations
+## 12. Timing and Accrual
+
+A contribution's worth is rarely settled the epoch it is made. A foundational link starts at tiny $\Delta\phi^+$ and grows over a hundred epochs as the graph builds around it; whether a link was surprising or correct is known only once the crowd and the [[inversely coupled bonding surface|ICBS]] market converge, many epochs later. The reward runs on three timescales, and no actor ever reaches back to re-grade the past.
+
+| timescale | what is scored | who scores it |
+|---|---|---|
+| instant | the structural bound $\Delta\phi^+$ | the [[neuron]] (propose, §6) |
+| epoch | surprise-weighted Shapley | the settlement-mining swarm (§7) |
+| continuous | maturing value, resolving truth | the per-epoch [[focusing]] pass, the ICBS market, and [[karma]] accrual |
+
+The present re-scores itself. [[focusing]] runs every epoch over the current graph, which still holds every historical link at its current weight. So an old contribution is scored now, at now's value, by now's settlement — the graph is the state, and the current $\phi^*$ already encodes all of history. A foundational link keeps earning because it stays a live player in its cluster's coalition: Shapley's complementarity gives it a slice of each epoch's new value precisely because the new links' worth depends on the foundation they build on. Distant-in-time value is collected as the integral of present-tense settlements (§11's annuity), through the contribution staying in the game rather than any re-opening of the past.
+
+The market resolves distant-in-time truth. Each epoch [[focusing]] re-reads a link's current ICBS price and the contributor's current [[karma]]. When a link earlier thought false is later vindicated, its price rises, its weight rises, its $\Delta\phi^+$ contribution rises, and it earns again; when a link is falsified, its price falls to zero, its weight vanishes, and it stops earning and stops moving focus. The market is the time-resolution mechanism; karma is its reputational integral. The weights update and the present settlement reflects them, with no audit reaching backward.
+
+Finality and accuracy are split. The pulse (instant mint, §11) is settled at the epoch boundary on provisional information — modest, conservative, final, paid now. The annuity (the yield stream) accrues as truth reveals itself, computed by the same per-epoch pass, and it is self-correcting: a link later falsified simply stops drawing it. So the protocol pays a small final pulse now and lets the annuity carry the long-horizon correction.
+
+Open — the discovery leak. An early contrarian-correct link looks wrong at settlement (consensus disagrees, ICBS price low, surprise low because the crowd predicted failure), so it earns almost no pulse — exactly when the discovery premium should be largest. It begins earning only once the market turns, far later, through the annuity. A retroactive discovery bonus, paid when a long-dormant link's cluster finally ignites, is the natural fix and is unbuilt. A second asymmetry compounds it: a paid pulse is irreversible, so a contribution later revealed dishonest can have its future earnings stopped (price → 0) but not its pulse reversed — which is the reason to keep the pulse conservative and most value in the self-correcting annuity.
+
+---
+
+## 13. Token Operations
 
 - Mint — prove $\Delta\phi^+$, receive the Shapley share; emission bounded by global $\Delta\phi^+$.
 - Burn — destroy [[$CYB]] for permanent $\phi^*$-weight on [[eternal particles]] or [[eternal cyberlinks]]; the fee burn $\beta$ is the protocol-level form.
@@ -253,7 +281,7 @@ The mint is the pulse; the yield is the annuity. Viral links earn the pulse and 
 
 ---
 
-## 13. Positioning
+## 14. Positioning
 
 Rewards are an emergent binding of four layers, and the separation keeps monetary policy out of consensus safety.
 
@@ -268,7 +296,7 @@ Rewards are an emergent binding of four layers, and the separation keeps monetar
 
 ---
 
-## 14. Security and Open Frontiers
+## 15. Security and Open Frontiers
 
 | property | guarantee |
 |---|---|
@@ -296,6 +324,8 @@ Withholding remains open. A contender-miner can bias the settlement average by d
 | $\mathcal{F}(\phi)$ | system [[free energy]]; $\phi^* = \arg\min_\phi \mathcal{F}$ |
 | $J(\phi)$ | [[syntropy]] $= D_{KL}(\phi \,\|\, u) = \log|P| - H(\phi)$ |
 | $\Delta\phi^+$ | directed focus impulse, the reward primitive (§2) |
+| $\sigma_\ell \in [0,1]$ | per-contribution [[Bayesian Truth Serum\|BTS]] surprise (§5) |
+| $v^\star(S)$ | surprise-weighted value: $v$ scaled per contribution by $\sigma$ (§6) |
 | $A^{\text{eff}}_{pq}$ | effective adjacency $= \sum_\ell \text{stake}(\ell)\,\kappa(\nu(\ell))\,f(\text{price}(\ell))$ |
 | $\nu,\ \kappa(\nu)$ | a [[neuron]] and its [[karma]]; $\text{id}(\nu) = \text{Hemera}(\text{secret})$ |
 | $v(\ell) \in \{-1,0,+1\}$ | the [[valence]] of a cyberlink |
