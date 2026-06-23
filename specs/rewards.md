@@ -172,7 +172,7 @@ For a cluster with beacon seed $\mathrm{b}$, a miner:
 2. computes the marginal sample $m(n)$ under $\pi(n)$ on the surprise-weighted value $v^\star$ (§6) — so the same draw that settles attribution also applies the BTS gate, with no separate pass; a genuine draw of the §4 estimator, and the useful work;
 3. holds a winning ticket iff $H(\mathrm{b} \,\|\, n \,\|\, \mathrm{id}(\nu)) < \text{target}$, claimed by publishing $(n, m(n), \sigma)$.
 
-Step 3 is a per-miner Poisson test: progress-free, leaderless, poolable on the same terms as Nakamoto consensus, and random in proportion to throughput. The settlement itself is the average of every published sample — more mining means more independent draws and a tighter estimate (Hoeffding). No actor produces the answer; it converges out of the swarm, and security spend converts directly into attribution precision with zero synthetic work.
+Step 3 is a per-miner Poisson test: progress-free, leaderless, poolable on the same terms as Nakamoto consensus, and random in proportion to throughput. The settlement itself is the average of every published sample — more mining means more independent draws and a tighter estimate ([[Hoeffding]]). No actor produces the answer; it converges out of the swarm, and security spend converts directly into attribution precision with zero synthetic work.
 
 This collapses the proof-of-work subsidy (§8) into the same act. The nonce a miner grinds to reseed a proof hash is the ordering index $n$ — so every hash attempt is a real Shapley sample. Securing the chain and computing the fair division become one computation; settlement mining is the content of the PoW subsidy.
 
