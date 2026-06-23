@@ -88,7 +88,7 @@ the reward layer turns φ* into [[CYB]]: a neuron self-mints the surprising synt
 
 ## implementation steps
 
-the steps below are in dependency order. each step has a clear input, output, and verifiable predicate.
+the steps below are in dependency order. each step has a clear input, output, and verifiable predicate. the full milestone plan — module layout, per-spec algorithm, predicate names, and cross-repo blockers — is [roadmap/implementation.md](roadmap/implementation.md).
 
 | step | what | output | verifies |
 |------|------|--------|----------|

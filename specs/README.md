@@ -130,4 +130,4 @@ this is the point. tru is not a ranking engine that happens to have rewards bolt
 
 **built: 1 of 8 active specs. the critical path is** `tri-kernel reconcile → focusing (cyberank, syntropy) → ct0 passes`, with `vocab`/`model` formats needed before pass 1 and after pass 8, and `rewards` now spec-complete — the reason the pipeline exists, its settlement spanning foculus/tok.
 
-see the [implementation steps table](../README.md#implementation-steps) in the repo readme for the step-by-step build order with verifiable predicates.
+see the [implementation steps table](../README.md#implementation-steps) in the repo readme for the step-by-step build order with verifiable predicates, and [roadmap/implementation.md](../roadmap/implementation.md) for the full milestone plan — module layout, per-spec algorithm, and cross-repo blockers.
