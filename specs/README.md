@@ -81,6 +81,7 @@ tru is a subgraph; every concept it owns is defined here, not scattered across t
 | [will.md](will.md) | locked balance → the broad budget for attention | the input quantity focusing reads |
 | [conviction.md](conviction.md) | per-link economic commitment, the box (τ,a) on one edge | the per-link counterpart of will; box magnitude in A^eff |
 | [axon.md](axon.md) | the bundle of all cyberlinks on a pair, itself a particle | cybergraph is the umbrella; tru defines the weighting |
+| [arithmetic.md](arithmetic.md) | fixed-point over the Goldilocks field — no floats, deterministic T(ε) steps | the representation contract every spec and the code inherit |
 
 the [[collective focus theorem]] (convergence + uniqueness of φ*) is `tri-kernel.md §3` (normative) and [docs/collective-focus-theorem.md](../docs/collective-focus-theorem.md) (the standalone paper).
 

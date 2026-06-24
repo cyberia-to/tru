@@ -98,6 +98,8 @@ $$\|\mathcal{R}\phi - \mathcal{R}\psi\| \leq \kappa \|\phi - \psi\|, \quad \kapp
 
 Since each component contracts and $\mathcal{R}$ is a convex combination, $\kappa$ is a convex combination of individual contraction coefficients -- each less than 1, hence $\kappa < 1$. By Banach fixed-point theorem, $\phi^t \to \phi^*$ at linear rate.
 
+$\kappa$ does more than guarantee convergence: it fixes the trace length. The operators act on fixed-point vectors over the [[Goldilocks field]] -- no float anywhere in the iteration ([[arithmetic]]) -- and rather than loop to a data-dependent threshold, tru runs a constant $T(\varepsilon) = \lceil \log(1/\varepsilon) / \log(1/\kappa) \rceil$ steps. The linear rate makes that bound exact, so the iterate is bit-identical across machines and the [[zheng]] trace has a compile-time-constant length.
+
 #### Theorem (Locality Radius)
 
 For edit batch $e_\Delta$, there exists $h = O(\log(1/\varepsilon))$ such that recomputing only on $N_h$ (the $h$-hop neighborhood) achieves global error $\leq \varepsilon$.

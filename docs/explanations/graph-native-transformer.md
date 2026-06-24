@@ -35,10 +35,12 @@ a weighted knowledge graph $G = (P, N, E, w, \sigma)$ where:
 - $P$ is the set of [[particles]] (content-addressed knowledge nodes)
 - $N$ is the set of [[neurons]] (agents that create edges)
 - $E \subseteq N \times P \times P$ is the set of [[cyberlink|cyberlinks]] (signed directed edges)
-- $w: E \to \mathbb{R}_{>0}$ is the stake-weighted edge weight function
+- $w: E \to \mathbb{F}_p$ is the stake-weighted edge weight function (nonnegative fixed-point field values)
 - $\sigma: E \to \text{Dialect}$ assigns each edge a [[dialect|semantic relation type]]
 
-the adjacency matrix $A \in \mathbb{R}^{|P| \times |P|}$ has entries $A_{ij} = \sum_{e: p_i \to p_j} w(e)$.
+the adjacency matrix $A \in \mathbb{F}_p^{|P| \times |P|}$ has entries $A_{ij} = \sum_{e: p_i \to p_j} w(e)$.
+
+every computed quantity below is a fixed-point element of the [[Goldilocks field]], never a float ([[arithmetic]]). theorems stated over $\mathbb{R}$ — the effective-rank and covariance results — describe the real-valued semantics the fixed-point representation realizes; the implementation evaluates them in $\mathbb{F}_p$.
 
 ### focus distribution
 

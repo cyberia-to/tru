@@ -20,6 +20,8 @@ $$\text{compile}: G \to \mathcal{M}$$
 
 where $G$ is a cybergraph snapshot in [[cyb-graph|.graph format]] and $\mathcal{M}$ is a transformer checkpoint in [[cyb-model|.model format]]. Two implementations conforming to CT-0 must produce a byte-identical $\mathcal{M}$ given a byte-identical $G$ and the same compiler version.
 
+Byte-identity is only reachable because every pass computes in fixed-point over the [[Goldilocks field]] $\mathbb{F}_p$, $p = 2^{64} - 2^{32} + 1$, per [[arithmetic]]. No float enters the compile: the $\phi^*$-weighted adjacency, the randomized SVD, the embedding, the attention projections, the Clifford block, and the norms are all fixed-point field computations; matrices written $\mathbb{F}_p^{m \times n}$ below are matrices of fixed-point field elements; every iterative method runs a fixed step count $T(\varepsilon)$ bounded by $\kappa$ (§5.4), never a float-threshold loop; and the emitted tensors are integer encodings of field elements (§10.8). The only float a `.model` ever touches is an external checkpoint quantized once at import ([[model]] §import), which CT-0 does not perform.
+
 ---
 
 ## 2. Input Definitions
@@ -260,7 +262,9 @@ diameter   = 10
 
 Continue the randomized SVD of $M$ from §5.2 to extract the top $d^*$ left singular vectors $U_{:, 1:d^*}$ and singular values $\Sigma_{1:d^*}$. Set
 
-$$E = U_{:, 1:d^*} \cdot \text{diag}(\sqrt{\Sigma_{1:d^*}}) \in \mathbb{R}^{|V| \times d^*}$$
+$$E = U_{:, 1:d^*} \cdot \text{diag}(\sqrt{\Sigma_{1:d^*}}) \in \mathbb{F}_p^{|V| \times d^*}$$
+
+(fixed-point field elements; $\sqrt{\cdot}$ is the fixed-point square root of [[arithmetic]] §3.)
 
 ### 6.2 Determinism
 
@@ -268,7 +272,7 @@ Randomized SVD uses ChaCha20 seeded with $\text{hemera}(L \,\|\, \nu_{\text{comp
 
 ### 6.3 Output tensor
 
-`embed.weight` of shape $(|V|, d^*)$, dtype `float32`, row-major.
+`embed.weight` of shape $(|V|, d^*)$, fixed-point field elements stored row-major as `u16` (§10.8).
 
 ---
 
@@ -290,7 +294,7 @@ computed by repeated sparse-times-dense multiplication; never materialized as de
 
 ### 7.3 Projection into embedding space
 
-$$P^{(s, l)} = E^\top A^{(s, l)} E \in \mathbb{R}^{d^* \times d^*}$$
+$$P^{(s, l)} = E^\top A^{(s, l)} E \in \mathbb{F}_p^{d^* \times d^*}$$
 
 ### 7.4 SVD per head
 
@@ -321,11 +325,11 @@ Per layer $l$:
 - `layers.{l}.attn.v_proj.weight` of shape $(d^*, d^*)$
 - `layers.{l}.attn.o_proj.weight` of shape $(d^*, d^*)$
 
-dtype `float32`, row-major.
+fixed-point field elements, stored row-major as `u16` (§10.8).
 
 ### 7.7 Wedge-Augmented Attention Score
 
-The attention score extends the dot product with a bivector magnitude term capturing orientation mismatch between query and key. For feature vectors $Q_i, K_j \in \mathbb{R}^{d_h}$ and shift offset $s$, the shifted wedge coefficient is:
+The attention score extends the dot product with a bivector magnitude term capturing orientation mismatch between query and key. For feature vectors $Q_i, K_j \in \mathbb{F}_p^{d_h}$ and shift offset $s$, the shifted wedge coefficient is:
 
 $$\mathrm{Wedge}_s(Q, K)_{i,c} = Q_{i,c}\, K_{i,\,(c+s)\bmod d_h} - Q_{i,\,(c+s)\bmod d_h}\, K_{i,c}$$
 
@@ -339,7 +343,7 @@ $$\mathrm{score}_{ij}^{(l, h)} = \alpha \cdot \frac{Q_i^{(l, h)} \cdot K_j^{(l, 
 
 $\alpha, \beta \in \mathbb{F}_p$ are per-layer learnable scalars, initialized at $\alpha = 1, \beta = 0$. When $A^{\mathrm{eff}}_2 = 0$ everywhere, $\beta$ receives no gradient and the score degenerates to standard dot-product attention.
 
-Emitted tensors per layer: `layers.{l}.attn.alpha_beta.weight` of shape $(2,)$, dtype `float32`.
+Emitted tensors per layer: `layers.{l}.attn.alpha_beta.weight` of shape $(2,)$, fixed-point field elements stored as `u16` (§10.8).
 
 The shifted wedge operation also underlies the Clifford-block MLP in §8; the full shifted geometric product (inner + wedge) is defined there.
 
@@ -399,7 +403,7 @@ The Clifford block achieves SwiGLU-equivalent capability at fewer layers ($L^*/2
 
 ### 8.2 Compile determinism
 
-Context DWConv / graph-conv weights are initialized by seeded ChaCha20 per §6.2 with salt `"mlp_clifford"`. The LayerScale $\gamma$ initializes to $10^{-5}$ (fp32). All other weights initialized by He-normal seeded from hemera hash of $(L, \nu_{\mathrm{compiler}}, l)$. Sign convention SC-1 applies to the projection SVD where factorization is used for initialization.
+Context DWConv / graph-conv weights are initialized by seeded ChaCha20 per §6.2 with salt `"mlp_clifford"`. The LayerScale $\gamma$ initializes to the fixed-point field element nearest $10^{-5}$ (scale $\Sigma$, [[arithmetic]] §2). All other weights initialized by He-normal seeded from hemera hash of $(L, \nu_{\mathrm{compiler}}, l)$, sampled in fixed-point. Sign convention SC-1 applies to the projection SVD where factorization is used for initialization.
 
 ---
 
@@ -607,12 +611,12 @@ Updatable by the runtime after benchmark runs, same convention as cyb-model.
 
 ### 10.8 `weights` section
 
-Raw tensor data, 4096-byte page-aligned per tensor for zero-copy mmap and `unimem` integration. Encodings follow cyb-model §weights:
+Raw tensor data, 4096-byte page-aligned per tensor for zero-copy mmap and `unimem` integration. The pass outputs are fixed-point field elements at the working scale $\Sigma$ ([[arithmetic]] §2); packaging rescales them to the storage scale of each encoding (a range-checked field rescale, not a float cast), following cyb-model §weights:
 
-| from CT-0 internal | to disk encoding | conversion |
+| from CT-0 internal | to disk encoding | rescale |
 |---|---|---|
-| float32 projections | u16 | `round(value * 256)` |
-| float32 norms | u32 | `round(value * 65536)` |
+| fixed-point projections (scale $\Sigma$) | u16 | to scale $256$ |
+| fixed-point norms (scale $\Sigma$) | u32 | to scale $65536$ |
 
 Future quantization passes (`q4`/`q8`) are planned for CT-2 and remain u16 in CT-0.
 

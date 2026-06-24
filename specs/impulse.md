@@ -14,6 +14,8 @@ in physics, impulse is force applied over time that changes momentum ($J = \Delt
 
 the [[neuron]] computes the impulse by running the [[tri-kernel]] locally on their $O(\log(1/\varepsilon))$-hop neighborhood, adding their [[cyberlinks]], and measuring how $\phi^*$ shifts. the [[locality theorem]] guarantees effects beyond that radius are below $\varepsilon$ — most entries are zero, so the sparse representation is compact
 
+each $\Delta\phi^*$ entry is a fixed-point [[Goldilocks field]] element, and the local recompute runs the same fixed $T(\varepsilon)$ steps as the global pass (see [[arithmetic]]) — so the neighborhood result agrees bit for bit with the global $\phi^*$ restricted to the neighborhood, which is what lets one proof certify the shift
+
 the result is whatever the math says. there is no target, no threshold, no minimum. a link to a well-connected [[particle]] in a sparse region produces a larger impulse than a redundant link in a dense cluster. the neuron discovers their contribution by computing it
 
 ## proof

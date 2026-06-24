@@ -109,6 +109,8 @@ by the banach fixed-point theorem, φ^(t) → φ* at linear rate. the fixed poin
 
 computation is one coupled iteration: each step applies D, S, and H_τ to the same current φ, blends with weights λ, and normalizes — repeat to the fixed point. tru does not solve the three operators independently to their own fixed points and average the results; that is a different, weaker object that minimizes no single free energy and has no single κ (see [[tri-kernel]] §2.4). the contraction κ < 1 governs this coupled iteration, and the [[ct0]] architecture parameters read κ from it.
 
+the iteration is fixed-point arithmetic over the [[Goldilocks field]], never float (see [[arithmetic]]). φ, the operators, the blend, and the normalization are all field elements; H_τ is a Chebyshev polynomial in L so it stays field-native. the loop does not run to a float threshold — it runs a fixed step count T(ε) = ⌈log(1/ε)/log(1/κ)⌉ derived from κ, so every neuron and validator computes the byte-identical φ* and the trace zheng proves has a constant length.
+
 φ* is the boltzmann equilibrium minimizing the free energy functional:
 
 ```

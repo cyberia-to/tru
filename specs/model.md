@@ -283,7 +283,7 @@ pass_at_1 = 652
 
 raw concatenated tensor data. page-aligned per tensor (4096 bytes) for zero-copy load, e.g. via [[unimem]].
 
-no floats. all weights are integers. float models are converted at import time.
+no floats. all weights are integers. import (§import conversion below) is the one boundary where an external float checkpoint is quantized to integers, once, on the way in — see [[arithmetic]] §5. a model [[ct0]] compiles is field-native from the first pass and never crosses that boundary; its tensors are integer encodings of [[Goldilocks field]] elements, not converted floats.
 
 | encoding | bits/value | block_size | description |
 |----------|:-:|:-:|-------------|

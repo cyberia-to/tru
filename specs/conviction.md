@@ -38,7 +38,7 @@ $$A^{\text{eff}}_{pq} = \sum_{\substack{\ell \in L \\ \text{src}(\ell)=p,\;\text
 
 $a(\ell)$ is the conviction (box magnitude); $\kappa$ is the neuron's [[karma]]; $f(m)$ is the [[market inhibition]] multiplier. a large conviction behind a low-karma neuron, or on a link the market disbelieves, contributes little — all three must align. this is what makes a [[cyberlink]] a [[costly signal]]: conviction spent on one claim is conviction withheld from every other.
 
-conviction is distinct from [[valence]]: valence is the epistemic prediction ($v \in \{-1,0,+1\}$), conviction is the economic depth ($a \in \mathbb{R}_+$). a neuron can hold high conviction with any valence — betting heavily that a link is true, or betting heavily while predicting the market will judge it false.
+conviction is distinct from [[valence]]: valence is the epistemic prediction ($v \in \{-1,0,+1\}$), conviction is the economic depth ($a \in \mathbb{F}_p$, stake in the smallest token unit — no floats, see [[arithmetic]]). a neuron can hold high conviction with any valence — betting heavily that a link is true, or betting heavily while predicting the market will judge it false.
 
 see [[will]] for the broad budget · [[box]] for the concrete container and its lifecycle · [[attention]] for how will and conviction combine · [[valence]] for the orthogonal epistemic field · [[focusing]] for effective adjacency.
 

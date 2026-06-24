@@ -64,7 +64,7 @@ the directed focus shift from applying $S$ to the [[karma]]-weighted effective g
 
 $$A^{\text{eff}}_{pq} \;=\; \sum_\ell \text{stake}(\ell)\,\kappa(\nu(\ell))\,f(\text{price}(\ell)).$$
 
-This is the move the whole specification turns on: $v$ makes the economy a cooperative game. As a set-function $v : 2^N \to \mathbb{R}$ it is that game's characteristic function — the worth of every possible coalition of contributors — and the reward (§4) is its fair division. Once value is a set-function, every result downstream is a property of $v$.
+This is the move the whole specification turns on: $v$ makes the economy a cooperative game. As a set-function $v : 2^N \to \mathbb{F}_p$ — its values are fixed-point field quantities, like every number tru computes ([[arithmetic]]) — it is that game's characteristic function — the worth of every possible coalition of contributors — and the reward (§4) is its fair division. Once value is a set-function, every result downstream is a property of $v$.
 
 Three of those properties are load-bearing, each invoked by name later:
 
