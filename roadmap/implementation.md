@@ -10,6 +10,8 @@ the full build order for every [[tru]] spec — from the one engine that is buil
 
 this plan refines two existing maps: [specs/README.md](../specs/README.md) (layer/status view) and the [implementation steps table](../README.md) (step ids 0a–3). it adds the concrete module layout, the algorithm per spec, and the exact predicate names so an engineer can start at M1 and not stop.
 
+one invariant cuts across every milestone: tru computes in fixed-point over the [[Goldilocks field]], never float ([[arithmetic]]). $\phi^*$ is a consensus object and $\Delta\phi^*$ is what [[zheng]] proves, so float is doubly excluded — non-deterministic and unprovable. M0 builds that arithmetic; M1 ports the `f64` stub onto it; M5 compiles in it. the only float anywhere is an external checkpoint quantized once at the [[model]] import boundary.
+
 ## state today
 
 | layer | spec | status |
@@ -46,44 +48,47 @@ prerequisites every later milestone shares. small, mechanical, unblocking.
 
 | task | detail | size |
 |------|--------|------|
+| field arithmetic | the representation contract ([[arithmetic]]): fixed-point over the [[Goldilocks field]] $\mathbb{F}_p$, scale $\Sigma$, add / mul-then-rescale / compare / Newton reciprocal+sqrt, all mapping to the GFP primitives. wire `rs/core` `FixedPoint` over $\mathbb{F}_p$ rather than invent a parallel type. this is the substrate M1 and M5 compute in — no `f64` anywhere | M |
 | wire [[hemera]] | uncomment `cyber-hemera` dep (path `../hemera/rs`, available, 32-byte `hash()`). needed for particle identity, axon hash $H(p\|q)$, file particles | S |
-| config structs | `Config` for `config.tokens` (token_weight $\rho_\tau$), tri-kernel params, clifford shift set. serde from `.graph`/`.model` toml | S |
+| config structs | `Config` for `config.tokens` (token_weight $\rho_\tau$), tri-kernel params + scale $\Sigma$, clifford shift set. serde from `.graph`/`.model` toml | S |
 | generalize `.cyb` reader | `src/graph/reader.rs` hardcodes the `"graph"` type assertion (`reader.rs:35`); the `~~~name` + `size` section logic is format-agnostic. extract a generic opener reused by vocab + model | S |
 | add `Serialize` to frontmatter | `graph/frontmatter.rs` structs are `Deserialize`-only; both writers need an emit path | S |
 
-predicate: existing 6 focusing tests + 1 smoke test stay green after the dep/reader refactor.
+predicate: field arithmetic round-trips (fixed-point encode/decode, mul-rescale within one ULP of the rational result) and the GFP-primitive op set is closed. the existing 6 focusing tests get ported onto the field type in M1.
 
 ---
 
-## M1 — focusing engine conformance (the math fix)
+## M1 — focusing engine conformance (math + arithmetic)
 
-the crate doc-comment flags exactly one thing as non-conformant, and it is correctness-critical. no external dependency — do this immediately.
+the stub is non-conformant on two independent axes, and the second is the deeper one. no external dependency — do this immediately, on top of M0's field type.
 
-what is wrong: `compute_focusing` (`focusing.rs:207`) runs each operator's own inner solve to its own fixed point (`operators::diffusion/springs/heat` each loop to convergence) then averages the three once. [[tri-kernel]] §2.4 and [[focusing]] forbid this — it is the "blend of separate attractors", minimizes no single free energy, has no single $\kappa$, and breaks the five-way identity.
+1. blend-of-attractors. `compute_focusing` (`focusing.rs:207`) runs each operator's own inner solve to its own fixed point (`operators::diffusion/springs/heat` each loop to convergence) then averages the three once. [[tri-kernel]] §2.4 and [[focusing]] forbid this — it minimizes no single free energy, has no single $\kappa$, breaks the five-way identity.
+2. float. the whole stub is `f64` (`alpha: f64`, `focus: Vec<f64>`, every operator). [[arithmetic]] forbids float in the provable path: $\phi^*$ is a consensus object (P-DET, foculus finality) and $\Delta\phi^*$ is what [[zheng]] proves — float is non-deterministic across hardware and has no proof system. the engine computes in fixed-point over $\mathbb{F}_p$, full stop. this is the bigger rewrite; (1) is cheap once the iteration is restructured.
 
-the settled form is one coupled iteration:
+the settled form is one coupled iteration, run a fixed step count (no float-threshold loop):
 
 ```
-φ ← u                                  (uniform or stake prior)
-repeat until ‖φ⁽ᵗ⁾ − φ⁽ᵗ⁻¹⁾‖₁ < ε:
+φ ← u                                  (uniform or stake prior), fixed-point 𝔽_p
+repeat exactly T(ε) = ⌈log(1/ε)/log(1/κ)⌉ times:
     d ← D_step(φ)                      one diffusion application:  α Pᵀφ + (1−α)u
     s ← S_step(φ)                      one springs relaxation step: toward (L+μI)⁻¹(μ·x₀)
     h ← H_step(φ)                      one bounded heat application: Chebyshev Σ cₖ(τ)Tₖ(L̃)φ
-    φ ← norm(λ_d·d + λ_s·s + λ_h·h)
+    φ ← norm(λ_d·d + λ_s·s + λ_h·h)     blend + simplex-normalize, all in fixed-point
 ```
 
 | task | detail | size |
 |------|--------|------|
-| operators → single-step | rewrite `operators.rs` `diffusion/springs/heat` from self-converging solves into `*_step(φ)` maps. heat via Chebyshev three-term recurrence on $\tilde L = 2L/\lambda_{max}-I$ | M |
-| outer coupled loop | rewrite `compute_focusing`: blend single-steps, normalize to simplex, feed φ back, iterate to ℓ₁-drift `< convergence`; `max_iter` now governs this outer loop | S |
+| port to field type | replace every `f64` in `crates/focusing` with the M0 fixed-point $\mathbb{F}_p$ type; reciprocal/sqrt (the `norm` and degree divides) via fixed-point Newton; no float literals | M |
+| operators → single-step | rewrite `operators.rs` `diffusion/springs/heat` from self-converging solves into `*_step(φ)` maps. heat via Chebyshev three-term recurrence on $\tilde L = 2L/\lambda_{max}-I$ (a polynomial in L — field-native, no matrix exponential) | M |
+| outer coupled loop | rewrite `compute_focusing`: blend single-steps, simplex-normalize, feed φ back, run exactly $T(\varepsilon)$ steps computed from $\kappa$; `max_iter` is replaced by the derived step count | S |
 | fix springs RHS | `operators.rs:68` uses `stake` as RHS; spec is $\mu\cdot x_0$ (TK §1.2 $(L+\mu I)x^*=\mu x_0$) | S |
 | weighted P | diffusion transition currently binary $1/\text{outdeg}$ (`focusing.rs:138`); derive $P$ from $A^{eff}$ once M3 lands. until then run on stake-weighted $A^{eff}$ | S |
 
-predicates (all from [[tri-kernel]] §2.2 / [[focusing]] §fixed-point):
-- contraction: $\kappa = \lambda_d\alpha + \lambda_s\frac{\|L\|}{\|L\|+\mu} + \lambda_h e^{-\tau\lambda_2} < 1$ (add a test computing $\kappa$ from $\|L\|$ via power iteration and Fiedler $\lambda_2$)
-- simplex: $\sum_i \phi^*(i)=1$, $\phi^*(i)>0\ \forall i$ (existing `focus_sums_to_one`)
-- ranking sanity: existing `high_in_stake_ranks_higher`, `well_linked_node_ranks_higher`
-- convergence in expected steps at linear rate (Banach)
+predicates (from [[tri-kernel]] §2.2 / [[focusing]] / [[arithmetic]]):
+- determinism: two runs on the same input produce the bit-identical $\phi^*$ (this is the field-arithmetic payoff; impossible under `f64`)
+- contraction: $\kappa = \lambda_d\alpha + \lambda_s\frac{\|L\|}{\|L\|+\mu} + \lambda_h e^{-\tau\lambda_2} < 1$ (test computing $\kappa$ from $\|L\|$ via power iteration and Fiedler $\lambda_2$), and $T(\varepsilon)$ steps reach the fixed point within $\varepsilon$
+- simplex: $\sum_i \phi^*(i)=1$ (in fixed-point, to one ULP), $\phi^*(i)>0\ \forall i$ (port `focus_sums_to_one`)
+- ranking sanity: port `high_in_stake_ranks_higher`, `well_linked_node_ranks_higher`
 
 ---
 
@@ -94,7 +99,7 @@ cheap, high-value, unblocks rewards and mir reads.
 | task | detail | size |
 |------|--------|------|
 | cyberank | `cyberank(p) = φ*(p)` — accessor keyed by particle hash over `FocusingResult.focus` ([[cyberank]]) | S |
-| syntropy | $J(\phi^*)=\sum_j \phi^*(j)\log(|V|\phi^*(j)) = D_{KL}(\phi^*\|u)$; add `syntropy: f64` to `FocusingResult` ([[syntropy]]) | S |
+| syntropy | $J(\phi^*)=\sum_j \phi^*(j)\log(|V|\phi^*(j)) = D_{KL}(\phi^*\|u)$; add a fixed-point $\mathbb{F}_p$ `syntropy` field to `FocusingResult` ([[syntropy]]); $\log$ via fixed-point (range-reduce + polynomial), never `f64::ln` | S |
 | telemetry | per-epoch monitors (TK §6.3): entropy $H$, negentropy $J$, spectral gap, ℓ₁ drift, locality radius $h$, nodes touched | S |
 
 predicates: $J(u)=0$ at the uniform distribution; $J\ge 0$ always; cyberank sums to 1.
@@ -153,7 +158,8 @@ $$A^{eff}_{pq} = \sum_{\ell:\,p\to q} \text{stake}(\ell)\cdot\kappa(\nu(\ell))\c
 
 - stake$(\ell)=a(\ell)\cdot\text{token\_weight}(\tau(\ell))$ — normalizes denominations from `config.tokens`
 - $\kappa(\nu)$ = karma — accumulated BTS history, read from [[bbg]], written by [[plumb]]. tru reads, never writes
-- $f(m(\ell))$ = ICBS price → edge multiplier in $[0,1]$ — [[market inhibition]]. valence $v$ does not enter $A^{eff}$ directly; it acts through $f(\text{price})$
+- $f(m(\ell))$ = ICBS price → edge multiplier in fixed-point $[0,1]$ — [[market inhibition]]. valence $v$ does not enter $A^{eff}$ directly; it acts through $f(\text{price})$
+- all inputs are field-native: stake, karma, and price arrive as fixed-point $\mathbb{F}_p$ elements and $A^{eff}$ is assembled in fixed-point — there is no lift to float on entry ([[arithmetic]]). a read path through inf (the cybergraph query layer) returns field elements directly
 - attention ([[attention]]): a neuron's per-edge weight = will-share (broad [[will]] lock auto-distributed across its links) + per-link conviction ([[box]] $(\tau,a)$). this is one summand $a\cdot\kappa\cdot f(m)$
 - truth-scoring ([[truth-scoring]]): BTS score accumulates into karma; the cyberlink IS the BTS input (belief = $(\tau,a)$, meta = $v$, identity = $\nu$)
 
@@ -179,7 +185,7 @@ $\Delta\phi^* = \phi^*_{after} - \phi^*_{before}$ for a neuron's link batch — 
 | task | size |
 |------|------|
 | neighborhood extraction $N_h$, $h=O(\log 1/\varepsilon)$ | M |
-| `compute_impulse(graph, batch) -> Vec<(particle, f64)>` — local coupled solve, before/after diff, sparse pack | L |
+| `compute_impulse(graph, batch) -> Vec<(particle, Fp)>` — local coupled solve (fixed-point field, same $T(\varepsilon)$ as the global pass), before/after diff, sparse pack | L |
 | directed form $\Delta\phi^+ = [J(\phi^*_{t+1})-J(\phi^*_t)]_+$ for rewards | S |
 
 predicate: locality — recomputing on $N_h$ vs full graph agrees within $\varepsilon$; sparse support (most entries zero).
@@ -192,7 +198,7 @@ new module: `crates/focusing/src/impulse.rs`.
 
 ## M5 — CT-0 compiler (8 passes) — the bulk
 
-deterministic `compile: G → M`. the two heavy passes (3, 5) are the randomized-SVD / matrix-power numeric core; the rest are linear scans, constant fills, or serialization. proposed layout:
+deterministic `compile: G → M`. every pass computes in fixed-point over $\mathbb{F}_p$ ([[arithmetic]]) — the $\phi^*$-weighted adjacency, the randomized SVD, the embedding, the projections, the Clifford block, the norms — and emits integer-encoded field tensors. byte-identity across machines (P-DET) follows from there being no float to diverge. the two heavy passes (3, 5) are the randomized-SVD / matrix-power numeric core; the rest are linear scans, constant fills, or serialization. proposed layout:
 
 ```
 src/
@@ -222,9 +228,9 @@ pass-5 detail: per dialect $s$, layer $l$: $A^{(s,l)}=(A^{(s)})^{l_{eff}}$ (spar
 
 the shifted geometric product is the shared primitive of passes 5 and 6: `Inner_s(H,C)=σ(H·shift_s C)` (SiLU over $\mathbb{F}_p$ via LUT) and `Wedge_s(Q,K)=Q·shift_s K − shift_s Q·K` (strictly anti-symmetric). `geometry/` must agree with the nox jets within $\varepsilon_j=10^{-9}$ (P-CLIFFORD-C).
 
-deps: nalgebra/ndarray (SVD, pinv, Lanczos), sprs (CSR, SpMV, matpow), rand_chacha, hemera. one to confirm in the [[nox]] crate: the `shifted_inner_product` / `shifted_wedge_product` jets — a scalar reference impl is required regardless for P-CLIFFORD-C.
+deps: the numeric kernels (randomized SVD, power iteration, Lanczos, pseudoinverse) are fixed-point $\mathbb{F}_p$ implementations on the M0 field type — not nalgebra's `f64` routines; sprs/ndarray serve as sparse/dense containers only, parameterized over `Fp`. rand_chacha (deterministic seeding), hemera. one to confirm in the [[nox]] crate: the `shifted_inner_product` / `shifted_wedge_product` jets — a fixed-point reference impl is required regardless for P-CLIFFORD-C.
 
-representation note: the compile-time numeric path is real-valued (float32 → u16/u32 on disk, §10.8); the Goldilocks/jet path is the inference/proof representation. they are distinct representations bridged by P-CLIFFORD-C, not one arithmetic.
+arithmetic note: one representation end to end — fixed-point over the [[Goldilocks field]], compile and inference and proof alike ([[arithmetic]]). there is no float-vs-field split; P-CLIFFORD-C checks the `geometry/` kernels against the nox jets, both fixed-point. the `.model` tensors are integer encodings of those field elements (ct0 §10.8). float exists only outside CT-0, at the [[model]] import boundary.
 
 ---
 
