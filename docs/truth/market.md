@@ -34,7 +34,7 @@ each edge carries a prediction market with two outcome tokens: TRUE and FALSE. a
 
 the market mechanism is the [[coupling]] (ICBS): $C(s_{YES}, s_{NO}) = \lambda\sqrt{s_{YES}^2 + s_{NO}^2}$. ICBS was adopted over LMSR because: self-scaling liquidity (trading volume grows TVL automatically), early conviction rewarded (prices range 0 to λ, not [0,1]), inverse coupling (buying YES directly suppresses NO's price — TRUE and FALSE are geometrically opposed on a circle). no external LPs needed. the protocol is the market maker.
 
-the market is perpetual — no oracle resolution. periodic liquidity transfer from the winning token to the losing one acts as a damper: prevents the market from freezing into dogma, always preserves liquidity for challenge. usage signal ([[cyberank]], traffic through the edge) serves as a soft oracle: if the edge is actively traversed, the TRUE price receives a weak upward nudge.
+the market is perpetual — no oracle resolution. periodic liquidity transfer from the winning token to the losing one acts as a damper: prevents the market from freezing into dogma, always preserves liquidity for challenge. reinforcement — rank, effective weight, reward — couples to the surprisingly-popular estimate $\hat\theta$ (the answer more popular than the crowd predicted), not to the raw price; this selects truth over a self-fulfilling false consensus. usage ([[cyberank]], traffic through the edge) enters only as a weak secondary signal. see [[strong-truthfulness]].
 
 - public: TRUE/FALSE price, volume
 - private: who holds what position, position sizes
@@ -160,7 +160,7 @@ no oracle resolves the market. instead:
 
 liquidity transfer. periodically, a fraction of liquidity transfers from the winning side to the losing side. this ensures the losing side always has enough liquidity for a challenger to enter cheaply. anti-echo-chamber mechanism built into the economics. analogous to how [[mycelium]] maintains even unprofitable hyphae — you never know when a weak connection will become critical.
 
-usage as soft oracle. [[cyberank]] (traffic, citations, traversals through the edge) provides a weak signal. high-rank edges get a small TRUE nudge. this is not resolution — a nudge. like [[mycelium]]: if resource actually flows through a hypha, the hypha thickens.
+usage as secondary signal. [[cyberank]] (traffic, citations, traversals through the edge) provides a weak signal. high-rank edges get a small TRUE nudge. the primary truth-selector is the surprisingly-popular divergence between price and meta, not usage — usage is a nudge, not resolution. like [[mycelium]]: if resource actually flows through a hypha, the hypha thickens.
 
 feedback loop. rank influences visibility → visibility influences usage → usage influences TRUE price → price influences rank. positive feedback with damping (liquidity transfer = damper). the same as in [[mycelium]]: more resource through a hypha → hypha thickens → more resource through hypha.
 

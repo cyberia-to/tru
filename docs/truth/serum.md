@@ -81,6 +81,8 @@ in [[cyber]], the [[cyberlink]] IS the BTS input — no separate submission step
 
 this means every [[cyberlink]] is simultaneously a structural assertion and a BTS prediction, in one atomic act. the scoring engine can compute $s_i$ for every [[neuron]] from the public graph without any additional input.
 
+the market position carries the first-order signal as liquidity and commitment — [[ICBS]] is the costly substrate, not the scorer. the proper, incentive-compatible elicitation lives in the valence and the surprisingly-popular divergence $\Delta = \bar p_{-i} - \bar m_{-i}$: a belief more popular than the crowd predicted is the one backed by private signal. see [[strong-truthfulness]] for the division of labor and the proof that the serum, not the market, carries truthfulness — including in the perpetual case where no oracle resolves.
+
 the [[syntropy]] metric in [[cyber]] measures information gain in the [[cybergraph]] as a whole. BTS operationalizes the same concept at the level of individual agents: syntropy = aggregate of BTS scores across all [[neurons]]. a [[neuron]] whose [[cyberlinks]] increase the collective's certainty has positive BTS score. a [[neuron]] whose [[cyberlinks]] add noise has negative score. [[karma]] is the accumulated BTS score history — the trust multiplier in the effective adjacency weight.
 
 the [[approximation quality metric]] in [[focus flow computation]] uses $D_{KL}(\phi^*_c \| q^*_c)$ — the same divergence measure — to quantify how much the compiled [[transformer]] deviates from the exact [[focus]] distribution. the same mathematical object measures epistemic quality at three scales: individual [[neuron]] (BTS score), compiled model (approximation gap), and collective knowledge state (φ* convergence).

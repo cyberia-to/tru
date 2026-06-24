@@ -38,7 +38,7 @@ A neuron that inflates its valence -- reporting what it expects the crowd to say
 
 A neuron that deflates its valence -- reporting contrarian for the sake of appearing to have private signal -- loses the prediction accuracy component. It mispredicts the aggregate. The market does not move where it predicted.
 
-The only strategy that consistently maximizes expected score across many rounds is accurate reporting of both the first-order belief (the link and its stake) and the meta-belief (the valence prediction). This is what Prelec proved: honest reporting is a Bayes-Nash equilibrium. No agent can improve expected score by misreporting.
+The only strategy that consistently maximizes expected score across many rounds is accurate reporting of both the first-order belief (the link and its stake) and the meta-belief (the valence prediction). This is what Prelec proved: honest reporting is a Bayes-Nash equilibrium. No agent can improve expected score by unilaterally misreporting. Honesty is an equilibrium, not automatically the only one — the surprisingly-popular divergence and the honest-majority-by-stake condition select it over coordinated consensus. see [[strong-truthfulness]].
 
 ---
 
@@ -74,13 +74,13 @@ Both are necessary. Protocol honesty guarantees the computation runs correctly. 
 
 The convergence argument has four parts.
 
-First, BTS makes honesty the dominant individual strategy. Each neuron, reasoning about its own score, concludes that accurate reporting maximizes expected return.
+First, BTS makes honesty a best individual strategy — accurate reporting is a Bayes-Nash equilibrium. The surprisingly-popular divergence selects this equilibrium over coordinated consensus, where a belief is popular only because everyone predicted it would be.
 
 Second, honest errors cancel. The mechanism extracts private signals even when those signals are wrong, because honest errors are distributed around reality while dishonest reports are biased in self-serving directions. The aggregate of honest-but-imperfect signals converges toward truth faster than any aggregate of strategic-but-precise signals.
 
 Third, karma amplifies good sources and dampens bad ones. Neurons with a track record of genuine signal earn higher weight. Neurons with a track record of noise see their influence shrink. Over time, the trust distribution self-corrects.
 
-Fourth, [[ICBS]] markets suppress false assertions economically. Even if a dishonest neuron creates a false link with high stake, other neurons can bet against it. If the disbelievers are right, the link's effective weight drops, and the false assertion stops distorting the focus distribution.
+Fourth, [[ICBS]] markets suppress false assertions economically. Even if a dishonest neuron creates a false link with high stake, other neurons can bet against it. If the disbelievers are right, the link's effective weight -- which tracks the surprisingly-popular estimate, not the raw market price -- drops, and the false assertion stops distorting the focus distribution.
 
 These four forces -- individual incentive, statistical aggregation, reputation dynamics, and market correction -- work simultaneously. The result: a knowledge graph where the focus distribution φ* moves closer to shared truth with every honest link, every karma update, every market trade.
 

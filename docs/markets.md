@@ -70,6 +70,8 @@ Every [[cyberlink]] carries three simultaneous signals:
 
 One atomic act -- creating a link -- simultaneously asserts structural knowledge, opens a perpetual prediction market, and registers a BTS meta-prediction. Three channels of epistemic signal from a single action.
 
+The market is the liquidity and commitment substrate; it is not the truth-scorer. Its price is a coarse first-order signal, biased as a readout of belief, and in the perpetual case a self-fulfilling consensus can sit at a false focal point. Truthfulness is carried by the [[serum]]: the surprisingly-popular divergence between price and meta selects the genuinely-supported answer over merely-coordinated agreement. see [[strong-truthfulness]].
+
 The effective adjacency weight combines all three:
 
 $$A^{\text{eff}}_{pq} = \sum_\ell \text{stake}(\ell) \times \text{karma}(\nu(\ell)) \times f(\text{ICBS price}(\ell))$$

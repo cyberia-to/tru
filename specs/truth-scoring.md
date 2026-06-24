@@ -4,7 +4,7 @@ alias: Bayesian Truth Serum, BTS, peer prediction, truth serum, serum, karma, ho
 ---
 # truth scoring
 
-The scoring layer of the [[cybergraph]]: how [[Bayesian Truth Serum]] (Prelec, 2004) extracts honest private signals from [[neurons]], how those scores accumulate into [[karma]], and how the protocol makes honesty the uniquely rational strategy.
+The scoring layer of the [[cybergraph]]: how [[Bayesian Truth Serum]] (Prelec, 2004) extracts honest private signals from [[neurons]], how those scores accumulate into [[karma]], and how the protocol makes honesty the selected equilibrium — truthful reporting is a Bayes-Nash equilibrium, and the surprisingly-popular divergence with honest-majority-by-stake selects it over coordinated consensus (see [[strong-truthfulness]]).
 
 ---
 
@@ -45,7 +45,7 @@ The mechanism is incentive-compatible because:
 - deflating belief to seem contrarian loses the prediction accuracy component (the agent mispredicts the aggregate)
 - the only strategy that consistently maximizes expected score is accurate reporting of both belief and meta-belief
 
-This is why the mechanism is called a "serum" -- it does not rely on virtue. It makes honesty the dominant response through score structure alone.
+This is why the mechanism is called a "serum" -- it does not rely on virtue. It makes honest reporting a best response through score structure alone. Truthful reporting is a Bayes-Nash equilibrium; it is not automatically the only one. Selection among equilibria -- defeating merely-coordinated consensus -- comes from the surprisingly-popular divergence and the honest-majority-by-stake condition. see [[strong-truthfulness]].
 
 ---
 
@@ -68,6 +68,14 @@ In [[cyber]], the [[cyberlink]] IS the BTS input -- no separate submission step 
 | agent identity | $\nu$ -- the signing neuron |
 
 Every [[cyberlink]] is simultaneously a structural assertion and a BTS prediction, in one atomic act. The scoring engine computes $s_i$ for every [[neuron]] from the public graph without any additional input.
+
+---
+
+## the market is the substrate, not the scorer
+
+The first-order channel -- link creation and stake -- moves the [[ICBS]] market, which supplies liquidity, commitment, and spam-cost. The market is not a proper scoring rule: its reserve ratio is a biased readout of belief (a true belief of $0.5$ settles near $0.366$, because [[ICBS]] prices lie on a circle $p_Y^2 + p_N^2 = \lambda^2$ rather than the simplex $p_Y + p_N = 1$). Truthfulness routes through the serum, never through the market.
+
+The serum scores the [[valence]] meta-report, which is strictly proper, and the surprisingly-popular divergence $\bar p_{-i} - \bar m_{-i}$ selects the truthful answer over coordinated consensus. In a resolved market the market becomes proper at settlement and carries the first-order signal; in a perpetual market with no external oracle the serum is the only truth source. see [[strong-truthfulness]].
 
 ---
 
@@ -115,7 +123,7 @@ Both are necessary. Protocol honesty guarantees the computation runs correctly. 
 
 ## why honesty is rational
 
-[[Bayesian Truth Serum]] proves that epistemic honesty is a Bayes-Nash equilibrium: when a neuron believes other neurons are reporting honestly, honest reporting is the uniquely score-maximizing response.
+[[Bayesian Truth Serum]] proves that epistemic honesty is a Bayes-Nash equilibrium: when a neuron believes other neurons are reporting honestly, honest reporting is a score-maximizing response. It is an equilibrium, not automatically the only one -- the surprisingly-popular divergence and the honest-majority-by-stake condition select it over coordinated alternatives (see [[strong-truthfulness]]).
 
 The logic:
 - a neuron that inflates [[valence]] toward what it expects the crowd to say loses its information gain (it is no longer more accurate than the predicted mean -- it has predicted itself into the crowd)
