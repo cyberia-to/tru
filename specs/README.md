@@ -61,7 +61,7 @@ the heart of tru. five specs that turn the weighted graph into the focus distrib
 
 | spec | defines | produces | status | step |
 |------|---------|----------|--------|------|
-| [tri-kernel.md](tri-kernel.md) | the three operators (diffusion D, springs S, heat H_τ), composite R, fixed-point + locality proofs, §2.4 five-way identity | φ* = fix(R) | 📐 spec complete; `crates/focusing/` stub is non-conformant (averaging form) | 1a |
+| [tri-kernel.md](tri-kernel.md) | the three operators (diffusion D, springs S, heat H_τ), composite R, fixed-point + locality proofs, §2.4 five-way identity | φ* = fix(R) | 📐 spec complete; `crates/focusing/` stub is non-conformant (averaging form + `f64`, both rewritten at M1) | 1a |
 | [attention.md](attention.md) | per-neuron focus projection — will-share + conviction box that sums into effective adjacency | A^eff summand | ⬜ spec only | 1b |
 | [truth-scoring.md](truth-scoring.md) | BTS mechanism, karma accumulation, honesty-weighted effective adjacency | κ(ν), A^eff | ⬜ spec only | 1b |
 | [focusing.md](focusing.md) | epoch computation: effective adjacency → tri-kernel → φ*, cyberank, syntropy | φ*, cyberank, syntropy | 🟡 φ* only — cyberank/syntropy missing | 1c |
@@ -85,7 +85,7 @@ tru is a subgraph; every concept it owns is defined here, not scattered across t
 
 the [[collective focus theorem]] (convergence + uniqueness of φ*) is `tri-kernel.md §3` (normative) and [docs/collective-focus-theorem.md](../docs/collective-focus-theorem.md) (the standalone paper).
 
-**settled — how φ\* is computed (tri-kernel §2.4, focusing.md):** φ\* is the fixed point of *one coupled iteration* — apply D, S, H_τ to the same current φ, blend, normalize, repeat. tru does **not** solve the three operators to their own fixed points and average (that minimizes no single free energy, has no single κ, and breaks the five-way identity). this is now explicit in the spec; no decision pending. the `crates/focusing/` stub (ported from optica) currently does the averaging form — it is non-conformant and gets rewritten when we implement. not a concern now: we are specifying, not building.
+**settled — how φ\* is computed (tri-kernel §2.4, focusing.md):** φ\* is the fixed point of *one coupled iteration* — apply D, S, H_τ to the same current φ, blend, normalize, repeat. tru does **not** solve the three operators to their own fixed points and average (that minimizes no single free energy, has no single κ, and breaks the five-way identity). this is now explicit in the spec; no decision pending. the `crates/focusing/` stub (ported from optica) currently does the averaging form in `f64` — non-conformant on both axes (averaging, and float where [[arithmetic]] requires fixed-point over the Goldilocks field), rewritten together at M1. not a concern now: we are specifying, not building.
 
 ## compile layer — φ* → transformer
 
