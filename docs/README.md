@@ -12,7 +12,7 @@ why tru works the way it does — narrative, derivations, background. see [expla
 
 ## terms
 
-the vocabulary tru owns — short definition pages, pinned for reference. see [terms/](terms/): focus, cyberank, syntropy, convergence, valence, will, conviction, axon. `terms/truth/` holds the older epistemic-market drafts, kept intact pending one more cleanup round.
+the vocabulary tru owns — short definition pages, pinned for reference. see [terms/](terms/): focus, cyberank, syntropy, convergence, valence, will, conviction, axon, plus the older epistemic-market and truth drafts (serum, coupling, market, inhibition, true/false/void, …) kept flat here pending one more cleanup round.
 
 ## guides · tutorials
 
