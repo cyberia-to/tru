@@ -16,14 +16,14 @@ one invariant cuts across every milestone: tru computes in fixed-point over the 
 
 | layer | spec | status |
 |-------|------|--------|
-| focusing | [[tri-kernel]] | 📐 spec complete; `crates/focusing/` stub is non-conformant |
+| focusing | [[tri-kernel]] | 📐 spec complete; `rs/focusing/` stub is non-conformant |
 | focusing | [[focusing]] | 🟡 φ* only (binary topology); cyberank + syntropy missing |
 | focusing | attention, truth-scoring, impulse | ⬜ spec only |
 | format | vocab, model | ⬜ / 🟡 writer scaffold (`unimplemented!`) |
 | compile | ct0 (8 passes) | ⬜ spec only — the bulk of the work |
 | economics | rewards | 📐 spec complete; settlement spans [[foculus]]/[[tok]] |
 
-~934 LOC exist: a working `.graph` reader (`src/graph/`) and the focusing stub (`crates/focusing/`, 6 tests green). Everything else is doc-comment stubs (`src/pass/mod.rs`, `src/model/writer.rs`).
+~934 LOC exist: a working `.graph` reader (`rs/graph/`) and the focusing stub (`rs/focusing/`, 6 tests green). Everything else is doc-comment stubs (`rs/pass/mod.rs`, `rs/model/writer.rs`).
 
 ## critical path
 
@@ -51,7 +51,7 @@ prerequisites every later milestone shares. small, mechanical, unblocking.
 | field arithmetic | the representation contract ([[arithmetic]]): fixed-point over the [[Goldilocks field]] $\mathbb{F}_p$, scale $\Sigma$, add / mul-then-rescale / compare / Newton reciprocal+sqrt, all mapping to the GFP primitives. wire `rs/core` `FixedPoint` over $\mathbb{F}_p$ rather than invent a parallel type. this is the substrate M1 and M5 compute in — no `f64` anywhere | M |
 | wire [[hemera]] | uncomment `cyber-hemera` dep (path `../hemera/rs`, available, 32-byte `hash()`). needed for particle identity, axon hash $H(p\|q)$, file particles | S |
 | config structs | `Config` for `config.tokens` (token_weight $\rho_\tau$), tri-kernel params + scale $\Sigma$, clifford shift set. serde from `.graph`/`.model` toml | S |
-| generalize `.cyb` reader | `src/graph/reader.rs` hardcodes the `"graph"` type assertion (`reader.rs:35`); the `~~~name` + `size` section logic is format-agnostic. extract a generic opener reused by vocab + model | S |
+| generalize `.cyb` reader | `rs/graph/reader.rs` hardcodes the `"graph"` type assertion (`reader.rs:35`); the `~~~name` + `size` section logic is format-agnostic. extract a generic opener reused by vocab + model | S |
 | add `Serialize` to frontmatter | `graph/frontmatter.rs` structs are `Deserialize`-only; both writers need an emit path | S |
 
 predicate: field arithmetic round-trips (fixed-point encode/decode, mul-rescale within one ULP of the rational result) and the GFP-primitive op set is closed. the existing 6 focusing tests get ported onto the field type in M1.
@@ -78,7 +78,7 @@ repeat exactly T(ε) = ⌈log(1/ε)/log(1/κ)⌉ times:
 
 | task | detail | size |
 |------|--------|------|
-| port to field type | replace every `f64` in `crates/focusing` with the M0 fixed-point $\mathbb{F}_p$ type; reciprocal/sqrt (the `norm` and degree divides) via fixed-point Newton; no float literals | M |
+| port to field type | replace every `f64` in `rs/focusing` with the M0 fixed-point $\mathbb{F}_p$ type; reciprocal/sqrt (the `norm` and degree divides) via fixed-point Newton; no float literals | M |
 | operators → single-step | rewrite `operators.rs` `diffusion/springs/heat` from self-converging solves into `*_step(φ)` maps. heat via Chebyshev three-term recurrence on $\tilde L = 2L/\lambda_{max}-I$ (a polynomial in L — field-native, no matrix exponential) | M |
 | outer coupled loop | rewrite `compute_focusing`: blend single-steps, simplex-normalize, feed φ back, run exactly $T(\varepsilon)$ steps computed from $\kappa$; `max_iter` is replaced by the derived step count | S |
 | fix springs RHS | `operators.rs:68` uses `stake` as RHS; spec is $\mu\cdot x_0$ (TK §1.2 $(L+\mu I)x^*=\mu x_0$) | S |
@@ -104,7 +104,7 @@ cheap, high-value, unblocks rewards and mir reads.
 
 predicates: $J(u)=0$ at the uniform distribution; $J\ge 0$ always; cyberank sums to 1.
 
-new module: `crates/focusing/src/measures.rs`.
+new module: `rs/focusing/measures.rs`.
 
 ---
 
@@ -125,7 +125,7 @@ entry index = vocab id. `len=0` valid (registers existence). self-consistency: `
 
 | task | size |
 |------|------|
-| `Vocab` + `VocabEntry` structs, new `src/vocab/` module | S |
+| `Vocab` + `VocabEntry` structs, new `rs/vocab/` module | S |
 | `ParticleEntryIter` over mmap'd `particles` slice (mirror `graph::record::CyberlinkIter`) | S |
 | writer: frontmatter + binary serialize, precompute section `size` $=4+\Sigma(40+\text{len}_i)$ | S–M |
 | multi-vocab composition with first-hit-wins dedup (CT-0 pass 1 §3.1) | M |
@@ -141,7 +141,7 @@ predicate: round-trip — parse then re-emit yields byte-identical file and same
 | extend `Model` to hold card/config/program/tensors/vocab/eval + weights blob | M |
 | `TensorEntry { name, shape, encoding, offset, size }`, `enum Encoding` (U16/U32 now; Q8/Q4/Ternary deferred to CT-2) | S |
 | weights blob assembly with per-tensor 4096-byte alignment + u16/u32 encode | M |
-| section emitters: `src/emit/{card,config,tensors,vocab,eval,weights}.rs` | M |
+| section emitters: `rs/emit/{card,config,tensors,vocab,eval,weights}.rs` | M |
 | file particle `hemera(bytes)` + `certificate.toml` sidecar (§12) | S |
 
 predicate: P-DET — two runs produce byte-identical `.model` (same particle, §10.9). Full P-LOAD waits on cyb-llm runtime.
@@ -192,7 +192,7 @@ predicate: locality — recomputing on $N_h$ vs full graph agrees within $\varep
 
 doc fix: `impulse.md` (lines 21, 25) says "stark proof" — per repo convention these are [[zheng]] proofs (see [[reference_zheng_not_stark]]). correct the wording.
 
-new module: `crates/focusing/src/impulse.rs`.
+new module: `rs/focusing/impulse.rs`.
 
 ---
 
@@ -201,7 +201,7 @@ new module: `crates/focusing/src/impulse.rs`.
 deterministic `compile: G → M`. every pass computes in fixed-point over $\mathbb{F}_p$ ([[arithmetic]]) — the $\phi^*$-weighted adjacency, the randomized SVD, the embedding, the projections, the Clifford block, the norms — and emits integer-encoded field tensors. byte-identity across machines (P-DET) follows from there being no float to diverge. the two heavy passes (3, 5) are the randomized-SVD / matrix-power numeric core; the rest are linear scans, constant fills, or serialization. proposed layout:
 
 ```
-src/
+rs/
   input/   graph.rs · stake.rs (eff stake w(ℓ), clip<0) · multivector.rs (AxonWeight{w0,w2}, EffAdj{a0,a2})
   pass/    pass1..pass8.rs
   geometry/ wedge.rs · inner.rs        (mirror nox jets shifted_wedge_product / shifted_inner_product)

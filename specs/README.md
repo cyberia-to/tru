@@ -61,7 +61,7 @@ the heart of tru. five specs that turn the weighted graph into the focus distrib
 
 | spec | defines | produces | status | step |
 |------|---------|----------|--------|------|
-| [tri-kernel.md](tri-kernel.md) | the three operators (diffusion D, springs S, heat H_τ), composite R, fixed-point + locality proofs, §2.4 five-way identity | φ* = fix(R) | 📐 spec complete; `crates/focusing/` stub is non-conformant (averaging form + `f64`, both rewritten at M1) | 1a |
+| [tri-kernel.md](tri-kernel.md) | the three operators (diffusion D, springs S, heat H_τ), composite R, fixed-point + locality proofs, §2.4 five-way identity | φ* = fix(R) | 📐 spec complete; `rs/focusing/` stub is non-conformant (averaging form + `f64`, both rewritten at M1) | 1a |
 | [attention.md](attention.md) | per-neuron focus projection — will-share + conviction box that sums into effective adjacency | A^eff summand | ⬜ spec only | 1b |
 | [truth-scoring.md](truth-scoring.md) | BTS mechanism, karma accumulation, honesty-weighted effective adjacency | κ(ν), A^eff | ⬜ spec only | 1b |
 | [focusing.md](focusing.md) | epoch computation: effective adjacency → tri-kernel → φ*, cyberank, syntropy | φ*, cyberank, syntropy | 🟡 φ* only — cyberank/syntropy missing | 1c |
@@ -73,25 +73,25 @@ tru is a subgraph; every concept it owns is defined here, not scattered across t
 
 | term | is | owned because |
 |------|----|----|
-| [focus.md](focus.md) | φ*, the collective attention distribution | tru computes it; the single most-referenced term |
-| [cyberank.md](cyberank.md) | focus per particle, φ*(p) — the canonical ordering | a named output other repos read |
-| [syntropy.md](syntropy.md) | network order in bits, J(φ*) — **the purpose** | the quantity the whole pipeline grows |
-| [convergence.md](convergence.md) | iteration toward a self-defined attractor — tru's execution model | "tru = convergence" |
-| [valence.md](valence.md) | the ternary epistemic field v ∈ {−1,0,+1} | cybergraph carries the field; tru runs the dynamics |
-| [will.md](will.md) | locked balance → the broad budget for attention | the input quantity focusing reads |
-| [conviction.md](conviction.md) | per-link economic commitment, the box (τ,a) on one edge | the per-link counterpart of will; box magnitude in A^eff |
-| [axon.md](axon.md) | the bundle of all cyberlinks on a pair, itself a particle | cybergraph is the umbrella; tru defines the weighting |
+| [focus.md](../docs/terms/focus.md) | φ*, the collective attention distribution | tru computes it; the single most-referenced term |
+| [cyberank.md](../docs/terms/cyberank.md) | focus per particle, φ*(p) — the canonical ordering | a named output other repos read |
+| [syntropy.md](../docs/terms/syntropy.md) | network order in bits, J(φ*) — **the purpose** | the quantity the whole pipeline grows |
+| [convergence.md](../docs/terms/convergence.md) | iteration toward a self-defined attractor — tru's execution model | "tru = convergence" |
+| [valence.md](../docs/terms/valence.md) | the ternary epistemic field v ∈ {−1,0,+1} | cybergraph carries the field; tru runs the dynamics |
+| [will.md](../docs/terms/will.md) | locked balance → the broad budget for attention | the input quantity focusing reads |
+| [conviction.md](../docs/terms/conviction.md) | per-link economic commitment, the box (τ,a) on one edge | the per-link counterpart of will; box magnitude in A^eff |
+| [axon.md](../docs/terms/axon.md) | the bundle of all cyberlinks on a pair, itself a particle | cybergraph is the umbrella; tru defines the weighting |
 | [arithmetic.md](arithmetic.md) | fixed-point over the Goldilocks field — no floats, deterministic T(ε) steps | the representation contract every spec and the code inherit |
 
-the [[collective focus theorem]] (convergence + uniqueness of φ*) is `tri-kernel.md §3` (normative) and [docs/collective-focus-theorem.md](../docs/collective-focus-theorem.md) (the standalone paper).
+the [[collective focus theorem]] (convergence + uniqueness of φ*) is `tri-kernel.md §3` (normative) and [docs/collective-focus-theorem.md](../docs/explanation/collective-focus-theorem.md) (the standalone paper).
 
-**settled — how φ\* is computed (tri-kernel §2.4, focusing.md):** φ\* is the fixed point of *one coupled iteration* — apply D, S, H_τ to the same current φ, blend, normalize, repeat. tru does **not** solve the three operators to their own fixed points and average (that minimizes no single free energy, has no single κ, and breaks the five-way identity). this is now explicit in the spec; no decision pending. the `crates/focusing/` stub (ported from optica) currently does the averaging form in `f64` — non-conformant on both axes (averaging, and float where [[arithmetic]] requires fixed-point over the Goldilocks field), rewritten together at M1. not a concern now: we are specifying, not building.
+**settled — how φ\* is computed (tri-kernel §2.4, focusing.md):** φ\* is the fixed point of *one coupled iteration* — apply D, S, H_τ to the same current φ, blend, normalize, repeat. tru does **not** solve the three operators to their own fixed points and average (that minimizes no single free energy, has no single κ, and breaks the five-way identity). this is now explicit in the spec; no decision pending. the `rs/focusing/` stub (ported from optica) currently does the averaging form in `f64` — non-conformant on both axes (averaging, and float where [[arithmetic]] requires fixed-point over the Goldilocks field), rewritten together at M1. not a concern now: we are specifying, not building.
 
 ## compile layer — φ* → transformer
 
 | spec | defines | produces | status | step |
 |------|---------|----------|--------|------|
-| [focus-flow.md](focus-flow.md) | the identity between continuous focusing (path A) and compiled transformer inference (path B); architecture derivation | — (the why) | 📐 reference | — |
+| [focus-flow.md](../docs/explanation/focus-flow.md) | the identity between continuous focusing (path A) and compiled transformer inference (path B); architecture derivation | — (the why) | 📐 reference | — |
 | [ct0.md](ct0.md) | the CT-0 pipeline — 8 passes from `.graph` to `.model`; multivector inputs §2.5–2.6, wedge attention §7.7, Clifford MLP §8 | `.model` weights | ⬜ spec only | 2a–2g |
 
 ct0 is the largest spec (738 lines) and the bulk of remaining work. its passes map directly to steps 2a–2g:

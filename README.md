@@ -62,7 +62,7 @@ tri-kernel is the mathematical foundation. attention defines the per-neuron inpu
 
 | spec | what it defines |
 |------|----------------|
-| [specs/focus-flow.md](specs/focus-flow.md) | the identity between continuous focusing (path A) and compiled transformer inference (path B); architecture parameter derivation |
+| [specs/focus-flow.md](docs/explanation/focus-flow.md) | the identity between continuous focusing (path A) and compiled transformer inference (path B); architecture parameter derivation |
 | [specs/ct0.md](specs/ct0.md) | CT-0 pipeline: 8 passes from `.graph` to `.model`; axon weights and effective adjacency are multivector-valued (§2.5–§2.6); wedge-augmented attention at §7.7; Clifford-block MLP at §8 |
 
 focus-flow explains why compilation works. ct0 specifies exactly how to do it. multivector geometry is native to the spec — axon weights and effective adjacency carry scalar and bivector grades (§2.5–§2.6); the shifted wedge product is defined at §7.7 where first used in attention; the full Clifford(H,C;S) operator is defined at §8 for the MLP pass. when all bivector grades are zero, every Clifford term vanishes and CT-0 is byte-identical to a scalar compile.
@@ -126,7 +126,7 @@ start with [specs/README.md](specs/README.md) — the build map with layers and 
 - [specs/tri-kernel.md](specs/tri-kernel.md) — tri-kernel mathematics and convergence proof
 - [specs/attention.md](specs/attention.md) — per-neuron focus projection (will + conviction)
 - [specs/impulse.md](specs/impulse.md) — Δφ*, the proven per-signal focus shift
-- [specs/focus-flow.md](specs/focus-flow.md) — focusing-to-transformer identity, architecture derivation
+- [specs/focus-flow.md](docs/explanation/focus-flow.md) — focusing-to-transformer identity, architecture derivation
 - [specs/ct0.md](specs/ct0.md) — CT-0 pipeline (8 passes); multivector inputs §2.5–§2.6; wedge attention §7.7; Clifford MLP §8
 - [specs/model.md](specs/model.md) — .model container format
 - [specs/truth-scoring.md](specs/truth-scoring.md) — BTS, karma, honesty weighting
@@ -135,8 +135,8 @@ start with [specs/README.md](specs/README.md) — the build map with layers and 
 
 ## docs
 
-- [docs/overview.md](docs/overview.md) — what tru computes and why it exists
-- [docs/tri-kernel.md](docs/tri-kernel.md) — why diffusion, springs, and heat are the minimal sufficient basis
-- [docs/incentives.md](docs/incentives.md) — the economics of contribution
-- [docs/markets.md](docs/markets.md) — ICBS and market inhibition
-- [docs/honesty.md](docs/honesty.md) — BTS, karma, and why honesty is rational
+- [docs/overview.md](docs/explanation/overview.md) — what tru computes and why it exists
+- [docs/tri-kernel.md](docs/explanation/tri-kernel.md) — why diffusion, springs, and heat are the minimal sufficient basis
+- [docs/incentives.md](docs/explanation/incentives.md) — the economics of contribution
+- [docs/markets.md](docs/explanation/markets.md) — ICBS and market inhibition
+- [docs/honesty.md](docs/explanation/honesty.md) — BTS, karma, and why honesty is rational
