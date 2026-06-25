@@ -1,0 +1,21 @@
+# ---
+# tags: cyber, tru, config
+# crystal-type: source
+# crystal-domain: cyber
+# ---
+[package]
+name = "tru-cli"
+description = "tru command-line interface"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "tru"
+path = "main.rs"
+
+[dependencies]
+tru = { path = "../rs" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }

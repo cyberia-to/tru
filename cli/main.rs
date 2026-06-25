@@ -47,7 +47,7 @@ fn inspect(path: &std::path::Path) -> anyhow::Result<()> {
 }
 
 fn compile(input: &std::path::Path, _output: &std::path::Path) -> anyhow::Result<()> {
-    use tru_focusing::{compute_focusing, FocusingGraph, FocusingParams, Link};
+    use tru::focusing::{compute_focusing, FocusingGraph, FocusingParams, Link};
 
     let g = Graph::open(input)?;
     let n_links = g.cyberlinks()?.len();

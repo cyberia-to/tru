@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::csr::{CsrBuilder, CsrMatrix};
-use crate::operators::{self, normalize_l1};
+use super::csr::{CsrBuilder, CsrMatrix};
+use super::operators::{self, normalize_l1};
 
 // ── Parameters ────────────────────────────────────────────────────────
 

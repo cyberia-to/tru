@@ -304,18 +304,20 @@ checksum = "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
 name = "tru"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "clap",
  "memmap2",
  "serde",
  "thiserror",
  "toml",
- "tru-focusing",
 ]
 
 [[package]]
-name = "tru-focusing"
+name = "tru-cli"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "tru",
+]
 
 [[package]]
 name = "unicode-ident"

@@ -1,33 +1,19 @@
+# ---
+# tags: cyber, tru, config
+# crystal-type: source
+# crystal-domain: cyber
+# ---
 [workspace]
-members = [".", "crates/focusing"]
+members = ["rs", "cli"]
 resolver = "2"
 
-[package]
-name = "tru"
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
-description = "model compilation — compile cybergraph snapshots into transformer checkpoints (CT-0)"
-license = "Apache-2.0"
+license = "Cyber"
 repository = "https://github.com/cyberia-to/tru"
 
-[[bin]]
-name = "tru"
-path = "src/main.rs"
-
-[lib]
-name = "tru"
-path = "src/lib.rs"
-
-[dependencies]
-tru-focusing = { path = "crates/focusing" }
-anyhow = "1"
-thiserror = "2"
-clap = { version = "4", features = ["derive"] }
-toml = "0.8"
-serde = { version = "1", features = ["derive"] }
-memmap2 = "0.9"
-
-# Dependencies landing in later phases:
-# cyber-hemera (phase 1 — CIDs and RNG seeds): path = "../hemera/rs"
-# rand_chacha, rand (phase 1 — reproducible sampling)
-# nalgebra (phase 2 — embed pass)
+# Cross-repo dependencies land here as phases need them:
+# cyber-hemera = { path = "../hemera/rs" }   # phase 1 — particle ids, RNG seeds
+# rand_chacha, rand                          # phase 1 — reproducible sampling
+# nalgebra-style fixed-point kernels         # phase 2 — embed/attention passes

@@ -12,10 +12,12 @@
 //! ```
 
 pub mod error;
+pub mod focusing;
 pub mod graph;
 pub mod model;
 pub mod pass;
 
 pub use error::{McError, Result};
+pub use focusing::{compute_focusing, FocusingGraph, FocusingParams, FocusingResult, Link};
 pub use graph::{Cyberlink, Graph};
 pub use model::Model;

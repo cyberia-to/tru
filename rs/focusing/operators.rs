@@ -1,4 +1,4 @@
-use crate::csr::CsrMatrix;
+use super::csr::CsrMatrix;
 
 /// Personalized PageRank with stake-weighted teleport.
 ///
