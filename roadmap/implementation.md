@@ -108,6 +108,23 @@ new module: `rs/focusing/measures.rs`.
 
 ---
 
+## M1.6 — superadditivity benchmark (measure collective intelligence)
+
+the empirical validation that the engine produces collective intelligence, not just a fixed point — the measurement method of [[superadditivity]]. needs M1 (φ*) and M1.5 (J). produces the first real numbers, so it doubles as the engine's correctness witness.
+
+| task | detail | size |
+|------|--------|------|
+| ego baseline | for each neuron ν, build its ego-net (radius r) and run the same coupled iteration → $\phi^*_\nu$ | M |
+| task scorers | link-prediction (hide edges → ROC-AUC, average precision) and retrieval@10 over focus-ranked particles | M |
+| σ metric | $\sigma_{\text{mean}} = Q(\phi^*) - \text{mean}_\nu Q(\phi^*_\nu)$, $\sigma_{\text{best}} = Q(\phi^*) - \max_\nu Q(\phi^*_\nu)$ | S |
+| connectivity sweep | add edges in $\lambda_2$ order; record $\sigma$ and $J$ vs $\lambda_2$ to test the generalized-CFT monotonicity | M |
+
+datasets: Zachary Karate Club (34 particles) as the smallest sanity instance, then a real cybergraph snapshot. predicate: $\sigma_{\text{best}} > 0$ and rising with $\lambda_2$ — the collective strictly beats its strongest neuron, by more as the graph connects. report measured figures only (no targets baked into the spec); they land in a benchmark output + `docs/explanation/superadditivity` once run on the conformant engine.
+
+new module: `rs/focusing/superadditivity.rs` (or a `benches/` harness).
+
+---
+
 ## M2 — format layer (containers)
 
 the two on-disk formats. prerequisites for the compiler: vocab feeds pass 1, model is the output of pass 8. authoritative byte layout for the writer is [[ct0]] §10.
@@ -280,11 +297,12 @@ hard cross-repo blockers (out of v0.1): the VDF beacon $b$ (foculus) for un-fron
 1. M0 foundation — S, unblocks all
 2. M1 focusing conformance — the math fix, no external deps, do first
 3. M1.5 cyberank + syntropy — cheap outputs
-4. M2 format layer — vocab + model writer (parallelizable with M1)
-5. M3 effective adjacency — partial until bbg reads land
-6. M4 impulse — needs M1
-7. M5 CT-0 passes 1–8 — the bulk; needs M1–M3 + M2 model writer
-8. M6 conformance harness — needs M5; P-LOAD needs cyb-llm
-9. M7 economics — measurement math now; mint/settle blocked on foculus/tok/zheng
+4. M1.6 superadditivity benchmark — first real numbers; validates collective intelligence (needs M1+M1.5)
+5. M2 format layer — vocab + model writer (parallelizable with M1)
+6. M3 effective adjacency — partial until bbg reads land
+7. M4 impulse — needs M1
+8. M5 CT-0 passes 1–8 — the bulk; needs M1–M3 + M2 model writer
+9. M6 conformance harness — needs M5; P-LOAD needs cyb-llm
+10. M7 economics — measurement math now; mint/settle blocked on foculus/tok/zheng
 
 built so far: 1 of 8 active specs. after M1+M1.5+M2 the engine is conformant and the formats round-trip; M5 is where the volume of work lives.
