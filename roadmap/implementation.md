@@ -121,7 +121,9 @@ the empirical validation that the engine produces collective intelligence, not j
 
 datasets: Zachary Karate Club (34 particles) as the smallest sanity instance, then a real cybergraph snapshot. predicate: $\sigma_{\text{best}} > 0$ and rising with $\lambda_2$ — the collective strictly beats its strongest neuron, by more as the graph connects. report measured figures only (no targets baked into the spec); they land in a benchmark output + `docs/explanation/superadditivity` once run on the conformant engine.
 
-new module: `rs/focusing/superadditivity.rs` (or a `benches/` harness).
+harness: `rs/examples/superadditivity.rs` (`cargo run -p tru --example superadditivity`).
+
+first run — Karate Club, 80/20 split, predictor φ(p)·φ(q), measured on the current f64 averaging stub (deterministic across runs at 3 decimals): collective AUC 0.688 vs best-ego 0.589, mean-ego 0.511 → σ_best(AUC) +0.099, σ_mean(AUC) +0.177; J(φ*) 0.177. On AP the collective beats the average (σ_mean +0.045) but not the single best neuron (σ_best −0.061). So superadditivity holds clearly for global ranking (AUC) and on-average for AP; a well-placed neuron can still win locally on AP. Re-measure on the conformant coupled-iteration field engine (M1) before these go in any paper; retrieval@k still pending (needs personalized focus, not the single global φ*).
 
 ---
 
