@@ -1,96 +1,95 @@
 use std::collections::HashMap;
 
+use crate::arithmetic::Fx;
+
 use super::csr::{CsrBuilder, CsrMatrix};
-use super::operators::{self, normalize_l1};
+use super::operators::{diffusion_step, heat_step, normalize_l1, springs_step};
 
 // ── Parameters ────────────────────────────────────────────────────────
 
-/// Tri-kernel parameters.
+/// Tri-kernel parameters, fixed-point over the Goldilocks field.
 pub struct FocusingParams {
-    /// PageRank teleport probability (diffusion).
-    pub alpha: f64,
-    /// Screened Laplacian screening strength (springs).
-    pub mu: f64,
-    /// Heat kernel temperature / time (heat).
-    pub tau: f64,
-    /// Blend weight for diffusion operator.
-    pub lambda_d: f64,
-    /// Blend weight for springs operator.
-    pub lambda_s: f64,
-    /// Blend weight for heat operator.
-    pub lambda_h: f64,
-    /// Max iterations for convergent operators (diffusion, springs).
-    pub max_iter: usize,
-    /// Convergence threshold (L1 norm of update).
-    pub convergence: f64,
-    /// Forward-Euler substeps for heat kernel approximation.
-    pub heat_substeps: usize,
+    /// Diffusion teleport probability α.
+    pub alpha: Fx,
+    /// Springs screening strength μ.
+    pub mu: Fx,
+    /// Heat kernel time τ.
+    pub tau: Fx,
+    /// Blend weight for diffusion (λ_d + λ_s + λ_h = 1).
+    pub lambda_d: Fx,
+    /// Blend weight for springs.
+    pub lambda_s: Fx,
+    /// Blend weight for heat.
+    pub lambda_h: Fx,
+    /// Outer coupled iterations T (fixed step count → deterministic trace).
+    pub iters: usize,
+    /// Heat forward-Euler substeps (need τ/substeps ≤ 1 for stability).
+    pub substeps: usize,
 }
 
 impl Default for FocusingParams {
     fn default() -> Self {
         Self {
-            alpha: 0.15,
-            mu: 1.0,
-            tau: 1.0,
-            lambda_d: 0.5,
-            lambda_s: 0.3,
-            lambda_h: 0.2,
-            max_iter: 50,
-            convergence: 1e-6,
-            heat_substeps: 20,
+            alpha: Fx::from_ratio(15, 100),
+            mu: Fx::ONE,
+            tau: Fx::ONE,
+            lambda_d: Fx::from_ratio(5, 10),
+            lambda_s: Fx::from_ratio(3, 10),
+            lambda_h: Fx::from_ratio(2, 10),
+            iters: 50,
+            substeps: 20,
         }
     }
 }
 
 // ── Input link type ───────────────────────────────────────────────────
 
-/// A single cyberlink contributing to focusing.
+/// A single cyberlink contributing to the field.
 pub struct Link {
     /// Source particle (32-byte hemera hash).
     pub from: [u8; 32],
     /// Target particle (32-byte hemera hash).
     pub to: [u8; 32],
-    /// Stake amount (raw token units; cast to f64 for computation).
+    /// Stake amount (raw token units).
     pub amount: u128,
     /// Valence: +1 affirm, -1 challenge, 0 void/hold.
     pub valence: i8,
 }
 
-// ── FocusingGraph ────────────────────────────────────────────────────────
+// ── FocusingGraph ─────────────────────────────────────────────────────
 
-/// Pre-built adjacency structures for tri-kernel focusing computation.
+/// Pre-built adjacency structures for one coupled tri-kernel computation.
 ///
-/// Build once per snapshot with [`FocusingGraph::build`], then call
-/// [`compute_focusing`] (possibly multiple times with different params).
+/// Effective adjacency is stake-weighted: `A_eff(p,q) = Σ_{ℓ: p→q} stake(ℓ)`.
+/// (Karma and market price join in M3; until then stake is the weight.)
 pub struct FocusingGraph {
     n: usize,
     /// Particle hash at each node index.
     node_ids: Vec<[u8; 32]>,
-    /// Transition matrix for diffusion: T[target][source] = w(src→tgt) / out_deg(src).
+    /// Column-stochastic transition: `transition[q][p] = A_eff(p,q)/out_strength(p)`.
     transition: CsrMatrix,
-    /// True for nodes with no outgoing edges.
+    /// True for nodes with no outgoing strength.
     dangling: Vec<bool>,
-    /// Symmetric weight matrix for springs/heat: W[i][j] = W[j][i].
+    /// Symmetric weights `A_sym(i,j) = A_eff(i,j) + A_eff(j,i)`.
     sym_weights: CsrMatrix,
-    /// Weighted undirected degree: d[i] = Σ_j W[i][j].
-    und_degree: Vec<f64>,
-    /// Stake vector, normalized to sum to 1.
-    stake: Vec<f64>,
+    /// Weighted undirected degree `d(i) = Σ_j A_sym(i,j)`.
+    und_degree: Vec<Fx>,
+    /// Stake-weighted teleport prior, normalized to sum 1.
+    teleport: Vec<Fx>,
 }
 
 impl FocusingGraph {
-    /// Build from an iterator of cyberlinks.
-    ///
-    /// Self-loops and zero-amount links are silently skipped.
-    /// Nodes are indexed only from valid edges.
+    /// Build from cyberlinks. Self-loops and zero-amount links are skipped.
     pub fn build(links: impl IntoIterator<Item = Link>) -> Self {
-        // Pass 0: filter to valid raw edges (from, to, weight)
-        let raw: Vec<([u8; 32], [u8; 32], f64)> = links
+        let raw: Vec<([u8; 32], [u8; 32], Fx)> = links
             .into_iter()
             .filter_map(|l| {
-                let w = l.amount as f64;
-                if w == 0.0 || l.from == l.to { None } else { Some((l.from, l.to, w)) }
+                if l.amount == 0 || l.from == l.to {
+                    None
+                } else {
+                    // Stake as fixed-point; realistic token amounts fit i64.
+                    Some((l.from, l.to, Fx::from_int(l.amount.min(i64::MAX as u128) as i64)))
+                }
             })
             .collect();
 
@@ -98,7 +97,7 @@ impl FocusingGraph {
             return Self::empty();
         }
 
-        // Pass 1: assign node indices (scope-limited to release borrows)
+        // Node indices, assigned by first appearance (deterministic).
         let mut node_ids: Vec<[u8; 32]> = Vec::new();
         let mut node_index: HashMap<[u8; 32], usize> = HashMap::new();
         for &(from, to, _) in &raw {
@@ -111,51 +110,43 @@ impl FocusingGraph {
         }
         let n = node_ids.len();
 
-        // Pass 2: accumulate stake per node; record unique directed and undirected edges (binary topology)
-        let mut dir_edges: HashMap<(usize, usize), ()> = HashMap::new();
-        let mut und_edges: HashMap<(usize, usize), ()> = HashMap::new();
-        let mut stake_raw = vec![0.0f64; n];
-
+        // Directed A_eff and per-node stake mass (for the teleport prior).
+        let mut dir_weight: HashMap<(usize, usize), Fx> = HashMap::new();
+        let mut out_strength = vec![Fx::ZERO; n];
+        let mut node_stake = vec![Fx::ZERO; n];
         for &(from, to, w) in &raw {
-            let fi = node_index[&from];
-            let ti = node_index[&to];
-            dir_edges.entry((fi, ti)).or_insert(());
-            und_edges.entry((fi.min(ti), fi.max(ti))).or_insert(());
-            stake_raw[fi] += w;
-            stake_raw[ti] += w;
+            let (fi, ti) = (node_index[&from], node_index[&to]);
+            let e = dir_weight.entry((fi, ti)).or_insert(Fx::ZERO);
+            *e = *e + w;
+            out_strength[fi] = out_strength[fi] + w;
+            node_stake[fi] = node_stake[fi] + w;
+            node_stake[ti] = node_stake[ti] + w;
         }
 
-        // Binary out-degree per node
-        let mut out_degree = vec![0usize; n];
-        for &(fi, _) in dir_edges.keys() {
-            out_degree[fi] += 1;
+        // Transition (col-stochastic) and symmetric weights + degree.
+        let mut trans = CsrBuilder::new(n);
+        let mut sym = CsrBuilder::new(n);
+        let mut und_degree = vec![Fx::ZERO; n];
+        for (&(fi, ti), &w) in &dir_weight {
+            trans.add(ti, fi, w.div(out_strength[fi])); // T[to][from]
+            sym.add(fi, ti, w);
+            sym.add(ti, fi, w);
+            und_degree[fi] = und_degree[fi] + w;
+            und_degree[ti] = und_degree[ti] + w;
         }
+        let dangling: Vec<bool> = (0..n).map(|i| out_strength[i].is_zero()).collect();
 
-        // Transition CSR: T[target][source] = 1 / out_deg(src)
-        let mut trans_builder = CsrBuilder::new(n);
-        for &(fi, ti) in dir_edges.keys() {
-            if out_degree[fi] > 0 {
-                trans_builder.add(ti, fi, 1.0 / out_degree[fi] as f64);
-            }
+        let teleport = normalize_l1(&node_stake);
+
+        Self {
+            n,
+            node_ids,
+            transition: trans.build(),
+            dangling,
+            sym_weights: sym.build(),
+            und_degree,
+            teleport,
         }
-        let transition = trans_builder.build();
-        let dangling: Vec<bool> = (0..n).map(|i| out_degree[i] == 0).collect();
-
-        // Symmetric binary weight CSR + degree
-        let mut und_degree = vec![0.0f64; n];
-        let mut sym_builder = CsrBuilder::new(n);
-        for &(a, b) in und_edges.keys() {
-            sym_builder.add(a, b, 1.0);
-            sym_builder.add(b, a, 1.0);
-            und_degree[a] += 1.0;
-            und_degree[b] += 1.0;
-        }
-        let sym_weights = sym_builder.build();
-
-        let mut stake = stake_raw;
-        normalize_l1(&mut stake);
-
-        Self { n, node_ids, transition, dangling, sym_weights, und_degree, stake }
     }
 
     fn empty() -> Self {
@@ -166,7 +157,7 @@ impl FocusingGraph {
             dangling: vec![],
             sym_weights: CsrBuilder::new(0).build(),
             und_degree: vec![],
-            stake: vec![],
+            teleport: vec![],
         }
     }
 
@@ -181,54 +172,53 @@ impl FocusingGraph {
     pub fn node_ids(&self) -> &[[u8; 32]] {
         &self.node_ids
     }
-
-    pub fn stake(&self) -> &[f64] {
-        &self.stake
-    }
 }
 
 // ── Output ────────────────────────────────────────────────────────────
 
-/// Result of tri-kernel focusing computation.
+/// Result of one tri-kernel computation.
 pub struct FocusingResult {
-    /// φ* focus distribution indexed by node index (same order as [`FocusingGraph::node_ids`]).
-    pub focus: Vec<f64>,
-    /// D component (personalized PageRank), normalized.
-    pub diffusion: Vec<f64>,
-    /// S component (screened Laplacian inverse), normalized.
-    pub springs: Vec<f64>,
-    /// H component (heat kernel), normalized.
-    pub heat: Vec<f64>,
+    /// φ* focus distribution (fixed-point), indexed as [`FocusingGraph::node_ids`].
+    pub focus: Vec<Fx>,
+    /// Diffusion component of the final step.
+    pub diffusion: Vec<Fx>,
+    /// Springs component of the final step.
+    pub springs: Vec<Fx>,
+    /// Heat component of the final step.
+    pub heat: Vec<Fx>,
 }
 
-// ── Composite ────────────────────────────────────────────────────────
+// ── Composite: one coupled iteration to the fixed point ───────────────
 
-/// Compute φ* = λ_d·D + λ_s·S + λ_h·H, normalized to sum to 1.
+/// Compute φ* by iterating the coupled tri-kernel: each step applies D, S, and
+/// H_τ to the same current φ, blends `λ_d·D + λ_s·S + λ_h·H`, normalizes onto
+/// the simplex, and feeds φ back — repeated a fixed `iters` times. Fixed-point
+/// throughout, so two runs on the same graph are bit-identical.
 pub fn compute_focusing(g: &FocusingGraph, p: &FocusingParams) -> FocusingResult {
     if g.n == 0 {
         return FocusingResult { focus: vec![], diffusion: vec![], springs: vec![], heat: vec![] };
     }
+    let n = g.n;
+    let uniform = Fx::from_ratio(1, n as i64);
+    let x0 = vec![uniform; n];
 
-    let diffusion = operators::diffusion(
-        g.n, &g.stake, &g.transition, &g.dangling,
-        p.alpha, p.max_iter, p.convergence,
-    );
-    let springs = operators::springs(
-        g.n, &g.stake, &g.sym_weights, &g.und_degree,
-        p.mu, p.max_iter, p.convergence,
-    );
-    let heat = operators::heat(
-        g.n, &g.stake, &g.sym_weights, &g.und_degree,
-        p.tau, p.heat_substeps,
-    );
+    let mut phi = vec![uniform; n];
+    let mut diffusion = vec![Fx::ZERO; n];
+    let mut springs = vec![Fx::ZERO; n];
+    let mut heat = vec![Fx::ZERO; n];
 
-    let mut focus = vec![0.0f64; g.n];
-    for i in 0..g.n {
-        focus[i] = p.lambda_d * diffusion[i] + p.lambda_s * springs[i] + p.lambda_h * heat[i];
+    for _ in 0..p.iters {
+        diffusion = diffusion_step(&phi, &g.transition, &g.dangling, &g.teleport, p.alpha);
+        springs = springs_step(&phi, &g.sym_weights, &g.und_degree, p.mu, &x0);
+        heat = heat_step(&phi, &g.sym_weights, &g.und_degree, p.tau, p.substeps);
+
+        let blend: Vec<Fx> = (0..n)
+            .map(|i| p.lambda_d * diffusion[i] + p.lambda_s * springs[i] + p.lambda_h * heat[i])
+            .collect();
+        phi = normalize_l1(&blend);
     }
-    normalize_l1(&mut focus);
 
-    FocusingResult { focus, diffusion, springs, heat }
+    FocusingResult { focus: phi, diffusion, springs, heat }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────
@@ -256,56 +246,52 @@ mod tests {
         let links = vec![link(1, 2, 100), link(2, 3, 50), link(3, 1, 200)];
         let g = FocusingGraph::build(links);
         let r = compute_focusing(&g, &FocusingParams::default());
-        let total: f64 = r.focus.iter().sum();
-        assert!((total - 1.0).abs() < 0.01, "focus sums to {total}");
+        let total: f64 = r.focus.iter().map(|x| x.to_f64()).sum();
+        assert!((total - 1.0).abs() < 1e-6, "focus sums to {total}");
+        assert!(r.focus.iter().all(|x| *x > Fx::ZERO), "all focus positive");
+    }
+
+    #[test]
+    fn deterministic_bit_identical() {
+        let mk = || vec![link(1, 2, 100), link(2, 3, 50), link(3, 1, 200), link(4, 1, 300)];
+        let a = compute_focusing(&FocusingGraph::build(mk()), &FocusingParams::default());
+        let b = compute_focusing(&FocusingGraph::build(mk()), &FocusingParams::default());
+        assert!(a.focus.iter().zip(&b.focus).all(|(x, y)| x.raw() == y.raw()), "φ* not bit-identical across runs");
+    }
+
+    #[test]
+    fn converges_drift_shrinks() {
+        let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
+        let g = FocusingGraph::build(links);
+        let long = compute_focusing(&g, &FocusingParams::default());
+        let short = compute_focusing(&g, &FocusingParams { iters: 25, ..FocusingParams::default() });
+        let drift: f64 = long.focus.iter().zip(&short.focus).map(|(a, b)| (a.to_f64() - b.to_f64()).abs()).sum();
+        assert!(drift < 1e-3, "drift 25→50 iters = {drift}, not converged");
     }
 
     #[test]
     fn high_in_stake_ranks_higher() {
-        // Node 1 is targeted by a 1000-amount link from node 4 — total stake touching node 1
-        // (1200) is 6× that of node 3 (200). Node 1 should dominate focus.
-        let links = vec![
-            link(1, 2, 100),
-            link(2, 3, 100),
-            link(3, 1, 100),
-            link(4, 1, 1000),
-        ];
+        let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 1000)];
         let g = FocusingGraph::build(links);
         let r = compute_focusing(&g, &FocusingParams::default());
-        let i1 = node_idx(&g, 1);
-        let i3 = node_idx(&g, 3);
-        assert!(
-            r.focus[i1] > r.focus[i3],
-            "high-in-stake node 1 ({:.4}) should outrank node 3 ({:.4})",
-            r.focus[i1], r.focus[i3]
-        );
+        let (i1, i3) = (node_idx(&g, 1), node_idx(&g, 3));
+        assert!(r.focus[i1] > r.focus[i3], "high-in-stake node 1 should outrank node 3");
     }
 
     #[test]
     fn well_linked_node_ranks_higher() {
-        let links = vec![
-            link(1, 2, 100),
-            link(2, 3, 100),
-            link(3, 1, 100),
-            link(4, 1, 100),
-        ];
+        let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
         let g = FocusingGraph::build(links);
         let r = compute_focusing(&g, &FocusingParams::default());
-        let i1 = node_idx(&g, 1);
-        let i2 = node_idx(&g, 2);
-        assert!(
-            r.focus[i1] > r.focus[i2],
-            "well-linked node 1 ({:.4}) should outrank node 2 ({:.4})",
-            r.focus[i1], r.focus[i2]
-        );
+        let (i1, i2) = (node_idx(&g, 1), node_idx(&g, 2));
+        assert!(r.focus[i1] > r.focus[i2], "well-linked node 1 should outrank node 2");
     }
 
     #[test]
     fn empty_graph() {
         let g = FocusingGraph::build(vec![]);
         assert_eq!(g.n(), 0);
-        let r = compute_focusing(&g, &FocusingParams::default());
-        assert!(r.focus.is_empty());
+        assert!(compute_focusing(&g, &FocusingParams::default()).focus.is_empty());
     }
 
     #[test]
@@ -316,8 +302,7 @@ mod tests {
 
     #[test]
     fn zero_amount_excluded() {
-        let links = vec![link(1, 2, 0), link(2, 3, 50)];
-        let g = FocusingGraph::build(links);
+        let g = FocusingGraph::build(vec![link(1, 2, 0), link(2, 3, 50)]);
         assert_eq!(g.n(), 2);
     }
 }

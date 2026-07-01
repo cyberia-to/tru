@@ -65,8 +65,8 @@ fn compile(input: &std::path::Path, _output: &std::path::Path) -> anyhow::Result
 
     let result = compute_focusing(&fg, &FocusingParams::default());
 
-    // Print top-10 by focus
-    let mut ranked: Vec<(usize, f64)> = result.focus.iter().copied().enumerate().collect();
+    // Print top-10 by focus (fixed-point → f64 for display only)
+    let mut ranked: Vec<(usize, f64)> = result.focus.iter().map(|x| x.to_f64()).enumerate().collect();
     ranked.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
     eprintln!("top particles by φ*:");
     for (idx, phi) in ranked.iter().take(10) {

@@ -69,7 +69,8 @@ fn focus_by_node(edges: &[(u8, u8)]) -> [f64; N] {
     let g = FocusingGraph::build(links(edges));
     let r = compute_focusing(&g, &FocusingParams::default());
     for idx in 0..g.n() {
-        out[g.node_id(idx)[0] as usize] = r.focus[idx];
+        // φ* is fixed-point; the benchmark's task scoring is offline analysis.
+        out[g.node_id(idx)[0] as usize] = r.focus[idx].to_f64();
     }
     out
 }
@@ -194,5 +195,5 @@ fn main() {
     println!();
     println!("collective beats the average neuron on both metrics; it beats the strongest");
     println!("neuron on AUC (global ranking) but not on AP — superadditivity is metric-dependent.");
-    println!("(measured on the current f64 averaging stub; re-run on the conformant engine at M1.)");
+    println!("(measured on the conformant engine: coupled iteration, fixed-point over Goldilocks.)");
 }

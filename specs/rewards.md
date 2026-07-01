@@ -178,7 +178,21 @@ Step 3 is a per-miner Poisson test: progress-free, leaderless, poolable on the s
 
 This collapses the proof-of-work subsidy (§8) into the same act. The nonce a miner grinds to reseed a proof hash is the ordering index $n$ — so every hash attempt is a real Shapley sample. Securing the chain and computing the fair division become one computation; settlement mining is the content of the PoW subsidy.
 
-Three properties of this lottery are asserted here and not yet proven. Each published sample carries its own [[zheng]] proof that $m(n)$ is a correct $v^\star$ marginal, so the proof cost per ticket must stay below the reward per ticket for mining to be rational — an economic condition, unmodeled. Progress-freedom holds per cluster but not uniformly across clusters, since a large cluster costs more per sample than a small one, so the clean Poisson picture is an approximation that the difficulty schedule has to correct for. And the analysis below covers only withholding; beacon manipulation and the verifier's aggregate cost are open. Settlement mining is the boldest construction in this document and the least adversarially tested.
+Two properties of this lottery are asserted here and not yet proven. Each published sample carries its own [[zheng]] proof that $m(n)$ is a correct $v^\star$ marginal, so the proof cost per ticket must stay below the reward per ticket for mining to be rational — an economic condition, unmodeled. Progress-freedom holds per cluster but not uniformly across clusters, since a large cluster costs more per sample than a small one, so the clean Poisson picture is an approximation that the difficulty schedule has to correct for. Beacon manipulation remains open. Verification cost is closed by the fold accumulator below.
+
+### Aggregation
+
+Each winning ticket carries a [[zheng]] proof that $m(n)$ is a correct $v^\star$ marginal. Without folding, a node's settle-verify cost scales with ticket count — an asymmetric-cost DoS if an attacker floods minimum-cost tickets (each costs one marginal evaluation plus the win-check; verification costs the same). The fix is to fold all winning tickets for a cluster into one accumulator before the cluster's settlement finalizes.
+
+The fold is a commutative monoid: a cluster's accumulated result is $\bigl(\sum_n m(n),\, k,\, \pi_{\text{acc}}\bigr)$ — the running sum of accepted marginals, the sample count, and a validity accumulator. Commutativity makes the fold order-independent, so the tree assembles in any topology and produces the same result; no coordination of assembly order is needed, and the leaderless property is preserved.
+
+Each miner self-folds first: before broadcasting, it collapses its own batch of winning tickets into a single accumulator proof using [[zheng]]'s HyperNova IVC. The cluster fold tree then reaches depth $O(\log k_{\text{miners}})$ rather than $O(\log k_{\text{tickets}})$; each tree node is one miner's pre-aggregated batch. One IVC step per level; the final accumulator verifies in $O(1)$.
+
+Duplicate nonces are structurally excluded: the win-test hash commits to $(b_E,\, \text{cluster},\, n,\, \mathrm{id}(\nu),\, \mathrm{commit}(m(n)))$, pinning identity to nonce and sample. Two miners cannot share the same $(n, m(n))$ pair under different identities; a single miner's re-submission of the same nonce is a collision on the committed value. The fold counts each canonical $(\mathrm{id},\, n)$ pair once.
+
+Fold work is paid as tier-2 settlement subsidy (§8), earned by publishing a fold step the same way a ticket is earned, with difficulty set so the tree completes within one epoch. Fold reward caps at the [[Hoeffding]] precision target — once $k$ samples meet the precision guarantee, fold work earns nothing — so fold-grinding cannot run as a secondary puzzle. The fold exercises the same four [[Goldilocks field processor|GFP]] primitives as the marginal sample; the work is real throughout.
+
+A verifier checks one $O(1)$ proof per cluster regardless of ticket count. Settlement soundness (§15) closes.
 
 ### Residual: withholding
 
@@ -322,7 +336,7 @@ Withholding remains open. A contender-miner can bias the settlement average by d
 
 The discovery leak remains open (§5, §12). The validity gate under-weights a novel link while its market price lags, and the pulse under-pays the early contrarian, deferring the discovery premium into the slow annuity. A retroactive discovery bonus is the candidate fix and is unbuilt.
 
-Settlement soundness is now mostly pinned. The beacon $b_E$ is specified ([[foculus beacon]]), and the subsidy and lottery share one canonical preimage (§7–§8), so front-running, ordering-grind, and the subsidy/settlement split are closed. The remaining gap is verification cost: the per-ticket proofs must fold into one accumulator per cluster, or a flood of cheap tickets makes block verification an asymmetric-cost DoS. Until that aggregation is specified, a node's settlement-verify cost scales with attacker spend.
+Settlement soundness is pinned. The beacon $b_E$ is specified ([[foculus beacon]]), the subsidy and lottery share one canonical preimage (§7–§8), and per-ticket proofs fold into one $O(1)$ accumulator per cluster (§7), so front-running, ordering-grind, the subsidy/settlement split, and the flood-of-cheap-tickets DoS are all closed.
 
 Settlement liveness and fork-safety are unspecified. The cluster average needs a deadline, a minimum sample count $k_{\min}$, and a defined default when too few samples arrive (deferral to the next epoch's annuity, not a stall) — otherwise [[tok]] has no input under thin or partitioned work. And because the pulse is irreversible (§12) while [[foculus]] finality is adaptive, settlement must bind to a $d$-deep stable state with the pulse escrowed until that depth, or a boundary reorg mints CYB against a claim set that is no longer canonical.
 

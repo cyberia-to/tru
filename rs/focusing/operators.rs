@@ -1,121 +1,77 @@
+//! The three tri-kernel operators as SINGLE-STEP maps (`specs/tri-kernel.md`).
+//!
+//! Each takes the current φ and returns one application — the coupled
+//! iteration in [`super::compute_focusing`] applies all three to the same φ,
+//! blends, normalizes, and feeds the result back. No operator solves itself to
+//! its own fixed point (the non-conformant "blend of separate attractors").
+//! All arithmetic is fixed-point over the Goldilocks field.
+
+use crate::arithmetic::Fx;
+
 use super::csr::CsrMatrix;
 
-/// Personalized PageRank with stake-weighted teleport.
-///
-/// rank_new[i] = α·stake[i] + (1-α)·(dangling_sum·stake[i] + (T·rank)[i])
-///
-/// `transition[i][j]` = w(j→i) / out_degree(j) — already normalized at build time.
-/// `dangling[i]` = true when node i has no outgoing edges in the directed graph.
-pub fn diffusion(
-    n: usize,
-    stake: &[f64],
-    transition: &CsrMatrix,
-    dangling: &[bool],
-    alpha: f64,
-    max_iter: usize,
-    convergence: f64,
-) -> Vec<f64> {
-    let mut rank = stake.to_vec();
-    let mut tmp = vec![0.0f64; n];
-
-    for _ in 0..max_iter {
-        let dangling_sum: f64 = rank
-            .iter()
-            .enumerate()
-            .filter(|&(i, _)| dangling[i])
-            .map(|(_, r)| r)
-            .sum();
-
-        transition.spmv(&rank, &mut tmp);
-        let mut delta = 0.0f64;
-        for i in 0..n {
-            let new_r = alpha * stake[i]
-                + (1.0 - alpha) * (dangling_sum * stake[i] + tmp[i]);
-            delta += (new_r - rank[i]).abs();
-            rank[i] = new_r;
-        }
-        if delta < convergence {
-            break;
+/// One diffusion step (personalized PageRank with stake-weighted teleport):
+/// `φ' = α·u + (1−α)·(dangling_mass·u + T·φ)`, where `T[q][p] =
+/// A_eff(p,q)/out_strength(p)` is column-stochastic and `u` is the teleport
+/// prior. Answers: where does probability flow?
+pub fn diffusion_step(phi: &[Fx], transition: &CsrMatrix, dangling: &[bool], teleport: &[Fx], alpha: Fx) -> Vec<Fx> {
+    let n = phi.len();
+    let one_minus_alpha = Fx::ONE - alpha;
+    let mut dangling_mass = Fx::ZERO;
+    for i in 0..n {
+        if dangling[i] {
+            dangling_mass = dangling_mass + phi[i];
         }
     }
-    rank
+    let mut tphi = vec![Fx::ZERO; n];
+    transition.spmv(phi, &mut tphi);
+    (0..n)
+        .map(|i| alpha * teleport[i] + one_minus_alpha * (dangling_mass * teleport[i] + tphi[i]))
+        .collect()
 }
 
-/// Screened Laplacian inverse via Jacobi iteration.
-///
-/// Solves (μI + L)·x = stake, where L is the weighted graph Laplacian.
-/// L·x = D·x − W·x, so (μI + L)·x = (μ + d[i])·x[i] − (W·x)[i]
-/// Jacobi: x_new[i] = (stake[i] + (W·x)[i]) / (μ + d[i])
-///
-/// `sym_weights[i][j]` = edge weight (symmetric). `und_degree[i]` = weighted degree.
-pub fn springs(
-    n: usize,
-    stake: &[f64],
-    sym_weights: &CsrMatrix,
-    und_degree: &[f64],
-    mu: f64,
-    max_iter: usize,
-    convergence: f64,
-) -> Vec<f64> {
-    let mut x = stake.to_vec();
-    let mut wx = vec![0.0f64; n];
-    let mut x_new = vec![0.0f64; n];
-
-    for _ in 0..max_iter {
-        sym_weights.spmv(&x, &mut wx);
-        let mut delta = 0.0f64;
-        for i in 0..n {
-            x_new[i] = (stake[i] + wx[i]) / (mu + und_degree[i]);
-            delta += (x_new[i] - x[i]).abs();
-        }
-        x.copy_from_slice(&x_new);
-        if delta < convergence {
-            break;
-        }
-    }
-
-    normalize_l1(&mut x);
-    x
+/// One springs relaxation step (Jacobi toward `(L+μI)x = μ·x₀`):
+/// `x'[i] = (μ·x₀[i] + (W·φ)[i]) / (μ + d[i])`, with `W = A_sym`, `d` the
+/// weighted degree, `x₀` the uniform reference. Answers: what shape satisfies
+/// the elastic constraints?
+pub fn springs_step(phi: &[Fx], sym_weights: &CsrMatrix, und_degree: &[Fx], mu: Fx, x0: &[Fx]) -> Vec<Fx> {
+    let n = phi.len();
+    let mut wphi = vec![Fx::ZERO; n];
+    sym_weights.spmv(phi, &mut wphi);
+    (0..n).map(|i| (mu * x0[i] + wphi[i]).div(mu + und_degree[i])).collect()
 }
 
-/// Heat kernel approximation: e^{−τL} applied to stake via forward Euler substeps.
+/// One bounded heat application: `substeps` of forward Euler on the lazy
+/// random walk, `s ← s + dt·(N·s − s)` with `dt = τ/substeps` and
+/// `N[i][j] = W[i][j]/d[j]` (column-stochastic). For `dt ≤ 1` each substep is
+/// a positive, mass-conserving convex combination. A bounded polynomial in the
+/// normalized adjacency — field-native (no matrix exponential).
 ///
-/// Each substep: s_new[i] = s[i] + dt·((N·s)[i] − s[i])
-/// where N[i][j] = W[i][j] / d[j] (column-stochastic normalized adjacency).
-///
-/// `sym_weights` is symmetric. `und_degree` is weighted degree.
-pub fn heat(
-    n: usize,
-    stake: &[f64],
-    sym_weights: &CsrMatrix,
-    und_degree: &[f64],
-    tau: f64,
-    substeps: usize,
-) -> Vec<f64> {
-    let mut s = stake.to_vec();
-    let dt = tau / substeps as f64;
-    let mut ns = vec![0.0f64; n];
-
+/// (The spec also admits a Chebyshev basis in the combinatorial L for tighter
+/// accuracy; the Euler-on-N form here is the M1 operator.)
+pub fn heat_step(phi: &[Fx], sym_weights: &CsrMatrix, und_degree: &[Fx], tau: Fx, substeps: usize) -> Vec<Fx> {
+    let n = phi.len();
+    let dt = tau.div(Fx::from_int(substeps as i64));
+    let mut s = phi.to_vec();
+    let mut ns = vec![Fx::ZERO; n];
     for _ in 0..substeps {
-        // (N·s)[i] = Σ_j W[i][j]/d[j] · s[j]
-        // We compute this as W·(s/d) element-wise then accumulate
-        // Build scaled input: inp[j] = s[j] / d[j]
-        let inp: Vec<f64> = (0..n).map(|j| {
-            if und_degree[j] > 0.0 { s[j] / und_degree[j] } else { 0.0 }
-        }).collect();
+        let inp: Vec<Fx> = (0..n).map(|j| if und_degree[j].is_zero() { Fx::ZERO } else { s[j].div(und_degree[j]) }).collect();
         sym_weights.spmv(&inp, &mut ns);
         for i in 0..n {
-            s[i] += dt * (ns[i] - s[i]);
+            s[i] = s[i] + dt * (ns[i] - s[i]);
         }
     }
-
-    normalize_l1(&mut s);
     s
 }
 
-pub fn normalize_l1(v: &mut [f64]) {
-    let sum: f64 = v.iter().sum();
-    if sum > 0.0 {
-        v.iter_mut().for_each(|x| *x /= sum);
+/// Normalize onto the simplex (`Σ = 1`). A zero vector is returned unchanged.
+pub fn normalize_l1(v: &[Fx]) -> Vec<Fx> {
+    let mut sum = Fx::ZERO;
+    for &x in v {
+        sum = sum + x;
     }
+    if sum.is_zero() {
+        return v.to_vec();
+    }
+    v.iter().map(|&x| x.div(sum)).collect()
 }
