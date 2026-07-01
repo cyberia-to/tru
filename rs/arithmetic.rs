@@ -202,6 +202,39 @@ impl Fx {
     }
 }
 
+impl Fx {
+    /// Natural log via range reduction `x = m·2^e`, `m ∈ [1,2)`:
+    /// `ln x = e·ln2 + ln m`, with `ln m = 2·Σ_{odd k} t^k/k`, `t = (m−1)/(m+1)`.
+    /// Defined for `x > 0` roughly in `[2^-30, 2^30]`; `x ≤ 0` returns zero.
+    pub fn ln(self) -> Fx {
+        let a = self.signed();
+        if a <= 0 {
+            return Fx::ZERO;
+        }
+        // e = floor(log2 x) = (position of MSB of the scaled int) − FRAC_BITS.
+        let msb = 127 - (a as u128).leading_zeros() as i64;
+        let e = msb - FRAC_BITS as i64;
+        // m = x · 2^-e ∈ [1,2)
+        let m = if e >= 0 {
+            self.div(Fx::from_int(1i64 << e.min(62)))
+        } else {
+            self * Fx::from_int(1i64 << (-e).min(30))
+        };
+        let t = (m - Fx::ONE).div(m + Fx::ONE);
+        let t2 = t * t;
+        let mut term = t;
+        let mut sum = t;
+        let mut k = 3i64;
+        for _ in 0..14 {
+            term = term * t2;
+            sum = sum + term.div(Fx::from_int(k));
+            k += 2;
+        }
+        let ln2 = Fx::from_ratio(6_931_471_806, 10_000_000_000);
+        Fx::from_int(e) * ln2 + Fx::from_int(2) * sum
+    }
+}
+
 /// `e^u` for `u ∈ [0, ln2]` by Taylor series (12 terms → within one ULP).
 fn exp_series(u: Fx) -> Fx {
     let mut term = Fx::ONE;
@@ -366,6 +399,17 @@ mod tests {
         close(Fx::from_int(-5).exp(), (-5.0_f64).exp());
         close(Fx::from_int(2).exp(), 2.0_f64.exp());
         assert_eq!(Fx::from_int(-40).exp(), Fx::ZERO); // underflows below one ULP
+    }
+
+    #[test]
+    fn ln_matches_reference() {
+        assert_eq!(Fx::ONE.ln(), Fx::ZERO);
+        for &(n, d) in &[(2, 1), (1, 2), (10, 1), (271828, 100000), (1, 100)] {
+            close(Fx::from_ratio(n, d).ln(), (n as f64 / d as f64).ln());
+        }
+        // exp and ln invert
+        close(Fx::from_int(3).ln().exp(), 3.0);
+        assert_eq!(Fx::ZERO.ln(), Fx::ZERO); // domain guard
     }
 
     #[test]

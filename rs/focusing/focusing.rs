@@ -203,6 +203,8 @@ impl FocusingGraph {
 pub struct FocusingResult {
     /// φ* focus distribution (fixed-point), indexed as [`FocusingGraph::node_ids`].
     pub focus: Vec<Fx>,
+    /// Syntropy J(φ*) = D_KL(φ* ‖ u), emitted alongside φ* every epoch.
+    pub syntropy: Fx,
     /// Diffusion component of the final step.
     pub diffusion: Vec<Fx>,
     /// Springs component of the final step.
@@ -235,7 +237,7 @@ pub fn compute_focusing(g: &FocusingGraph, p: &FocusingParams) -> FocusingResult
 /// The coupled iteration run for an explicit step count.
 pub fn iterate(g: &FocusingGraph, p: &FocusingParams, steps: usize) -> FocusingResult {
     if g.n == 0 {
-        return FocusingResult { focus: vec![], diffusion: vec![], springs: vec![], heat: vec![] };
+        return FocusingResult { focus: vec![], syntropy: Fx::ZERO, diffusion: vec![], springs: vec![], heat: vec![] };
     }
     let n = g.n;
     let uniform = Fx::from_ratio(1, n as i64);
@@ -257,7 +259,8 @@ pub fn iterate(g: &FocusingGraph, p: &FocusingParams, steps: usize) -> FocusingR
         phi = normalize_l1(&blend);
     }
 
-    FocusingResult { focus: phi, diffusion, springs, heat }
+    let syntropy = super::measures::syntropy(&phi);
+    FocusingResult { focus: phi, syntropy, diffusion, springs, heat }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────

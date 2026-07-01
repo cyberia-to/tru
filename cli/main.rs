@@ -64,6 +64,7 @@ fn compile(input: &std::path::Path, _output: &std::path::Path) -> anyhow::Result
     eprintln!("        {} particles, {} edges", fg.n(), n_links);
 
     let result = compute_focusing(&fg, &FocusingParams::default());
+    eprintln!("        syntropy J(φ*) = {:.6}", result.syntropy.to_f64());
 
     // Print top-10 by focus (fixed-point → f64 for display only)
     let mut ranked: Vec<(usize, f64)> = result.focus.iter().map(|x| x.to_f64()).enumerate().collect();
