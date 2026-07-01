@@ -25,8 +25,6 @@ pub struct FocusingParams {
     pub epsilon: Fx,
     /// Hard cap on outer iterations (used when κ is degenerate).
     pub iter_cap: usize,
-    /// Heat forward-Euler substeps (need τ/substeps ≤ 1 for stability).
-    pub substeps: usize,
 }
 
 impl Default for FocusingParams {
@@ -40,7 +38,6 @@ impl Default for FocusingParams {
             lambda_h: Fx::from_ratio(2, 10),
             epsilon: Fx::from_ratio(1, 1_000_000),
             iter_cap: 500,
-            substeps: 20,
         }
     }
 }
@@ -252,7 +249,7 @@ pub fn iterate(g: &FocusingGraph, p: &FocusingParams, steps: usize) -> FocusingR
     for _ in 0..steps {
         diffusion = diffusion_step(&phi, &g.transition, &g.dangling, &g.teleport, p.alpha);
         springs = springs_step(&phi, &g.sym_weights, &g.und_degree, p.mu, &x0);
-        heat = heat_step(&phi, &g.sym_weights, &g.und_degree, p.tau, p.substeps);
+        heat = heat_step(&phi, &g.sym_weights, &g.und_degree, g.lambda_max, p.tau);
 
         let blend: Vec<Fx> = (0..n)
             .map(|i| p.lambda_d * diffusion[i] + p.lambda_s * springs[i] + p.lambda_h * heat[i])
@@ -325,6 +322,24 @@ mod tests {
         let past_t = iterate(&g, &p, t + 20);
         let drift: f64 = at_t.focus.iter().zip(&past_t.focus).map(|(a, b)| (a.to_f64() - b.to_f64()).abs()).sum();
         assert!(drift < 1e-4, "drift past T = {drift}, not converged");
+    }
+
+    #[test]
+    fn heat_conserves_mass_and_smooths() {
+        let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
+        let g = FocusingGraph::build(links);
+        let n = g.n();
+        let i1 = node_idx(&g, 1);
+        // A delta spike at node 1.
+        let mut v = vec![Fx::ZERO; n];
+        v[i1] = Fx::ONE;
+        let h = heat_step(&v, &g.sym_weights, &g.und_degree, g.lambda_max, Fx::ONE);
+        // exp(−τL) conserves mass (L·1 = 0), up to series truncation.
+        let mass: f64 = h.iter().map(|x| x.to_f64()).sum();
+        assert!((mass - 1.0).abs() < 1e-2, "heat should conserve mass, got {mass}");
+        // and it diffuses the spike off the peak while staying ~positive.
+        assert!(h[i1].to_f64() < 1.0, "heat should spread mass off node 1");
+        assert!(h.iter().all(|x| x.to_f64() > -1e-3), "heat stays approximately positive");
     }
 
     #[test]
