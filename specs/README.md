@@ -61,10 +61,10 @@ the heart of tru. five specs that turn the weighted graph into the focus distrib
 
 | spec | defines | produces | status | step |
 |------|---------|----------|--------|------|
-| [tri-kernel.md](tri-kernel.md) | the three operators (diffusion D, springs S, heat H_τ), composite R, fixed-point + locality proofs, §2.4 five-way identity | φ* = fix(R) | 📐 spec complete; `rs/focusing/` stub is non-conformant (averaging form + `f64`, both rewritten at M1) | 1a |
+| [tri-kernel.md](tri-kernel.md) | the three operators (diffusion D, springs S, heat H_τ), composite R, fixed-point + locality proofs, §2.4 five-way identity | φ* = fix(R) | ✅ conformant — coupled iteration in fixed-point `Fx` (`rs/focusing/`, M1) | 1a |
 | [attention.md](attention.md) | per-neuron focus projection — will-share + conviction box that sums into effective adjacency | A^eff summand | ⬜ spec only | 1b |
 | [truth-scoring.md](truth-scoring.md) | BTS mechanism, karma accumulation, honesty-weighted effective adjacency | κ(ν), A^eff | ⬜ spec only | 1b |
-| [focusing.md](focusing.md) | epoch computation: effective adjacency → tri-kernel → φ*, cyberank, syntropy | φ*, cyberank, syntropy | 🟡 φ* only — cyberank/syntropy missing | 1c |
+| [focusing.md](focusing.md) | epoch computation: effective adjacency → tri-kernel → φ*, cyberank, syntropy | φ*, cyberank, syntropy | 🟡 φ* built (M1, deterministic); cyberank/syntropy next (M1.5) | 1c |
 | [impulse.md](impulse.md) | Δφ* — the proven focus shift one signal delivers; locality-bounded sparse vector | Δφ* + proof claim | ⬜ spec only | 1c |
 | [superadditivity.md](superadditivity.md) | the collective-intelligence measure σ (collective φ* vs ego φ*_ν); generalized CFT — σ, J grow with algebraic connectivity λ₂ | σ_mean, σ_best, J(λ₂) | 📐 spec; benchmark to run | val |
 
@@ -86,7 +86,7 @@ tru is a subgraph; every concept it owns is defined here, not scattered across t
 
 the [[collective focus theorem]] (convergence + uniqueness of φ*) is `tri-kernel.md §3` (normative) and [docs/collective-focus-theorem.md](../docs/explanation/collective-focus-theorem.md) (the standalone paper).
 
-**settled — how φ\* is computed (tri-kernel §2.4, focusing.md):** φ\* is the fixed point of *one coupled iteration* — apply D, S, H_τ to the same current φ, blend, normalize, repeat. tru does **not** solve the three operators to their own fixed points and average (that minimizes no single free energy, has no single κ, and breaks the five-way identity). this is now explicit in the spec; no decision pending. the `rs/focusing/` stub (ported from optica) currently does the averaging form in `f64` — non-conformant on both axes (averaging, and float where [[arithmetic]] requires fixed-point over the Goldilocks field), rewritten together at M1. not a concern now: we are specifying, not building.
+**settled — how φ\* is computed (tri-kernel §2.4, focusing.md):** φ\* is the fixed point of *one coupled iteration* — apply D, S, H_τ to the same current φ, blend, normalize, repeat. tru does **not** solve the three operators to their own fixed points and average (that minimizes no single free energy, has no single κ, and breaks the five-way identity). this is now explicit in the spec; no decision pending. `rs/focusing/` implements exactly this (M1): one coupled iteration in fixed-point `Fx` over the Goldilocks field, stake-weighted A_eff, single-step operators — the old averaging-in-`f64` form is gone, and φ* is bit-identical across runs.
 
 ## compile layer — φ* → transformer
 
@@ -121,8 +121,8 @@ this is the point. tru is not a ranking engine that happens to have rewards bolt
 
 | | spec | done |
 |---|------|------|
-| 📐 | tri-kernel | spec complete (§2.4 added); stub is non-conformant, rewrite at implementation |
-| 🟡 | focusing | φ* computed; **need** cyberank, syntropy |
+| ✅ | tri-kernel | spec complete; conformant engine built (M1: coupled iteration, fixed-point, deterministic) |
+| 🟡 | focusing | φ* built (M1); **need** cyberank, syntropy (M1.5) |
 | 🟡 | model | writer scaffold; **need** real serialize/load |
 | ⬜ | vocab | parser |
 | ⬜ | attention + truth-scoring | will/conviction input, BTS → karma, effective adjacency |
@@ -130,6 +130,6 @@ this is the point. tru is not a ranking engine that happens to have rewards bolt
 | ⬜ | ct0 | all 8 passes (2a–2g) — the bulk of the work |
 | 📐 | rewards | spec complete — the telos; cross-layer settlement in foculus/tok |
 
-**built: 1 of 8 active specs. the critical path is** `tri-kernel reconcile → focusing (cyberank, syntropy) → ct0 passes`, with `vocab`/`model` formats needed before pass 1 and after pass 8, and `rewards` now spec-complete — the reason the pipeline exists, its settlement spanning foculus/tok.
+**built: the focusing engine (M0 field arithmetic + M1 coupled tri-kernel, deterministic). the critical path continues** `focusing (cyberank, syntropy — M1.5) → ct0 passes`, with `vocab`/`model` formats needed before pass 1 and after pass 8, and `rewards` spec-complete — the reason the pipeline exists, its settlement spanning foculus/tok.
 
 see the [implementation steps table](../README.md#implementation-steps) in the repo readme for the step-by-step build order with verifiable predicates, and [roadmap/implementation.md](../roadmap/implementation.md) for the full milestone plan — module layout, per-spec algorithm, and cross-repo blockers.

@@ -16,14 +16,14 @@ one invariant cuts across every milestone: tru computes in fixed-point over the 
 
 | layer | spec | status |
 |-------|------|--------|
-| focusing | [[tri-kernel]] | 📐 spec complete; `rs/focusing/` stub is non-conformant |
+| focusing | [[tri-kernel]] | ✅ conformant engine built (M1: coupled iteration, fixed-point `Fx`, deterministic) |
 | focusing | [[focusing]] | 🟡 φ* only (binary topology); cyberank + syntropy missing |
 | focusing | attention, truth-scoring, impulse | ⬜ spec only |
 | format | vocab, model | ⬜ / 🟡 writer scaffold (`unimplemented!`) |
 | compile | ct0 (8 passes) | ⬜ spec only — the bulk of the work |
 | economics | rewards | 📐 spec complete; settlement spans [[foculus]]/[[tok]] |
 
-~934 LOC exist: a working `.graph` reader (`rs/graph/`) and the focusing stub (`rs/focusing/`, 6 tests green). Everything else is doc-comment stubs (`rs/pass/mod.rs`, `rs/model/writer.rs`).
+built: the `.graph` reader (`rs/graph/`), the fixed-point field type (`rs/arithmetic.rs`, M0), and the conformant focusing engine (`rs/focusing/`, M1 — coupled iteration, deterministic; 15 tests green). Still doc-comment stubs: `rs/pass/mod.rs`, `rs/model/writer.rs`.
 
 ## critical path
 
@@ -58,12 +58,12 @@ predicate (met): `Fx` round-trips encode/decode, mul rescales within one ULP of 
 
 ---
 
-## M1 — focusing engine conformance (math + arithmetic)
+## M1 — focusing engine conformance (math + arithmetic) — ✅ done
 
-the stub is non-conformant on two independent axes, and the second is the deeper one. no external dependency — do this immediately, on top of M0's field type.
+both non-conformances the stub carried are fixed; the engine is now coupled-iteration, fixed-point, stake-weighted. 8 tests green including bit-identical determinism.
 
-1. blend-of-attractors. `compute_focusing` (`focusing.rs:207`) runs each operator's own inner solve to its own fixed point (`operators::diffusion/springs/heat` each loop to convergence) then averages the three once. [[tri-kernel]] §2.4 and [[focusing]] forbid this — it minimizes no single free energy, has no single $\kappa$, breaks the five-way identity.
-2. float. the whole stub is `f64` (`alpha: f64`, `focus: Vec<f64>`, every operator). [[arithmetic]] forbids float in the provable path: $\phi^*$ is a consensus object (P-DET, foculus finality) and $\Delta\phi^*$ is what [[zheng]] proves — float is non-deterministic across hardware and has no proof system. the engine computes in fixed-point over $\mathbb{F}_p$, full stop. this is the bigger rewrite; (1) is cheap once the iteration is restructured.
+1. blend-of-attractors → fixed. `compute_focusing` was three independent solves averaged once ([[tri-kernel]] §2.4 / [[focusing]] forbid it — no single free energy, no single $\kappa$). now one coupled iteration: `diffusion_step`/`springs_step`/`heat_step` each apply once to the shared φ, blend `λ_d·D+λ_s·S+λ_h·H`, normalize, feed back, ×`iters`.
+2. float → fixed. every `f64` replaced by `Fx` (M0). $\phi^*$ is now bit-identical across runs — the determinism [[arithmetic]] requires and `f64` could never give. field addition is associative, so the HashMap-order in the build no longer threatens determinism.
 
 the settled form is one coupled iteration, run a fixed step count (no float-threshold loop):
 
@@ -123,7 +123,7 @@ datasets: Zachary Karate Club (34 particles) as the smallest sanity instance, th
 
 harness: `rs/examples/superadditivity.rs` (`cargo run -p tru --example superadditivity`).
 
-first run — Karate Club, 80/20 split, predictor φ(p)·φ(q), measured on the current f64 averaging stub (deterministic across runs at 3 decimals): collective AUC 0.688 vs best-ego 0.589, mean-ego 0.511 → σ_best(AUC) +0.099, σ_mean(AUC) +0.177; J(φ*) 0.177. On AP the collective beats the average (σ_mean +0.045) but not the single best neuron (σ_best −0.061). So superadditivity holds clearly for global ranking (AUC) and on-average for AP; a well-placed neuron can still win locally on AP. Re-measure on the conformant coupled-iteration field engine (M1) before these go in any paper; retrieval@k still pending (needs personalized focus, not the single global φ*).
+measured on the conformant engine (M1: coupled iteration, fixed-point over Goldilocks, bit-identical across runs) — Karate Club, 80/20 split, predictor φ(p)·φ(q): collective AUC 0.705 vs best-ego 0.589, mean-ego 0.511 → σ_best(AUC) +0.115, σ_mean(AUC) +0.194; J(φ*) 0.130. On AP the collective beats the average (σ_mean +0.060) but not the single best neuron (σ_best −0.100). So superadditivity holds clearly for global ranking (AUC) — the collective strictly outranks its strongest neuron — and on-average for AP; a well-placed neuron still wins locally on AP. Still pending: retrieval@k (needs personalized focus, not the single global φ*), and the λ₂ connectivity sweep to test the generalized-CFT monotonicity.
 
 ---
 
@@ -297,7 +297,7 @@ hard cross-repo blockers (out of v0.1): the VDF beacon $b$ (foculus) for un-fron
 ## sequencing summary
 
 1. M0 foundation — ✅ done (`Fx` fixed-point over nebu::Goldilocks); unblocked all
-2. M1 focusing conformance — the math fix + port to `Fx`, no external deps, do next
+2. M1 focusing conformance — ✅ done (coupled iteration in `Fx`, stake-weighted, deterministic); 8 tests green
 3. M1.5 cyberank + syntropy — cheap outputs
 4. M1.6 superadditivity benchmark — first real numbers; validates collective intelligence (needs M1+M1.5)
 5. M2 format layer — vocab + model writer (parallelizable with M1)
@@ -307,4 +307,4 @@ hard cross-repo blockers (out of v0.1): the VDF beacon $b$ (foculus) for un-fron
 9. M6 conformance harness — needs M5; P-LOAD needs cyb-llm
 10. M7 economics — measurement math now; mint/settle blocked on foculus/tok/zheng
 
-built so far: 1 of 8 active specs. after M1+M1.5+M2 the engine is conformant and the formats round-trip; M5 is where the volume of work lives.
+built so far: M0 (field arithmetic) + M1 (conformant focusing engine, deterministic). next M1.5 (cyberank, syntropy) + M2 (formats), then M5 is where the volume of work lives.
