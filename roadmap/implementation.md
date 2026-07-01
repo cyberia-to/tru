@@ -44,17 +44,17 @@ The single highest-value, lowest-cost, zero-external-dependency change is M1: re
 
 ## M0 — foundation wiring
 
-prerequisites every later milestone shares. small, mechanical, unblocking.
+the substrate the critical path needs. the field arithmetic is the real M0 — the rest of the old list was M2/M3 plumbing with no consumer yet, so it lands with its first consumer rather than as dead code.
 
-| task | detail | size |
-|------|--------|------|
-| field arithmetic | the representation contract ([[arithmetic]]): a thin fixed-point layer at scale $\Sigma$ over [[nebu]]'s `Goldilocks` (`cyb-nebu`, path `../strata/nebu/rs` — field add/mul/inv/sqrt/NTT/packed already built and proptested). tru adds only: encode/decode at $\Sigma$, mul-then-rescale (u128 widen → truncate → reduce), compare on the canonical residue, Newton reciprocal+sqrt, deterministic $T(\varepsilon)$. no `f64` anywhere. the field itself is NOT tru's to build | S |
-| wire [[hemera]] | uncomment `cyber-hemera` dep (path `../hemera/rs`, available, 32-byte `hash()`). needed for particle identity, axon hash $H(p\|q)$, file particles | S |
-| config structs | `Config` for `config.tokens` (token_weight $\rho_\tau$), tri-kernel params + scale $\Sigma$, clifford shift set. serde from `.graph`/`.model` toml | S |
-| generalize `.cyb` reader | `rs/graph/reader.rs` hardcodes the `"graph"` type assertion (`reader.rs:35`); the `~~~name` + `size` section logic is format-agnostic. extract a generic opener reused by vocab + model | S |
-| add `Serialize` to frontmatter | `graph/frontmatter.rs` structs are `Deserialize`-only; both writers need an emit path | S |
+| task | detail | status |
+|------|--------|--------|
+| field arithmetic | the representation contract ([[arithmetic]]): a thin fixed-point layer at scale $\Sigma = 2^{32}$ over [[nebu]]'s `Goldilocks` (`cyb-nebu`, `../strata/nebu/rs`). tru adds encode/decode, mul-then-rescale (i128 widen → round → reduce mod p), div/recip, integer `sqrt`, order on the balanced residue. no `f64` on any deterministic path. `rs/arithmetic.rs`, type `Fx` | ✅ done — 7 tests green |
+| wire [[hemera]] | `cyber-hemera` for particle ids / axon hash / file particles | ↦ at first use (M2 formats) — avoid an unused dep |
+| config `.tokens` | token_weight $\rho_\tau$ from `config.tokens` | ↦ M3 (its only consumer is $A^{eff}$) |
+| generalize `.cyb` reader | extract a format-agnostic opener from `rs/graph/reader.rs` (drops the hardcoded `"graph"` assertion at `reader.rs:35`) | ↦ M2, when vocab + model become the second and third consumers (no premature abstraction) |
+| `Serialize` on frontmatter | emit path for the writers | ↦ M2 (with the model/vocab writers) |
 
-predicate: field arithmetic round-trips (fixed-point encode/decode, mul-rescale within one ULP of the rational result) and the GFP-primitive op set is closed. the existing 6 focusing tests get ported onto the field type in M1.
+predicate (met): `Fx` round-trips encode/decode, mul rescales within one ULP of the rational, div/recip/sqrt correct, order respects sign+magnitude, division-by-zero degrades to zero (checked form reports it). the existing 6 focusing tests get ported onto `Fx` in M1.
 
 ---
 
@@ -296,8 +296,8 @@ hard cross-repo blockers (out of v0.1): the VDF beacon $b$ (foculus) for un-fron
 
 ## sequencing summary
 
-1. M0 foundation — S, unblocks all
-2. M1 focusing conformance — the math fix, no external deps, do first
+1. M0 foundation — ✅ done (`Fx` fixed-point over nebu::Goldilocks); unblocked all
+2. M1 focusing conformance — the math fix + port to `Fx`, no external deps, do next
 3. M1.5 cyberank + syntropy — cheap outputs
 4. M1.6 superadditivity benchmark — first real numbers; validates collective intelligence (needs M1+M1.5)
 5. M2 format layer — vocab + model writer (parallelizable with M1)
