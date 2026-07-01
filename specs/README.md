@@ -52,8 +52,8 @@ the two on-disk formats. prerequisites for everything: vocab feeds pass 1, model
 
 | spec | defines | produces | status | step |
 |------|---------|----------|--------|------|
-| [vocab.md](vocab.md) | `.vocab` particle dictionary — content-addressed particle → bytes | `Vocab` lookup | ⬜ spec only | 0a |
-| [model.md](model.md) | `.model` container — the inference-ready artifact, mmap-able weights | `.model` file | 🟡 writer scaffold (`unimplemented!`) | 0b, 2g |
+| [vocab.md](vocab.md) | `.vocab` particle dictionary — content-addressed particle → bytes | `Vocab` lookup | ✅ parser + writer (M2, content-addressed, 5 tests) | 0a |
+| [model.md](model.md) | `.model` container — the inference-ready artifact, mmap-able weights | `.model` file | ✅ container writer/reader (M2, page-aligned weights, P-DET) | 0b |
 
 ## focusing layer — computing φ*
 
@@ -123,8 +123,8 @@ this is the point. tru is not a ranking engine that happens to have rewards bolt
 |---|------|------|
 | ✅ | tri-kernel | spec complete; conformant engine built (M1: coupled iteration, fixed-point, deterministic) |
 | ✅ | focusing | φ*, cyberank, syntropy J built (M1 + M1.5), deterministic |
-| 🟡 | model | writer scaffold; **need** real serialize/load |
-| ⬜ | vocab | parser |
+| ✅ | model | container writer/reader built (M2); text-section content comes from CT-0 pass 8 |
+| ✅ | vocab | parser + writer built (M2) |
 | ⬜ | attention + truth-scoring | will/conviction input, BTS → karma, effective adjacency |
 | ⬜ | impulse | Δφ* delta computation |
 | ⬜ | ct0 | all 8 passes (2a–2g) — the bulk of the work |

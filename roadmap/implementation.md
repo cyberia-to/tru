@@ -23,7 +23,7 @@ one invariant cuts across every milestone: tru computes in fixed-point over the 
 | compile | ct0 (8 passes) | ⬜ spec only — the bulk of the work |
 | economics | rewards | 📐 spec complete; settlement spans [[foculus]]/[[tok]] |
 
-built: the `.graph` reader (`rs/graph/`), the fixed-point field type (`rs/arithmetic.rs`, M0), the conformant focusing engine + spectral contraction (`rs/focusing/`, M1 — coupled iteration, deterministic), and cyberank + syntropy + telemetry (M1.5). 23 tests green. Still doc-comment stubs: `rs/pass/mod.rs`, `rs/model/writer.rs`.
+built: the `.graph` reader, the fixed-point field type (`rs/arithmetic.rs`, M0), the conformant focusing engine + spectral contraction (`rs/focusing/`, M1 — coupled iteration, deterministic), cyberank + syntropy + telemetry (M1.5), and the format layer — `.vocab` + `.model` containers (`rs/vocab.rs`, `rs/model/`, M2, content-addressed, P-DET). 33 tests green. The one remaining stub is `rs/pass/mod.rs` — the CT-0 compile passes (M5).
 
 ## critical path
 
@@ -127,7 +127,7 @@ measured on the fully-conformant engine (M1: coupled iteration, fixed-point over
 
 ---
 
-## M2 — format layer (containers)
+## M2 — format layer (containers) — ✅ done
 
 the two on-disk formats. prerequisites for the compiler: vocab feeds pass 1, model is the output of pass 8. authoritative byte layout for the writer is [[ct0]] §10.
 
@@ -137,21 +137,11 @@ the two on-disk formats. prerequisites for the compiler: vocab feeds pass 1, mod
 
 deferred: multi-vocab composition + first-hit-wins dedup (CT-0 pass 1 §3.1) — lands with pass 1 (M5), its only consumer.
 
-### model (`specs/model.md` + ct0 §10) — step 0b, 2g
+### model (`specs/model.md` + ct0 §10) — step 0b — ✅ done
 
-`.cyb` container, seven sections: card, config, program, tensors, vocab, eval, weights. `weights` is binary, 4096-byte page-aligned per tensor (zero-copy mmap), integer encodings only — CT-0 emits u16 (projections, `round(v·256)`) and u32 (norms, `round(v·65536)`). `config` and `tensors` are integers-only TOML (e.g. `rms_norm_eps=1000000` for 1e-6).
+`rs/model/writer.rs` — `Model` holds the six text sections + `Vec<Tensor>`; `to_bytes`/`from_bytes`/`read`/`write`/`particle()`. The `weights` blob is assembled with per-tensor 4096-byte page alignment; `Tensor { name, shape, Encoding, data: Vec<Fx> }` encodes to integers via `Fx::to_i64_scaled` — `Encoding::U16` (scale 2^8, projections) and `U32` (scale 2^16, norms), signed LE, no floats on disk (`q4/q8/ternary` → CT-2). `tensors` TOML index (name → shape/encoding/offset/size) round-trips. 4 tests: page alignment, P-DET (byte-identical emission + stable particle), text+tensor round-trip within one storage ULP, file I/O.
 
-| task | size |
-|------|------|
-| extend `Model` to hold card/config/program/tensors/vocab/eval + weights blob | M |
-| `TensorEntry { name, shape, encoding, offset, size }`, `enum Encoding` (U16/U32 now; Q8/Q4/Ternary deferred to CT-2) | S |
-| weights blob assembly with per-tensor 4096-byte alignment + u16/u32 encode | M |
-| section emitters: `rs/emit/{card,config,tensors,vocab,eval,weights}.rs` | M |
-| file particle `hemera(bytes)` + `certificate.toml` sidecar (§12) | S |
-
-predicate: P-DET — two runs produce byte-identical `.model` (same particle, §10.9). Full P-LOAD waits on cyb-llm runtime.
-
-current scaffold: `model/writer.rs` is `unimplemented!("Model::write")`. The whole write path is new; the read side (`graph/`) is the working half to mirror.
+deferred: the *content* of the text sections (real config/program/tensors/eval) is produced by CT-0 pass 8 (M5) — the writer treats them as opaque now. `certificate.toml` sidecar (§12) lands with the conformance harness (M6).
 
 ---
 
@@ -286,7 +276,7 @@ hard cross-repo blockers (out of v0.1): the VDF beacon $b$ (foculus) for un-fron
 2. M1 focusing conformance — ✅ done (coupled iteration in `Fx`, stake-weighted, deterministic); 8 tests green
 3. M1.5 cyberank + syntropy — ✅ done (deterministic J, cyberank accessor, telemetry)
 4. M1.6 superadditivity benchmark — ✅ done (σ>0 confirmed; λ₂ sweep: σ rises with λ₂, J falls — conjecture half-refuted)
-5. M2 format layer — vocab + model writer (parallelizable with M1)
+5. M2 format layer — ✅ done (vocab + model containers, content-addressed, P-DET)
 6. M3 effective adjacency — partial until bbg reads land
 7. M4 impulse — needs M1
 8. M5 CT-0 passes 1–8 — the bulk; needs M1–M3 + M2 model writer
