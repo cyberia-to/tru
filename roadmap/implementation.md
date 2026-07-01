@@ -60,7 +60,7 @@ predicate (met): `Fx` round-trips encode/decode, mul rescales within one ULP of 
 
 ## M1 — focusing engine conformance (math + arithmetic) — ✅ done
 
-both non-conformances the stub carried are fixed; the engine is now coupled-iteration, fixed-point, stake-weighted. 8 tests green including bit-identical determinism.
+fully conformant — coupled iteration, fixed-point over Goldilocks, stake-weighted A_eff, Chebyshev heat on the combinatorial L, and a κ-derived step count from a real λ_max/λ₂ (`rs/focusing/spectral.rs`). no deferrals remain. 18 tests green (`rs/arithmetic.rs` 8 + `rs/focusing/` 10) including bit-identical determinism, κ<1 contraction, T(ε) convergence, and heat mass-conservation.
 
 1. blend-of-attractors → fixed. `compute_focusing` was three independent solves averaged once ([[tri-kernel]] §2.4 / [[focusing]] forbid it — no single free energy, no single $\kappa$). now one coupled iteration: `diffusion_step`/`springs_step`/`heat_step` each apply once to the shared φ, blend `λ_d·D+λ_s·S+λ_h·H`, normalize, feed back, ×`iters`.
 2. float → fixed. every `f64` replaced by `Fx` (M0). $\phi^*$ is now bit-identical across runs — the determinism [[arithmetic]] requires and `f64` could never give. field addition is associative, so the HashMap-order in the build no longer threatens determinism.
@@ -123,7 +123,7 @@ datasets: Zachary Karate Club (34 particles) as the smallest sanity instance, th
 
 harness: `rs/examples/superadditivity.rs` (`cargo run -p tru --example superadditivity`).
 
-measured on the conformant engine (M1: coupled iteration, fixed-point over Goldilocks, bit-identical across runs) — Karate Club, 80/20 split, predictor φ(p)·φ(q): collective AUC 0.705 vs best-ego 0.589, mean-ego 0.511 → σ_best(AUC) +0.115, σ_mean(AUC) +0.194; J(φ*) 0.130. On AP the collective beats the average (σ_mean +0.060) but not the single best neuron (σ_best −0.100). So superadditivity holds clearly for global ranking (AUC) — the collective strictly outranks its strongest neuron — and on-average for AP; a well-placed neuron still wins locally on AP. Still pending: retrieval@k (needs personalized focus, not the single global φ*), and the λ₂ connectivity sweep to test the generalized-CFT monotonicity.
+measured on the fully-conformant engine (M1: coupled iteration, fixed-point over Goldilocks, Chebyshev heat, κ-derived T(ε), bit-identical across runs) — Karate Club, 80/20 split, predictor φ(p)·φ(q): collective AUC 0.725 vs best-ego 0.589, mean-ego 0.511 → σ_best(AUC) +0.135, σ_mean(AUC) +0.214; J(φ*) 0.084. On AP the collective beats the average (σ_mean +0.069) but not the single best neuron (σ_best −0.091). So superadditivity holds clearly for global ranking (AUC) — the collective strictly outranks its strongest neuron — and on-average for AP; a well-placed neuron still wins locally on AP. Still pending: retrieval@k (needs personalized focus, not the single global φ*), and the λ₂ connectivity sweep to test the generalized-CFT monotonicity (λ₂ is now computed per graph, so the sweep is straightforward).
 
 ---
 
