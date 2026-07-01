@@ -178,6 +178,19 @@ impl Fx {
         (self.signed() >> FRAC_BITS) as i64
     }
 
+    /// Round `value · 2^frac_bits` to an integer — the storage encoding for
+    /// `.model` tensors (`frac_bits` = 8 for u16, 16 for u32; must be ≤ FRAC_BITS).
+    pub fn to_i64_scaled(self, frac_bits: u32) -> i64 {
+        debug_assert!(frac_bits <= FRAC_BITS);
+        let shift = FRAC_BITS - frac_bits;
+        if shift == 0 {
+            return self.signed() as i64;
+        }
+        let s = self.signed();
+        let half = 1i128 << (shift - 1);
+        (if s >= 0 { (s + half) >> shift } else { -(((-s) + half) >> shift) }) as i64
+    }
+
     /// `e^self` via range reduction `e^x = 2^i · 2^f`, `x·log₂e = i + f`.
     /// `2^f = e^{f·ln2}` from a short Taylor series (argument in `[0, ln2]`).
     /// Underflows to zero below the representable magnitude.
@@ -399,6 +412,19 @@ mod tests {
         close(Fx::from_int(-5).exp(), (-5.0_f64).exp());
         close(Fx::from_int(2).exp(), 2.0_f64.exp());
         assert_eq!(Fx::from_int(-40).exp(), Fx::ZERO); // underflows below one ULP
+    }
+
+    #[test]
+    fn storage_encoding_round_trips() {
+        // u16: scale 2^8 = 256
+        assert_eq!(Fx::from_ratio(1, 2).to_i64_scaled(8), 128);
+        assert_eq!(Fx::from_ratio(-1, 4).to_i64_scaled(8), -64);
+        // u32: scale 2^16
+        assert_eq!(Fx::from_int(3).to_i64_scaled(16), 3 * 65536);
+        // encode then decode is within one storage ULP
+        let x = Fx::from_ratio(7, 11);
+        let dec = Fx::from_ratio(x.to_i64_scaled(8), 256);
+        assert!((x.to_f64() - dec.to_f64()).abs() <= 1.0 / 256.0);
     }
 
     #[test]

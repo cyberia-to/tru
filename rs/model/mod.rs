@@ -1,3 +1,3 @@
 pub mod writer;
 
-pub use writer::Model;
+pub use writer::{Encoding, Model, Tensor};
