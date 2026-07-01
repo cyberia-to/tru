@@ -1,10 +1,20 @@
+//! `tru` — the convergence VM command line.
+//!
+//! Reads `.cyb` containers (`.graph` / `.vocab` / `.model`) and runs the
+//! focusing engine over a graph: φ*, cyberank, syntropy, and telemetry.
+
 use std::path::PathBuf;
 
+use anyhow::Result;
 use clap::{Parser, Subcommand};
-use tru::Graph;
+
+use tru::focusing::{self, FocusingGraph, FocusingParams, Link};
+use tru::graph::frontmatter;
+use tru::vocab::Vocab;
+use tru::{Graph, Model};
 
 #[derive(Parser)]
-#[command(name = "tru", version, about = "model compilation: .graph → .model")]
+#[command(name = "tru", version, about = "convergence VM: .graph → φ* → .model")]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,
@@ -12,68 +22,105 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Print a summary of a `.graph` file.
+    /// Summarize any `.cyb` container: type, name, sections.
     Inspect { path: PathBuf },
 
-    /// Compile a `.graph` into a `.model` (CT-0 pipeline).
-    Compile {
-        input: PathBuf,
-        #[arg(short, long)]
-        output: PathBuf,
+    /// Run the tri-kernel over a `.graph`: cyberank, syntropy, telemetry.
+    Focus {
+        path: PathBuf,
+        /// How many top-ranked particles to print.
+        #[arg(short, long, default_value_t = 20)]
+        top: usize,
     },
+
+    /// Summarize a `.vocab` dictionary and check its self-consistency.
+    Vocab { path: PathBuf },
+
+    /// Summarize a `.model` checkpoint: tensors, config, particle.
+    Model { path: PathBuf },
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<()> {
     match Cli::parse().cmd {
-        Cmd::Inspect { path } => inspect(&path)?,
-        Cmd::Compile { input, output } => compile(&input, &output)?,
+        Cmd::Inspect { path } => inspect(&path),
+        Cmd::Focus { path, top } => focus(&path, top),
+        Cmd::Vocab { path } => vocab(&path),
+        Cmd::Model { path } => model(&path),
+    }
+}
+
+fn inspect(path: &std::path::Path) -> Result<()> {
+    let bytes = std::fs::read(path)?;
+    let (fm_str, body) = frontmatter::split(&bytes)?;
+    let fm = frontmatter::parse(fm_str)?;
+    let sections = frontmatter::index_sections(&bytes, body, &fm.files)?;
+
+    println!("{}  [types: {}]", fm.cyb.name, fm.cyb.types.join(", "));
+    println!("{} bytes, {} sections:", bytes.len(), fm.files.len());
+    for f in &fm.files {
+        let sz = sections.get(&f.name).map(|&(s, e)| e - s).unwrap_or(0);
+        println!("  {:<12} {:<9} {:>12} bytes", f.name, f.format, sz);
     }
     Ok(())
 }
 
-fn inspect(path: &std::path::Path) -> anyhow::Result<()> {
+fn focus(path: &std::path::Path, top: usize) -> Result<()> {
     let g = Graph::open(path)?;
-    println!("name:       {}", g.name());
-    println!("sections:   {}", g.frontmatter().files.len());
-    for f in &g.frontmatter().files {
-        match f.size {
-            Some(sz) => println!("  - {} ({}, {} bytes)", f.name, f.format, sz),
-            None => println!("  - {} ({}, text)", f.name, f.format),
+    let n_links = g.cyberlinks()?.count();
+    let links = g.cyberlinks()?.map(|cl| Link { from: cl.from, to: cl.to, amount: cl.amount, valence: cl.valence });
+    let fg = FocusingGraph::build(links);
+    let params = FocusingParams::default();
+    let result = tru::compute_focusing(&fg, &params);
+    let tel = focusing::telemetry(&fg, &result, &params);
+
+    println!("focus: {}", g.name());
+    println!("  particles {}   cyberlinks {}", fg.n(), n_links);
+    println!("  syntropy J {:.4}   entropy H {:.4}", tel.syntropy.to_f64(), tel.entropy.to_f64());
+    println!("  contraction κ {:.3}   λ₂ {:.3}   steps T(ε) {}", tel.kappa.to_f64(), tel.lambda_2.to_f64(), tel.steps);
+
+    let mut ranked: Vec<(usize, f64)> = result.focus.iter().map(|x| x.to_f64()).enumerate().collect();
+    ranked.sort_by(|a, b| b.1.total_cmp(&a.1));
+    println!("\ntop {} particles by cyberank φ*(p):", top.min(ranked.len()));
+    for (idx, phi) in ranked.iter().take(top) {
+        println!("  {}  {:.6}", hex8(fg.node_id(*idx)), phi);
+    }
+    Ok(())
+}
+
+fn vocab(path: &std::path::Path) -> Result<()> {
+    let v = Vocab::read(path)?;
+    let inline = v.entries.iter().filter(|e| !e.data.is_empty()).count();
+    println!("vocab: {}", v.name);
+    println!("  entries {} ({} with inline data)", v.entries.len(), inline);
+    println!("  file particle {}", hex(&v.particle()));
+    match v.verify() {
+        Ok(()) => println!("  self-consistency OK"),
+        Err(e) => println!("  self-consistency FAIL: {e}"),
+    }
+    Ok(())
+}
+
+fn model(path: &std::path::Path) -> Result<()> {
+    let m = Model::read(path)?;
+    println!("model: {}", m.name);
+    println!("  particle {}", hex(&m.particle()));
+    println!("  tensors {}", m.tensors.len());
+    for t in &m.tensors {
+        println!("    {:<34} {:?}  {:?}  {} values", t.name, t.shape, t.encoding, t.data.len());
+    }
+    if !m.config.is_empty() {
+        println!("  config:");
+        for line in m.config.lines().take(8) {
+            println!("    {line}");
         }
     }
-    let count = g.cyberlinks()?.count();
-    println!("cyberlinks: {count}");
     Ok(())
 }
 
-fn compile(input: &std::path::Path, _output: &std::path::Path) -> anyhow::Result<()> {
-    use tru::focusing::{compute_focusing, FocusingGraph, FocusingParams, Link};
+fn hex(b: &[u8]) -> String {
+    b.iter().map(|x| format!("{x:02x}")).collect()
+}
 
-    let g = Graph::open(input)?;
-    let n_links = g.cyberlinks()?.len();
-    eprintln!("pass 0: building focusing graph from {n_links} cyberlinks…");
-
-    let links = g.cyberlinks()?.map(|cl| Link {
-        from: cl.from,
-        to: cl.to,
-        amount: cl.amount,
-        valence: cl.valence,
-    });
-
-    let fg = FocusingGraph::build(links);
-    eprintln!("        {} particles, {} edges", fg.n(), n_links);
-
-    let result = compute_focusing(&fg, &FocusingParams::default());
-    eprintln!("        syntropy J(φ*) = {:.6}", result.syntropy.to_f64());
-
-    // Print top-10 by focus (fixed-point → f64 for display only)
-    let mut ranked: Vec<(usize, f64)> = result.focus.iter().map(|x| x.to_f64()).enumerate().collect();
-    ranked.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-    eprintln!("top particles by φ*:");
-    for (idx, phi) in ranked.iter().take(10) {
-        let hash = fg.node_id(*idx);
-        eprintln!("  {:016x}…  φ*={:.6}", u64::from_le_bytes(hash[..8].try_into().unwrap()), phi);
-    }
-
-    anyhow::bail!("CT-0 passes 1–8 not yet implemented; focus computed above")
+fn hex8(b: &[u8; 32]) -> String {
+    format!("{}…", b[..8].iter().map(|x| format!("{x:02x}")).collect::<String>())
 }
