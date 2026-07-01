@@ -23,7 +23,7 @@ one invariant cuts across every milestone: tru computes in fixed-point over the 
 | compile | ct0 (8 passes) | ⬜ spec only — the bulk of the work |
 | economics | rewards | 📐 spec complete; settlement spans [[foculus]]/[[tok]] |
 
-built: the `.graph` reader (`rs/graph/`), the fixed-point field type (`rs/arithmetic.rs`, M0), and the conformant focusing engine (`rs/focusing/`, M1 — coupled iteration, deterministic; 15 tests green). Still doc-comment stubs: `rs/pass/mod.rs`, `rs/model/writer.rs`.
+built: the `.graph` reader (`rs/graph/`), the fixed-point field type (`rs/arithmetic.rs`, M0), the conformant focusing engine + spectral contraction (`rs/focusing/`, M1 — coupled iteration, deterministic), and cyberank + syntropy + telemetry (M1.5). 23 tests green. Still doc-comment stubs: `rs/pass/mod.rs`, `rs/model/writer.rs`.
 
 ## critical path
 
@@ -92,19 +92,17 @@ predicates (from [[tri-kernel]] §2.2 / [[focusing]] / [[arithmetic]]):
 
 ---
 
-## M1.5 — focusing outputs: cyberank + syntropy
+## M1.5 — focusing outputs: cyberank + syntropy — ✅ done
 
-cheap, high-value, unblocks rewards and mir reads.
+`rs/focusing/measures.rs`; 4 tests green. `syntropy` is emitted in `FocusingResult` and printed by the CLI.
 
-| task | detail | size |
-|------|--------|------|
-| cyberank | `cyberank(p) = φ*(p)` — accessor keyed by particle hash over `FocusingResult.focus` ([[cyberank]]) | S |
-| syntropy | $J(\phi^*)=\sum_j \phi^*(j)\log(|V|\phi^*(j)) = D_{KL}(\phi^*\|u)$; add a fixed-point $\mathbb{F}_p$ `syntropy` field to `FocusingResult` ([[syntropy]]); $\log$ via fixed-point (range-reduce + polynomial), never `f64::ln` | S |
-| telemetry | per-epoch monitors (TK §6.3): entropy $H$, negentropy $J$, spectral gap, ℓ₁ drift, locality radius $h$, nodes touched | S |
+| task | detail | status |
+|------|--------|--------|
+| cyberank | `cyberank(g, result, particle) → φ*(p)` by hash, zero if absent ([[cyberank]]) | ✅ |
+| syntropy | $J(\phi^*)=\sum_j \phi^*(j)\ln(|V|\phi^*(j)) = D_{KL}(\phi^*\|u)$, a fixed-point field on `FocusingResult`; $\ln$ is fixed-point range-reduce + atanh series (`Fx::ln`), never `f64::ln` ([[syntropy]]) | ✅ |
+| telemetry | `Telemetry { particles, syntropy, entropy H, lambda_2, kappa, steps }` (TK §6.3, the cheap monitors). ℓ₁-drift + locality-radius are per-signal → M4 (impulse) | ✅ |
 
-predicates: $J(u)=0$ at the uniform distribution; $J\ge 0$ always; cyberank sums to 1.
-
-new module: `rs/focusing/measures.rs`.
+predicates (met): $J(u)=0$ at uniform; $J\ge 0$; $J$ grows with concentration; cyberank over all particles sums to 1; emitted `result.syntropy` equals recomputed $J$ bit-for-bit.
 
 ---
 
@@ -298,7 +296,7 @@ hard cross-repo blockers (out of v0.1): the VDF beacon $b$ (foculus) for un-fron
 
 1. M0 foundation — ✅ done (`Fx` fixed-point over nebu::Goldilocks); unblocked all
 2. M1 focusing conformance — ✅ done (coupled iteration in `Fx`, stake-weighted, deterministic); 8 tests green
-3. M1.5 cyberank + syntropy — cheap outputs
+3. M1.5 cyberank + syntropy — ✅ done (deterministic J, cyberank accessor, telemetry)
 4. M1.6 superadditivity benchmark — first real numbers; validates collective intelligence (needs M1+M1.5)
 5. M2 format layer — vocab + model writer (parallelizable with M1)
 6. M3 effective adjacency — partial until bbg reads land
@@ -307,4 +305,4 @@ hard cross-repo blockers (out of v0.1): the VDF beacon $b$ (foculus) for un-fron
 9. M6 conformance harness — needs M5; P-LOAD needs cyb-llm
 10. M7 economics — measurement math now; mint/settle blocked on foculus/tok/zheng
 
-built so far: M0 (field arithmetic) + M1 (conformant focusing engine, deterministic). next M1.5 (cyberank, syntropy) + M2 (formats), then M5 is where the volume of work lives.
+built so far: M0 (field arithmetic) + M1 (conformant focusing engine, deterministic) + M1.5 (cyberank, syntropy, telemetry). the whole focusing layer is done. next M1.6 (superadditivity λ₂ sweep) + M2 (formats), then M5 is where the volume of work lives.

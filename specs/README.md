@@ -64,7 +64,7 @@ the heart of tru. five specs that turn the weighted graph into the focus distrib
 | [tri-kernel.md](tri-kernel.md) | the three operators (diffusion D, springs S, heat H_τ), composite R, fixed-point + locality proofs, §2.4 five-way identity | φ* = fix(R) | ✅ conformant — coupled iteration in fixed-point `Fx` (`rs/focusing/`, M1) | 1a |
 | [attention.md](attention.md) | per-neuron focus projection — will-share + conviction box that sums into effective adjacency | A^eff summand | ⬜ spec only | 1b |
 | [truth-scoring.md](truth-scoring.md) | BTS mechanism, karma accumulation, honesty-weighted effective adjacency | κ(ν), A^eff | ⬜ spec only | 1b |
-| [focusing.md](focusing.md) | epoch computation: effective adjacency → tri-kernel → φ*, cyberank, syntropy | φ*, cyberank, syntropy | 🟡 φ* built (M1, deterministic); cyberank/syntropy next (M1.5) | 1c |
+| [focusing.md](focusing.md) | epoch computation: effective adjacency → tri-kernel → φ*, cyberank, syntropy | φ*, cyberank, syntropy | ✅ φ*, cyberank, syntropy J built (M1 + M1.5, deterministic) | 1c |
 | [impulse.md](impulse.md) | Δφ* — the proven focus shift one signal delivers; locality-bounded sparse vector | Δφ* + proof claim | ⬜ spec only | 1c |
 | [superadditivity.md](superadditivity.md) | the collective-intelligence measure σ (collective φ* vs ego φ*_ν); generalized CFT — σ, J grow with algebraic connectivity λ₂ | σ_mean, σ_best, J(λ₂) | 📐 spec; benchmark to run | val |
 
@@ -122,7 +122,7 @@ this is the point. tru is not a ranking engine that happens to have rewards bolt
 | | spec | done |
 |---|------|------|
 | ✅ | tri-kernel | spec complete; conformant engine built (M1: coupled iteration, fixed-point, deterministic) |
-| 🟡 | focusing | φ* built (M1); **need** cyberank, syntropy (M1.5) |
+| ✅ | focusing | φ*, cyberank, syntropy J built (M1 + M1.5), deterministic |
 | 🟡 | model | writer scaffold; **need** real serialize/load |
 | ⬜ | vocab | parser |
 | ⬜ | attention + truth-scoring | will/conviction input, BTS → karma, effective adjacency |
