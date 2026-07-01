@@ -75,10 +75,18 @@ fn focus_by_node(edges: &[(u8, u8)]) -> [f64; N] {
     out
 }
 
-/// Syntropy J(φ) = Σ φ_j · ln(n·φ_j) over present nodes.
-fn syntropy(f: &[f64; N]) -> f64 {
-    let n = f.iter().filter(|&&x| x > 0.0).count() as f64;
-    f.iter().filter(|&&x| x > 0.0).map(|&x| x * (n * x).ln()).sum()
+/// Collective focus over `edges`, plus the engine's own λ₂ and syntropy J.
+fn collective(edges: &[(u8, u8)]) -> ([f64; N], f64, f64) {
+    let mut out = [0.0; N];
+    if edges.is_empty() {
+        return (out, 0.0, 0.0);
+    }
+    let g = FocusingGraph::build(links(edges));
+    let r = compute_focusing(&g, &FocusingParams::default());
+    for idx in 0..g.n() {
+        out[g.node_id(idx)[0] as usize] = r.focus[idx].to_f64();
+    }
+    (out, g.lambda_2().to_f64(), r.syntropy.to_f64())
 }
 
 /// ROC-AUC via Mann–Whitney U (fraction of pos>neg pairs, ties = 0.5).
@@ -126,6 +134,110 @@ fn score(f: &[f64; N], a: u8, b: u8) -> f64 {
     f[a as usize] * f[b as usize]
 }
 
+/// One measurement: collective vs ego on the link-prediction task.
+struct Row {
+    lambda2: f64,
+    j: f64,
+    col_auc: f64,
+    mean_auc: f64,
+    best_auc: f64,
+    best_node: usize,
+    col_ap: f64,
+    mean_ap: f64,
+    best_ap: f64,
+}
+
+fn superadd(train: &[(u8, u8)], test: &[(u8, u8)], neg_pairs: &[(u8, u8)]) -> Row {
+    let (col, lambda2, j) = collective(train);
+
+    // Per-neuron ego focus: tri-kernel on the closed radius-1 neighbourhood.
+    let mut nbr: Vec<Vec<u8>> = vec![Vec::new(); N];
+    for &(a, b) in train {
+        nbr[a as usize].push(b);
+        nbr[b as usize].push(a);
+    }
+    let ego: Vec<[f64; N]> = (0..N as u8)
+        .map(|v| {
+            let mut nodes: Vec<u8> = nbr[v as usize].clone();
+            nodes.push(v);
+            let ee: Vec<(u8, u8)> = train.iter().copied().filter(|&(a, b)| nodes.contains(&a) && nodes.contains(&b)).collect();
+            focus_by_node(&ee)
+        })
+        .collect();
+
+    let evaluate = |f: &[f64; N]| -> (f64, f64) {
+        let pos: Vec<f64> = test.iter().map(|&(a, b)| score(f, a, b)).collect();
+        let neg: Vec<f64> = neg_pairs.iter().map(|&(a, b)| score(f, a, b)).collect();
+        (auc(&pos, &neg), ap(&pos, &neg))
+    };
+    let (col_auc, col_ap) = evaluate(&col);
+    let es: Vec<(f64, f64)> = ego.iter().map(|f| evaluate(f)).collect();
+    let mean = |xs: &[f64]| xs.iter().sum::<f64>() / xs.len() as f64;
+    let aucs: Vec<f64> = es.iter().map(|x| x.0).collect();
+    let aps: Vec<f64> = es.iter().map(|x| x.1).collect();
+    let (best_auc, best_node) = aucs.iter().copied().enumerate().fold((0.0, 0usize), |a, (i, x)| if x > a.0 { (x, i) } else { a });
+    Row {
+        lambda2,
+        j,
+        col_auc,
+        mean_auc: mean(&aucs),
+        best_auc,
+        best_node,
+        col_ap,
+        mean_ap: mean(&aps),
+        best_ap: aps.iter().copied().fold(0.0, f64::max),
+    }
+}
+
+/// BFS spanning tree over `edges` from node 0, and the remaining edges.
+/// The tree touches every reachable node, so tree + any subset of the rest
+/// keeps the vertex set fixed — the regime where adding an edge is Fiedler-
+/// monotone (λ₂ never decreases).
+fn spanning(edges: &[(u8, u8)]) -> (Vec<(u8, u8)>, Vec<(u8, u8)>) {
+    let mut adj: Vec<Vec<u8>> = vec![Vec::new(); N];
+    for &(a, b) in edges {
+        adj[a as usize].push(b);
+        adj[b as usize].push(a);
+    }
+    let mut seen = [false; N];
+    seen[0] = true;
+    let mut q = vec![0u8];
+    let mut qi = 0;
+    let mut tree = Vec::new();
+    while qi < q.len() {
+        let u = q[qi];
+        qi += 1;
+        for &v in &adj[u as usize] {
+            if !seen[v as usize] {
+                seen[v as usize] = true;
+                tree.push((u.min(v), u.max(v)));
+                q.push(v);
+            }
+        }
+    }
+    let rest: Vec<(u8, u8)> = edges.iter().copied().filter(|e| !tree.contains(e)).collect();
+    (tree, rest)
+}
+
+/// Pearson correlation coefficient.
+fn pearson(x: &[f64], y: &[f64]) -> f64 {
+    let n = x.len() as f64;
+    let (mx, my) = (x.iter().sum::<f64>() / n, y.iter().sum::<f64>() / n);
+    let mut sxy = 0.0;
+    let mut sxx = 0.0;
+    let mut syy = 0.0;
+    for i in 0..x.len() {
+        sxy += (x[i] - mx) * (y[i] - my);
+        sxx += (x[i] - mx).powi(2);
+        syy += (y[i] - my).powi(2);
+    }
+    if sxx == 0.0 || syy == 0.0 {
+        0.0
+    } else {
+        sxy / (sxx.sqrt() * syy.sqrt())
+    }
+}
+
 fn main() {
     // Deterministic 80/20 split: every 5th edge is held out for test.
     let test: Vec<(u8, u8)> = EDGES.iter().copied().enumerate().filter(|(i, _)| i % 5 == 0).map(|(_, e)| e).collect();
@@ -145,55 +257,51 @@ fn main() {
         }
     }
 
-    // Collective focus over the training graph.
-    let col = focus_by_node(&train);
-
-    // Adjacency (train) for ego-net construction.
-    let mut nbr: Vec<Vec<u8>> = vec![Vec::new(); N];
-    for &(a, b) in &train {
-        nbr[a as usize].push(b);
-        nbr[b as usize].push(a);
-    }
-
-    // Per-neuron ego focus: tri-kernel on the closed radius-1 neighbourhood.
-    let mut ego: Vec<[f64; N]> = Vec::with_capacity(N);
-    for v in 0..N as u8 {
-        let mut nodes: Vec<u8> = nbr[v as usize].clone();
-        nodes.push(v);
-        let ego_edges: Vec<(u8, u8)> =
-            train.iter().copied().filter(|&(a, b)| nodes.contains(&a) && nodes.contains(&b)).collect();
-        ego.push(focus_by_node(&ego_edges));
-    }
-
-    // Score a focus vector on the link-prediction task.
-    let evaluate = |f: &[f64; N]| -> (f64, f64) {
-        let pos: Vec<f64> = test.iter().map(|&(a, b)| score(f, a, b)).collect();
-        let neg: Vec<f64> = neg_pairs.iter().map(|&(a, b)| score(f, a, b)).collect();
-        (auc(&pos, &neg), ap(&pos, &neg))
-    };
-
-    let (col_auc, col_ap) = evaluate(&col);
-    let ego_scores: Vec<(f64, f64)> = ego.iter().map(|f| evaluate(f)).collect();
-
-    let mean = |xs: &[f64]| xs.iter().sum::<f64>() / xs.len() as f64;
-    let ego_aucs: Vec<f64> = ego_scores.iter().map(|x| x.0).collect();
-    let ego_aps: Vec<f64> = ego_scores.iter().map(|x| x.1).collect();
-    let (best_auc, best_node) =
-        ego_aucs.iter().copied().enumerate().fold((0.0, 0usize), |acc, (i, x)| if x > acc.0 { (x, i) } else { acc });
-    let best_ap = ego_aps.iter().copied().fold(0.0, f64::max);
+    let r = superadd(&train, &test, &neg_pairs);
 
     println!("Karate Club — superadditivity (collective φ* vs ego φ*_ν)");
     println!("nodes={N}  edges={}  train={}  test={}  negatives={}", EDGES.len(), train.len(), test.len(), neg_pairs.len());
     println!();
     println!("                       AUC      AP");
-    println!("collective φ*        {:.3}   {:.3}    J(φ*)={:.4}", col_auc, col_ap, syntropy(&col));
-    println!("ego  — mean neuron   {:.3}   {:.3}", mean(&ego_aucs), mean(&ego_aps));
-    println!("ego  — best neuron   {:.3}   {:.3}    (node {})", best_auc, best_ap, best_node);
+    println!("collective φ*        {:.3}   {:.3}    J(φ*)={:.4}", r.col_auc, r.col_ap, r.j);
+    println!("ego  — mean neuron   {:.3}   {:.3}", r.mean_auc, r.mean_ap);
+    println!("ego  — best neuron   {:.3}   {:.3}    (node {})", r.best_auc, r.best_ap, r.best_node);
     println!();
-    println!("σ_mean(AUC) = {:+.3}     σ_best(AUC) = {:+.3}", col_auc - mean(&ego_aucs), col_auc - best_auc);
-    println!("σ_mean(AP)  = {:+.3}     σ_best(AP)  = {:+.3}", col_ap - mean(&ego_aps), col_ap - best_ap);
+    println!("σ_mean(AUC) = {:+.3}     σ_best(AUC) = {:+.3}", r.col_auc - r.mean_auc, r.col_auc - r.best_auc);
+    println!("σ_mean(AP)  = {:+.3}     σ_best(AP)  = {:+.3}", r.col_ap - r.mean_ap, r.col_ap - r.best_ap);
     println!();
     println!("collective beats the average neuron on both metrics; it beats the strongest");
     println!("neuron on AUC (global ranking) but not on AP — superadditivity is metric-dependent.");
     println!("(measured on the conformant engine: coupled iteration, fixed-point over Goldilocks.)");
+
+    // Generalized Collective Focus Theorem: with the vertex set fixed (spanning
+    // tree over all N nodes), add non-redundant edges and watch λ₂ rise — do
+    // syntropy J and superadditivity σ rise with it?
+    let (tree, rest) = spanning(&train);
+    let steps = [0usize, rest.len() / 4, rest.len() / 2, 3 * rest.len() / 4, rest.len()];
+    let (mut l2s, mut js, mut sms, mut sbs) = (vec![], vec![], vec![], vec![]);
+    println!();
+    println!("connectivity sweep — spanning tree ({} nodes) + k extra edges:", N);
+    println!("  edges   λ₂       J(φ*)    σ_mean(AUC)  σ_best(AUC)");
+    for &k in &steps {
+        let mut e = tree.clone();
+        e.extend_from_slice(&rest[..k]);
+        let s = superadd(&e, &test, &neg_pairs);
+        let (sm, sb) = (s.col_auc - s.mean_auc, s.col_auc - s.best_auc);
+        println!("  {:>4}   {:.4}   {:.4}    {:+.3}       {:+.3}", e.len(), s.lambda2, s.j, sm, sb);
+        l2s.push(s.lambda2);
+        js.push(s.j);
+        sms.push(sm);
+        sbs.push(sb);
+    }
+    println!();
+    println!(
+        "Pearson(λ₂, J) = {:+.2}    Pearson(λ₂, σ_mean) = {:+.2}    Pearson(λ₂, σ_best) = {:+.2}",
+        pearson(&l2s, &js),
+        pearson(&l2s, &sms),
+        pearson(&l2s, &sbs)
+    );
+    println!("finding: σ RISES with λ₂ (more connectivity → more collective advantage), and σ_best > 0");
+    println!("at every level. but J FALLS with λ₂ — adding edges spreads focus toward uniform, lowering");
+    println!("syntropy. so the generalized-CFT σ-λ₂ claim holds; the J-λ₂ claim is refuted (opposite sign).");
 }

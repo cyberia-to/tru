@@ -180,7 +180,7 @@ When $\lambda_s = \lambda_h = 0$: $\mathcal{R} = D$, $\kappa = \alpha$, $\mathca
 
 ### Part III -- Emergence (Superadditivity)
 
-Existence, uniqueness, and convergence establish that $\phi^*$ is a well-defined collective object. They do not establish that it is *better* than what an individual computes. The generalized theorem ([[superadditivity]]) adds that claim: the collective $\phi^*$ strictly outperforms every neuron's ego focus $\phi^*_\nu$ on graph tasks (superadditivity $\sigma_{\text{best}} > 0$), and both $\sigma$ and syntropy $J(\phi^*)$ increase monotonically with the algebraic connectivity $\lambda_2$ — the same Fiedler value that sets the heat contraction rate $e^{-\tau\lambda_2}$ in §2.2. Convergence speed and collective intelligence share one knob. The monotonicity is conjectured and benchmark-tested; see [[superadditivity]].
+Existence, uniqueness, and convergence establish that $\phi^*$ is a well-defined collective object. They do not establish that it is *better* than what an individual computes. The generalized theorem ([[superadditivity]]) adds that claim: the collective $\phi^*$ strictly outperforms every neuron's ego focus $\phi^*_\nu$ on graph tasks (superadditivity $\sigma_{\text{best}} > 0$), and $\sigma$ rises with the algebraic connectivity $\lambda_2$ — the same Fiedler value that sets the heat contraction rate $e^{-\tau\lambda_2}$ in §2.2. Convergence speed and collective advantage share one knob. Benchmark-tested: $\sigma$–$\lambda_2$ is supported, but syntropy $J$ *falls* with $\lambda_2$ (densification spreads focus) — the two are distinct axes; see [[superadditivity]].
 
 ---
 

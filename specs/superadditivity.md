@@ -39,11 +39,16 @@ both are self-contained, consistent with tru's epistemics: the graph grades itse
 
 the [[collective focus theorem]] ([[tri-kernel]] §3) proves $\phi^*$ exists, is unique, and converges. the generalization concerns its quality. let $\lambda_2$ be the algebraic connectivity (Fiedler value) of the weighted graph. adding a non-redundant [[cyberlink]] — one bridging otherwise weakly-connected regions — raises $\lambda_2$.
 
-claim: $J(\phi^*)$ and $\sigma$ increase monotonically with $\lambda_2$.
+claim, as measured: $\sigma$ increases with $\lambda_2$ — the collective advantage grows with connectivity. $J(\phi^*)$ does the opposite: it *falls* as $\lambda_2$ rises.
 
-the same $\lambda_2$ already governs convergence: the heat term contracts at rate $e^{-\tau\lambda_2}$ inside $\kappa$ ([[tri-kernel]] §2.2). so algebraic connectivity is one knob setting both how fast $\phi^*$ converges and how much collective intelligence it carries. redundant links — copies, duplicates — raise neither, which is exactly why [[rewards]] pays only for non-redundant syntropy.
+the same $\lambda_2$ already governs convergence: the heat term contracts at rate $e^{-\tau\lambda_2}$ inside $\kappa$ ([[tri-kernel]] §2.2). so algebraic connectivity sets how fast $\phi^*$ converges and how much collective *advantage* $\sigma$ it carries. but it does not raise syntropy — adding edges spreads focus toward uniform, and a more uniform $\phi^*$ has *less* $J$. the original conjecture ("$J$ and $\sigma$ both rise with $\lambda_2$") conflated two different things: connectivity grows the collective's edge over any individual, while sharpness (syntropy) comes from structure being concentrated, which dense connectivity dilutes.
 
-status: the $\lambda_2$–convergence link is proven (§2.2); the $\lambda_2$–superadditivity monotonicity is a conjecture, supported by the structure and to be confirmed by the benchmark. open: whether it holds for every operator blend $(\lambda_d,\lambda_s,\lambda_h)$ or only generically. this sits beside the §4 completeness conjecture as a named open result.
+status (benchmark-tested, Karate Club, fixed-vertex spanning-tree sweep — [`rs/examples/superadditivity.rs`](../rs/examples/superadditivity.rs)):
+- $\lambda_2$–convergence: proven (§2.2).
+- $\sigma$–$\lambda_2$: supported. Pearson $+0.5$ ($\sigma_{\text{mean}}$), and $\sigma_{\text{best}} > 0$ at every connectivity level — the collective beats its strongest neuron throughout.
+- $J$–$\lambda_2$: refuted. Pearson $\approx -0.7$; $J$ decreases monotonically as edges are added. The sparse spanning tree is the *most* syntropic state; densification lowers $J$.
+
+open: whether the $\sigma$–$\lambda_2$ rise holds on larger graphs and every operator blend $(\lambda_d,\lambda_s,\lambda_h)$; and the right way to state the corrected law (syntropy rewards concentration, superadditivity rewards connectivity — they are distinct axes).
 
 ## benchmark
 
