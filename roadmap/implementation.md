@@ -106,7 +106,7 @@ predicates (met): $J(u)=0$ at uniform; $J\ge 0$; $J$ grows with concentration; c
 
 ---
 
-## M1.6 — superadditivity benchmark (measure collective intelligence)
+## M1.6 — superadditivity benchmark (measure collective intelligence) — ✅ done
 
 the empirical validation that the engine produces collective intelligence, not just a fixed point — the measurement method of [[superadditivity]]. needs M1 (φ*) and M1.5 (J). produces the first real numbers, so it doubles as the engine's correctness witness.
 
@@ -121,7 +121,9 @@ datasets: Zachary Karate Club (34 particles) as the smallest sanity instance, th
 
 harness: `rs/examples/superadditivity.rs` (`cargo run -p tru --example superadditivity`).
 
-measured on the fully-conformant engine (M1: coupled iteration, fixed-point over Goldilocks, Chebyshev heat, κ-derived T(ε), bit-identical across runs) — Karate Club, 80/20 split, predictor φ(p)·φ(q): collective AUC 0.725 vs best-ego 0.589, mean-ego 0.511 → σ_best(AUC) +0.135, σ_mean(AUC) +0.214; J(φ*) 0.084. On AP the collective beats the average (σ_mean +0.069) but not the single best neuron (σ_best −0.091). So superadditivity holds clearly for global ranking (AUC) — the collective strictly outranks its strongest neuron — and on-average for AP; a well-placed neuron still wins locally on AP. Still pending: retrieval@k (needs personalized focus, not the single global φ*), and the λ₂ connectivity sweep to test the generalized-CFT monotonicity (λ₂ is now computed per graph, so the sweep is straightforward).
+measured on the fully-conformant engine (M1: coupled iteration, fixed-point over Goldilocks, Chebyshev heat, κ-derived T(ε), bit-identical across runs) — Karate Club, 80/20 split, predictor φ(p)·φ(q): collective AUC 0.725 vs best-ego 0.589, mean-ego 0.511 → σ_best(AUC) +0.135, σ_mean(AUC) +0.214; J(φ*) 0.084. On AP the collective beats the average (σ_mean +0.069) but not the single best neuron (σ_best −0.091). So superadditivity holds clearly for global ranking (AUC) — the collective strictly outranks its strongest neuron — and on-average for AP; a well-placed neuron still wins locally on AP.
+
+λ₂ connectivity sweep (fixed 34-node spanning tree + k edges, so λ₂ is Fiedler-monotone) — the generalized-CFT test, and it partly refutes the conjecture, honestly: **σ rises with λ₂** (Pearson +0.5 mean; σ_best > 0 at every level — the collective beats its strongest neuron throughout), but **J falls with λ₂** (Pearson −0.7) — densifying spreads focus toward uniform, lowering syntropy. So connectivity buys collective *advantage* but costs *syntropy*; they are distinct axes. Spec ([[superadditivity]]) + tri-kernel §3 + syntropy term updated to the measured result. Still pending: retrieval@k (needs personalized focus, not the single global φ*).
 
 ---
 
@@ -297,7 +299,7 @@ hard cross-repo blockers (out of v0.1): the VDF beacon $b$ (foculus) for un-fron
 1. M0 foundation — ✅ done (`Fx` fixed-point over nebu::Goldilocks); unblocked all
 2. M1 focusing conformance — ✅ done (coupled iteration in `Fx`, stake-weighted, deterministic); 8 tests green
 3. M1.5 cyberank + syntropy — ✅ done (deterministic J, cyberank accessor, telemetry)
-4. M1.6 superadditivity benchmark — first real numbers; validates collective intelligence (needs M1+M1.5)
+4. M1.6 superadditivity benchmark — ✅ done (σ>0 confirmed; λ₂ sweep: σ rises with λ₂, J falls — conjecture half-refuted)
 5. M2 format layer — vocab + model writer (parallelizable with M1)
 6. M3 effective adjacency — partial until bbg reads land
 7. M4 impulse — needs M1
