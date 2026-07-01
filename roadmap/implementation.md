@@ -48,7 +48,7 @@ prerequisites every later milestone shares. small, mechanical, unblocking.
 
 | task | detail | size |
 |------|--------|------|
-| field arithmetic | the representation contract ([[arithmetic]]): fixed-point over the [[Goldilocks field]] $\mathbb{F}_p$, scale $\Sigma$, add / mul-then-rescale / compare / Newton reciprocal+sqrt, all mapping to the GFP primitives. wire `rs/core` `FixedPoint` over $\mathbb{F}_p$ rather than invent a parallel type. this is the substrate M1 and M5 compute in — no `f64` anywhere | M |
+| field arithmetic | the representation contract ([[arithmetic]]): a thin fixed-point layer at scale $\Sigma$ over [[nebu]]'s `Goldilocks` (`cyb-nebu`, path `../strata/nebu/rs` — field add/mul/inv/sqrt/NTT/packed already built and proptested). tru adds only: encode/decode at $\Sigma$, mul-then-rescale (u128 widen → truncate → reduce), compare on the canonical residue, Newton reciprocal+sqrt, deterministic $T(\varepsilon)$. no `f64` anywhere. the field itself is NOT tru's to build | S |
 | wire [[hemera]] | uncomment `cyber-hemera` dep (path `../hemera/rs`, available, 32-byte `hash()`). needed for particle identity, axon hash $H(p\|q)$, file particles | S |
 | config structs | `Config` for `config.tokens` (token_weight $\rho_\tau$), tri-kernel params + scale $\Sigma$, clifford shift set. serde from `.graph`/`.model` toml | S |
 | generalize `.cyb` reader | `rs/graph/reader.rs` hardcodes the `"graph"` type assertion (`reader.rs:35`); the `~~~name` + `size` section logic is format-agnostic. extract a generic opener reused by vocab + model | S |

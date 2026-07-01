@@ -15,11 +15,11 @@ two properties force it, and both are load-bearing:
 
 ## 1. the field
 
-the substrate is the [[Goldilocks field]] $\mathbb{F}_p$ shared across the whole stack — the same field [[hemera]] hashes in, [[nox]] computes in, [[zheng]] proves over, and [[bbg]] commits. an element is one canonical residue in $[0, p)$. tru introduces no arithmetic of its own; it spends the field's.
+the substrate is the [[Goldilocks field]] $\mathbb{F}_p$ shared across the whole stack — the same field [[hemera]] hashes in, [[nox]] computes in, [[zheng]] proves over, and [[bbg]] commits. an element is one canonical residue in $[0, p)$. tru introduces no arithmetic of its own; it spends the field's. the implementation is [[nebu]] (`cyb-nebu`, the `Goldilocks` type — field add/mul/inv/sqrt, NTT, packed SIMD); tru depends on it rather than reimplementing $\mathbb{F}_p$.
 
 ## 2. fixed-point semantics
 
-linear algebra needs rationals — $\phi^*$ is a probability vector, the embedding $E$ carries singular weights. tru represents a rational $x$ as the field element $X = \mathrm{round}(x \cdot \Sigma) \bmod p$ at a fixed scale $\Sigma$ (the stack [[fixed-point]] convention; `rs/core` provides the reference `FixedPoint`). $\Sigma$ is a compile-time constant recorded in `config`, so two runs share it and agree bit for bit.
+linear algebra needs rationals — $\phi^*$ is a probability vector, the embedding $E$ carries singular weights. tru represents a rational $x$ as the field element $X = \mathrm{round}(x \cdot \Sigma) \bmod p$ at a fixed scale $\Sigma$ — a thin fixed-point layer over [[nebu]]'s `Goldilocks`, tru's only new arithmetic code. $\Sigma$ is a compile-time constant recorded in `config`, so two runs share it and agree bit for bit.
 
 the distinction that resolves the apparent paradox: tru does fixed-point rational arithmetic in which every value is stored as an $\mathbb{F}_p$ element — not abstract finite-field algebra. there is no "SVD over $\mathbb{F}_p$" — singular values and ordering are undefined in a bare finite field. magnitude and order are the order of the fixed-point representatives, which is total, canonical, and deterministic. the numerics are real-valued in meaning; the field is the storage and proof substrate.
 
