@@ -113,9 +113,41 @@ This is the precise sense in which [[Bayesian Truth Serum]] is the fundamental l
 
 ---
 
+## the Regime-B capital bound
+
+Regime B — a cartel holding over half the stake-weight — cannot be defended by scoring, because the cartel is the reference the score is measured against. The defense is economic: the perpetual [[ICBS]] market makes holding a false consensus a continuous cost, and the bound states how much honest capital renders that cost prohibitive.
+
+The peg-holding cost. Let the honest-signal-implied probability of edge $e$ be $q_T$ and the cartel's target false read be $q_F$, with lie size $g = q_T - q_F > 0$. In [[ICBS]], parametrizing the state by an angle $\phi$ gives prices $p_Y = \lambda\cos\phi$, $p_N = \lambda\sin\phi$ and reserve-ratio probability $q = \cos^2\phi$. Honest informed capital sees YES underpriced whenever $q < q_T$ and buys toward $q_T$; the cartel must run a counter-flow to hold $q$ at $q_F$. Model the motion as
+
+$$\dot q = \eta_H H\,(q_T - q) - u_C,$$
+
+honest push proportional to deployed honest capital $H$ and responsiveness $\eta_H$, against the cartel's counter-flow $u_C$. Holding the peg ($\dot q = 0$ at $q = q_F$) forces a constant counter-flow $u_C = \eta_H H\, g$. The cartel buys the losing side at that rate against a price gap $g$, so it bleeds at rate
+
+$$\dot L_C = u_C\, g + \delta D\, g = g\,(\eta_H H + \delta D),$$
+
+the counter-flow cost plus the damper tax, where $D$ is market depth (capital to move $q$ by one unit, $D \propto$ TVL $= \lambda\rho$, largest near $q = \tfrac12$ by a $1/\sin 2\phi$ factor).
+
+The bound. Let the cartel extract value at rate $\gamma(f)$ — the reward, rank, or influence it siphons by keeping $e$ mis-rated, increasing in its reach $f$. Both gain and bleed are rates, so viability is time-independent: the holding period cancels, and the attack either bleeds forever with no crossover or profits forever. It is a phase boundary, not a race. The attack is unprofitable exactly when $\gamma(f) \le g\,(\eta_H H + \delta D)$, which solves to the honest-capital threshold
+
+$$H \;\ge\; H^*(f) \;=\; \frac{\gamma(f)}{\eta_H\, g} \;-\; \frac{\delta D}{\eta_H}.$$
+
+Reading it:
+
+- $H^*$ rises with the prize $\gamma(f)$ and falls with the lie size $g$. Big lies are cheap to deter — lucrative to bet against — and near-truth lies would need vast capital but extract almost nothing; the ratio $\gamma/g$ governs.
+- the damper does part of the defense for free: if $\delta D \ge \gamma(f)/g$ then $H^* \le 0$ and the damper alone deters the attack. this sets the design target for $\delta$.
+- $\lambda$ and $\delta$ are protocol levers ($D \propto \lambda\rho$); $H$, $\eta_H$, $\gamma$, $g$ are environment.
+
+Two channels and antifragility. With the surprisingly-popular coupling and [[valence]] privacy, the cartel must corrupt both the price and the meta-aggregate to move $\hat\theta$. Corrupting the meta is the classic stake threshold — capital $\tfrac12 S_{\text{total}}$ to flip the reference; corrupting the price is the market cost above. The cartel must win both races; the honest side deters by holding either:
+
+$$\text{secure} \iff H > H^*(f) \ \ \text{or}\ \ S_{\text{honest}} > \tfrac12 S_{\text{total}}.$$
+
+Above the threshold the dynamics are self-reinforcing: betting against a false peg is profitable, so honest capital grows while the cartel's shrinks, widening the margin. $H^*$ is an unstable separatrix, not a finish line — the antifragility of [[market]] made quantitative.
+
+---
+
 ## what remains conjectural
 
-- the Regime-B capital bound: the honest informed [[ICBS]] capital that makes a stake-fraction-$f$ cartel strictly unprofitable, as a function of $\lambda$, $f$, and the signal margin. The coordinated-inversion case of the selection theorem assumes it; the explicit bound is the remaining economic theorem.
+- the capital bound is a mean-field model. The price ODE replaces the finite-population stochastic order flow with its drift; a full proof needs concentration (propagation of chaos). The geometric constants in $D$ and $\eta_H$ are order-of-magnitude, and the exact form of $\gamma(f)$ depends on the reward function of [[rewards]].
 - the surprisingly-popular selection rests on the standard peer-prediction model (common prior, conditional independence, stochastic relevance). Correlated evidence across agents weakens it; its interaction with the perpetual dynamics is unverified.
 
 see [[truth-scoring]] for the static minority case, the babbling lemma, and the Correlated Agreement reduction. see [[market]] for the perpetual market and the liquidity damper. see [[epistemic-markets]] for the [[ICBS]] cost function. see [[serum]] for the original Prelec mechanism. see [[honest majority assumption]] for the stake condition.
