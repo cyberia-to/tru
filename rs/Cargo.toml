@@ -17,6 +17,7 @@ path = "lib.rs"
 
 [dependencies]
 cyb-nebu = { path = "../../strata/nebu/rs" }
+cyber-hemera = { path = "../../hemera/rs" }
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"

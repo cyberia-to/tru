@@ -17,6 +17,7 @@ pub mod focusing;
 pub mod graph;
 pub mod model;
 pub mod pass;
+pub mod vocab;
 
 pub use arithmetic::Fx;
 pub use error::{McError, Result};
