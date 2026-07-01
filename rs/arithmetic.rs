@@ -171,6 +171,46 @@ impl Fx {
         // √(A/Σ) as fixed-point = √(A·Σ).
         Fx(from_signed(isqrt_u128((a as u128) << FRAC_BITS) as i128))
     }
+
+    /// Floor to an integer (toward −∞).
+    #[inline]
+    pub fn floor_to_i64(self) -> i64 {
+        (self.signed() >> FRAC_BITS) as i64
+    }
+
+    /// `e^self` via range reduction `e^x = 2^i · 2^f`, `x·log₂e = i + f`.
+    /// `2^f = e^{f·ln2}` from a short Taylor series (argument in `[0, ln2]`).
+    /// Underflows to zero below the representable magnitude.
+    pub fn exp(self) -> Fx {
+        // log2(e) and ln2 as fixed-point constants.
+        let log2e = Fx::from_ratio(14_426_950_409, 10_000_000_000);
+        let ln2 = Fx::from_ratio(6_931_471_806, 10_000_000_000);
+        let y = self * log2e;
+        let i = y.floor_to_i64();
+        let f = y - Fx::from_int(i); // [0,1)
+        let two_f = exp_series(f * ln2); // e^{f·ln2} = 2^f ∈ [1,2)
+        if i >= 30 {
+            // 2^30 already saturates our range; larger is out of scope.
+            Fx(from_signed(i128::MAX >> 2))
+        } else if i >= 0 {
+            two_f * Fx::from_int(1i64 << i)
+        } else if i > -(FRAC_BITS as i64) {
+            two_f.div(Fx::from_int(1i64 << (-i)))
+        } else {
+            Fx::ZERO
+        }
+    }
+}
+
+/// `e^u` for `u ∈ [0, ln2]` by Taylor series (12 terms → within one ULP).
+fn exp_series(u: Fx) -> Fx {
+    let mut term = Fx::ONE;
+    let mut sum = Fx::ONE;
+    for n in 1..=12 {
+        term = term * u.div(Fx::from_int(n));
+        sum = sum + term;
+    }
+    sum
 }
 
 // ── order (on the signed representative, not the residue) ─────────────
@@ -315,6 +355,17 @@ mod tests {
     fn field_element_round_trips() {
         let x = Fx::from_ratio(123, 456);
         assert_eq!(Fx::from_raw(x.raw()), x);
+    }
+
+    #[test]
+    fn exp_and_floor() {
+        assert_eq!(Fx::from_ratio(7, 2).floor_to_i64(), 3);
+        assert_eq!(Fx::from_ratio(-7, 2).floor_to_i64(), -4); // toward −∞
+        close(Fx::ZERO.exp(), 1.0);
+        close(Fx::from_int(-1).exp(), (-1.0_f64).exp());
+        close(Fx::from_int(-5).exp(), (-5.0_f64).exp());
+        close(Fx::from_int(2).exp(), 2.0_f64.exp());
+        assert_eq!(Fx::from_int(-40).exp(), Fx::ZERO); // underflows below one ULP
     }
 
     #[test]

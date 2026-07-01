@@ -21,8 +21,10 @@ pub struct FocusingParams {
     pub lambda_s: Fx,
     /// Blend weight for heat.
     pub lambda_h: Fx,
-    /// Outer coupled iterations T (fixed step count → deterministic trace).
-    pub iters: usize,
+    /// Convergence target ε: the iteration runs T(ε) = min t with κ^t ≤ ε.
+    pub epsilon: Fx,
+    /// Hard cap on outer iterations (used when κ is degenerate).
+    pub iter_cap: usize,
     /// Heat forward-Euler substeps (need τ/substeps ≤ 1 for stability).
     pub substeps: usize,
 }
@@ -36,7 +38,8 @@ impl Default for FocusingParams {
             lambda_d: Fx::from_ratio(5, 10),
             lambda_s: Fx::from_ratio(3, 10),
             lambda_h: Fx::from_ratio(2, 10),
-            iters: 50,
+            epsilon: Fx::from_ratio(1, 1_000_000),
+            iter_cap: 500,
             substeps: 20,
         }
     }
@@ -76,6 +79,10 @@ pub struct FocusingGraph {
     und_degree: Vec<Fx>,
     /// Stake-weighted teleport prior, normalized to sum 1.
     teleport: Vec<Fx>,
+    /// Largest Laplacian eigenvalue ‖L‖ (for the contraction κ).
+    lambda_max: Fx,
+    /// Algebraic connectivity λ₂ (Fiedler value).
+    lambda_2: Fx,
 }
 
 impl FocusingGraph {
@@ -137,15 +144,22 @@ impl FocusingGraph {
         let dangling: Vec<bool> = (0..n).map(|i| out_strength[i].is_zero()).collect();
 
         let teleport = normalize_l1(&node_stake);
+        let sym_weights = sym.build();
+
+        // Spectrum for the contraction κ (graph-only; params fold in at compute).
+        let lambda_max = super::spectral::lambda_max(&sym_weights, &und_degree, n, 60);
+        let lambda_2 = super::spectral::lambda_2(&sym_weights, &und_degree, n, lambda_max, 120);
 
         Self {
             n,
             node_ids,
             transition: trans.build(),
             dangling,
-            sym_weights: sym.build(),
+            sym_weights,
             und_degree,
             teleport,
+            lambda_max,
+            lambda_2,
         }
     }
 
@@ -158,6 +172,8 @@ impl FocusingGraph {
             sym_weights: CsrBuilder::new(0).build(),
             und_degree: vec![],
             teleport: vec![],
+            lambda_max: Fx::ZERO,
+            lambda_2: Fx::ZERO,
         }
     }
 
@@ -171,6 +187,16 @@ impl FocusingGraph {
 
     pub fn node_ids(&self) -> &[[u8; 32]] {
         &self.node_ids
+    }
+
+    /// Largest Laplacian eigenvalue ‖L‖.
+    pub fn lambda_max(&self) -> Fx {
+        self.lambda_max
+    }
+
+    /// Algebraic connectivity λ₂ (Fiedler value).
+    pub fn lambda_2(&self) -> Fx {
+        self.lambda_2
     }
 }
 
@@ -190,11 +216,27 @@ pub struct FocusingResult {
 
 // ── Composite: one coupled iteration to the fixed point ───────────────
 
+/// The composite contraction coefficient κ for this graph and params.
+pub fn contraction(g: &FocusingGraph, p: &FocusingParams) -> Fx {
+    super::spectral::kappa(p, g.lambda_max, g.lambda_2)
+}
+
+/// The step count T(ε) the coupled iteration runs: the smallest T with κ^T ≤ ε
+/// ([[tri-kernel]] §2.2), capped by `p.iter_cap`.
+pub fn derived_steps(g: &FocusingGraph, p: &FocusingParams) -> usize {
+    super::spectral::steps_for(contraction(g, p), p.epsilon, p.iter_cap)
+}
+
 /// Compute φ* by iterating the coupled tri-kernel: each step applies D, S, and
 /// H_τ to the same current φ, blends `λ_d·D + λ_s·S + λ_h·H`, normalizes onto
-/// the simplex, and feeds φ back — repeated a fixed `iters` times. Fixed-point
-/// throughout, so two runs on the same graph are bit-identical.
+/// the simplex, and feeds φ back — for a fixed T(ε) steps derived from the
+/// contraction κ. Fixed-point throughout, so two runs are bit-identical.
 pub fn compute_focusing(g: &FocusingGraph, p: &FocusingParams) -> FocusingResult {
+    iterate(g, p, derived_steps(g, p))
+}
+
+/// The coupled iteration run for an explicit step count.
+pub fn iterate(g: &FocusingGraph, p: &FocusingParams, steps: usize) -> FocusingResult {
     if g.n == 0 {
         return FocusingResult { focus: vec![], diffusion: vec![], springs: vec![], heat: vec![] };
     }
@@ -207,7 +249,7 @@ pub fn compute_focusing(g: &FocusingGraph, p: &FocusingParams) -> FocusingResult
     let mut springs = vec![Fx::ZERO; n];
     let mut heat = vec![Fx::ZERO; n];
 
-    for _ in 0..p.iters {
+    for _ in 0..steps {
         diffusion = diffusion_step(&phi, &g.transition, &g.dangling, &g.teleport, p.alpha);
         springs = springs_step(&phi, &g.sym_weights, &g.und_degree, p.mu, &x0);
         heat = heat_step(&phi, &g.sym_weights, &g.und_degree, p.tau, p.substeps);
@@ -260,13 +302,29 @@ mod tests {
     }
 
     #[test]
-    fn converges_drift_shrinks() {
+    fn contraction_below_one() {
         let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
         let g = FocusingGraph::build(links);
-        let long = compute_focusing(&g, &FocusingParams::default());
-        let short = compute_focusing(&g, &FocusingParams { iters: 25, ..FocusingParams::default() });
-        let drift: f64 = long.focus.iter().zip(&short.focus).map(|(a, b)| (a.to_f64() - b.to_f64()).abs()).sum();
-        assert!(drift < 1e-3, "drift 25→50 iters = {drift}, not converged");
+        let p = FocusingParams::default();
+        let kappa = contraction(&g, &p);
+        assert!(kappa < Fx::ONE, "κ = {} must be < 1", kappa.to_f64());
+        assert!(kappa > Fx::ZERO, "κ = {} must be > 0", kappa.to_f64());
+        // λ_max is real (positive) for a nonempty graph.
+        assert!(g.lambda_max() > Fx::ZERO, "λ_max should be positive");
+    }
+
+    #[test]
+    fn derived_steps_reach_the_fixed_point() {
+        let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
+        let g = FocusingGraph::build(links);
+        let p = FocusingParams::default();
+        let t = derived_steps(&g, &p);
+        assert!(t > 0 && t < p.iter_cap, "derived T = {t} should be a real step count");
+        // Past T(ε) the iterate barely moves — the fixed point is reached.
+        let at_t = iterate(&g, &p, t);
+        let past_t = iterate(&g, &p, t + 20);
+        let drift: f64 = at_t.focus.iter().zip(&past_t.focus).map(|(a, b)| (a.to_f64() - b.to_f64()).abs()).sum();
+        assert!(drift < 1e-4, "drift past T = {drift}, not converged");
     }
 
     #[test]
