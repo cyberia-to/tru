@@ -49,10 +49,10 @@ the substrate the critical path needs. the field arithmetic is the real M0 — t
 | task | detail | status |
 |------|--------|--------|
 | field arithmetic | the representation contract ([[arithmetic]]): a thin fixed-point layer at scale $\Sigma = 2^{32}$ over [[nebu]]'s `Goldilocks` (`cyb-nebu`, `../strata/nebu/rs`). tru adds encode/decode, mul-then-rescale (i128 widen → round → reduce mod p), div/recip, integer `sqrt`, order on the balanced residue. no `f64` on any deterministic path. `rs/arithmetic.rs`, type `Fx` | ✅ done — 7 tests green |
-| wire [[hemera]] | `cyber-hemera` for particle ids / axon hash / file particles | ↦ at first use (M2 formats) — avoid an unused dep |
+| wire [[hemera]] | `cyber-hemera` for particle ids / file particles | ✅ done (M2 — used by vocab's `particle()`/`verify()`) |
 | config `.tokens` | token_weight $\rho_\tau$ from `config.tokens` | ↦ M3 (its only consumer is $A^{eff}$) |
-| generalize `.cyb` reader | extract a format-agnostic opener from `rs/graph/reader.rs` (drops the hardcoded `"graph"` assertion at `reader.rs:35`) | ↦ M2, when vocab + model become the second and third consumers (no premature abstraction) |
-| `Serialize` on frontmatter | emit path for the writers | ↦ M2 (with the model/vocab writers) |
+| generalize `.cyb` reader | `frontmatter::index_sections` — format-agnostic; graph reader + vocab share it | ✅ done (M2) |
+| frontmatter emit | writers emit the `[cyb]` + `[[files]]` TOML directly (vocab does; model will) | ✅ done for vocab — no `Serialize` derive needed |
 
 predicate (met): `Fx` round-trips encode/decode, mul rescales within one ULP of the rational, div/recip/sqrt correct, order respects sign+magnitude, division-by-zero degrades to zero (checked form reports it). the existing 6 focusing tests get ported onto `Fx` in M1.
 
@@ -131,25 +131,11 @@ measured on the fully-conformant engine (M1: coupled iteration, fixed-point over
 
 the two on-disk formats. prerequisites for the compiler: vocab feeds pass 1, model is the output of pass 8. authoritative byte layout for the writer is [[ct0]] §10.
 
-### vocab (`specs/vocab.md`) — step 0a
+### vocab (`specs/vocab.md`) — step 0a — ✅ done
 
-`.cyb` container, two sections: `card` (md) + `particles` (binary). `particles` layout:
+`rs/vocab.rs` — `Vocab`/`VocabEntry`, `to_bytes`/`from_bytes`/`read`/`write`, `push`/`register`/`lookup`, `particle()` = hemera(file bytes), `verify()` (each inlined entry hashes to its particle). The `.cyb` section indexer was generalized into `frontmatter::index_sections` (the graph reader now shares it) and `cyber-hemera` is wired. 5 tests: round-trip, content-addressed particle (reorder → new particle), self-consistency, lookup, file I/O. `len=0` entries preserved.
 
-```
-[0..4]  n  (u32 LE)
-×n:  [0..32] particle (hemera hash)  [32..40] len (u64 LE)  [40..40+len] data
-```
-
-entry index = vocab id. `len=0` valid (registers existence). self-consistency: `hemera(data)==particle` when `len>0`. file identity: `particle(.vocab)=hemera(file bytes)`.
-
-| task | size |
-|------|------|
-| `Vocab` + `VocabEntry` structs, new `rs/vocab/` module | S |
-| `ParticleEntryIter` over mmap'd `particles` slice (mirror `graph::record::CyberlinkIter`) | S |
-| writer: frontmatter + binary serialize, precompute section `size` $=4+\Sigma(40+\text{len}_i)$ | S–M |
-| multi-vocab composition with first-hit-wins dedup (CT-0 pass 1 §3.1) | M |
-
-predicate: round-trip — parse then re-emit yields byte-identical file and same file particle.
+deferred: multi-vocab composition + first-hit-wins dedup (CT-0 pass 1 §3.1) — lands with pass 1 (M5), its only consumer.
 
 ### model (`specs/model.md` + ct0 §10) — step 0b, 2g
 
