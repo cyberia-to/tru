@@ -33,6 +33,19 @@ tru computes Δφ* — the shift in φ* before and after a neuron's batch of lin
 
 this is why tru runs locally on every [[neuron]], not only on validators. validators run it for consensus. every neuron runs it to earn.
 
+## cli
+
+the `tru` binary reads `.cyb` containers and runs the engine. built and verified:
+
+```
+tru inspect <file>      # any .cyb: type, name, sections + sizes
+tru focus   <graph>     # run the tri-kernel: cyberank, syntropy J, telemetry (κ, λ₂, T(ε))
+tru vocab   <file>      # .vocab: entries, file particle, self-consistency
+tru model   <file>      # .model: tensors, config, particle
+```
+
+`focus` is the showcase — it computes φ* over a `.graph` in fixed-point over the [[Goldilocks field]] (deterministic, no floats) and prints the cyberank ranking, [[syntropy]], and the contraction κ / algebraic connectivity λ₂ / derived step count. generate demo files with `cargo run -p tru --example gen_demo -- /tmp`.
+
 ## spec map
 
 the specs are organized in dependency order. implement them in the sequence below. the [specs/README.md](specs/README.md) is the full build map — layers, status, and the ct0 pass breakdown.
