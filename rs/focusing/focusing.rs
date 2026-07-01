@@ -85,21 +85,21 @@ pub struct FocusingGraph {
 impl FocusingGraph {
     /// Build from cyberlinks. Self-loops and zero-amount links are skipped.
     pub fn build(links: impl IntoIterator<Item = Link>) -> Self {
-        let raw: Vec<([u8; 32], [u8; 32], Fx)> = links
+        // Keep raw amounts as exact integers; normalize to fixed-point below.
+        let raw_amounts: Vec<([u8; 32], [u8; 32], u128)> = links
             .into_iter()
-            .filter_map(|l| {
-                if l.amount == 0 || l.from == l.to {
-                    None
-                } else {
-                    // Stake as fixed-point; realistic token amounts fit i64.
-                    Some((l.from, l.to, Fx::from_int(l.amount.min(i64::MAX as u128) as i64)))
-                }
-            })
+            .filter_map(|l| if l.amount == 0 || l.from == l.to { None } else { Some((l.from, l.to, l.amount)) })
             .collect();
 
-        if raw.is_empty() {
+        if raw_amounts.is_empty() {
             return Self::empty();
         }
+
+        // Stake weights are scale-invariant for φ*; normalize by the largest so
+        // they land in (0,1] (comparable to μ=τ=1) and never overflow the field.
+        let max_amount = raw_amounts.iter().map(|&(_, _, a)| a).max().unwrap_or(1);
+        let raw: Vec<([u8; 32], [u8; 32], Fx)> =
+            raw_amounts.iter().map(|&(f, t, a)| (f, t, Fx::ratio_u128(a, max_amount))).collect();
 
         // Node indices, assigned by first appearance (deterministic).
         let mut node_ids: Vec<[u8; 32]> = Vec::new();
@@ -361,6 +361,25 @@ mod tests {
         let r = compute_focusing(&g, &FocusingParams::default());
         let (i1, i2) = (node_idx(&g, 1), node_idx(&g, 2));
         assert!(r.focus[i1] > r.focus[i2], "well-linked node 1 should outrank node 2");
+    }
+
+    #[test]
+    fn large_stakes_are_scale_invariant() {
+        // 10^15-scale stakes must not overflow and must give the SAME φ* as the
+        // proportionally-smaller graph (weights are scale-invariant).
+        let big = 1_000_000_000_000_000u128;
+        let large = vec![
+            Link { from: hash(1), to: hash(2), amount: big, valence: 1 },
+            Link { from: hash(2), to: hash(3), amount: big / 2, valence: 1 },
+            Link { from: hash(4), to: hash(1), amount: big * 3, valence: 1 },
+        ];
+        let small = vec![link(1, 2, 1000), link(2, 3, 500), link(4, 1, 3000)];
+        let rl = compute_focusing(&FocusingGraph::build(large), &FocusingParams::default());
+        let rs = compute_focusing(&FocusingGraph::build(small), &FocusingParams::default());
+        let total: f64 = rl.focus.iter().map(|x| x.to_f64()).sum();
+        assert!((total - 1.0).abs() < 1e-6, "large-stake φ* sums to {total}");
+        assert!(rl.focus.iter().all(|x| *x > Fx::ZERO));
+        assert!(rl.focus.iter().zip(&rs.focus).all(|(a, b)| a.raw() == b.raw()), "φ* not scale-invariant");
     }
 
     #[test]

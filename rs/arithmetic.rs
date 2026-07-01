@@ -62,6 +62,24 @@ impl Fx {
         Fx(from_signed(round_div((num as i128) << FRAC_BITS, den as i128)))
     }
 
+    /// `round(num · 2^FRAC_BITS / den)` for large nonnegative integers — the way
+    /// to bring a big stake ratio (`amount / total`) into fixed-point without
+    /// [`Fx::from_int`] overflowing for values above `2^31`. Intended for
+    /// `num ≤ den` (result in `[0,1]`).
+    pub fn ratio_u128(num: u128, den: u128) -> Fx {
+        if den == 0 {
+            return Fx::ZERO;
+        }
+        // Keep den below 2^96 so `num << FRAC_BITS` cannot overflow u128.
+        let (mut num, mut den) = (num, den);
+        while den >= (1u128 << 96) {
+            num >>= 1;
+            den >>= 1;
+        }
+        let scaled = ((num << FRAC_BITS) + den / 2) / den;
+        Fx(from_signed(scaled as i128))
+    }
+
     /// The underlying field element — the canonical storage / proof form.
     #[inline]
     pub fn raw(self) -> Goldilocks {
@@ -412,6 +430,16 @@ mod tests {
         close(Fx::from_int(-5).exp(), (-5.0_f64).exp());
         close(Fx::from_int(2).exp(), 2.0_f64.exp());
         assert_eq!(Fx::from_int(-40).exp(), Fx::ZERO); // underflows below one ULP
+    }
+
+    #[test]
+    fn ratio_u128_handles_large_ints() {
+        close(Fx::ratio_u128(1, 3), 1.0 / 3.0);
+        close(Fx::ratio_u128(3, 4), 0.75);
+        // magnitudes that would overflow from_int(n<<32) for n > 2^31
+        let big = 1_000_000_000_000_000u128; // 10^15
+        assert_eq!(Fx::ratio_u128(big, big), Fx::ONE);
+        close(Fx::ratio_u128(big / 4, big), 0.25);
     }
 
     #[test]
