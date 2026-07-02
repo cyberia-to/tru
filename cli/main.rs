@@ -100,8 +100,9 @@ enum Cmd {
     /// Summarize any `.cyb` container: type, name, sections.
     Inspect { path: PathBuf },
     /// Run the tri-kernel over a `.graph`: cyberank, syntropy, telemetry.
+    /// With no path, reads the local snapshot ($TRU_GRAPH or ~/.cyb/cybergraph.graph).
     Focus {
-        path: PathBuf,
+        path: Option<PathBuf>,
         #[arg(short, long, default_value_t = 20)]
         top: usize,
     },
@@ -120,7 +121,7 @@ fn main() -> Result<()> {
     }
     match Cli::parse().cmd {
         Cmd::Inspect { path } => inspect(&path),
-        Cmd::Focus { path, top } => focus(&path, top),
+        Cmd::Focus { path, top } => focus(path, top),
         Cmd::Vocab { path } => vocab(&path),
         Cmd::Model { path } => model(&path),
     }
@@ -128,6 +129,36 @@ fn main() -> Result<()> {
 
 fn kv(key: &str, val: &str) -> String {
     format!("{} {}", dim(key), val)
+}
+
+/// The default local cybergraph snapshot: `$TRU_GRAPH`, else `~/.cyb/cybergraph.graph`.
+fn default_graph() -> PathBuf {
+    if let Ok(p) = std::env::var("TRU_GRAPH") {
+        return PathBuf::from(p);
+    }
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+    Path::new(&home).join(".cyb").join("cybergraph.graph")
+}
+
+/// Resolve the graph path: the one given, or the local default. Errors with
+/// guidance if the default is missing.
+fn resolve_graph(path: Option<PathBuf>) -> Result<PathBuf> {
+    match path {
+        Some(p) => Ok(p),
+        None => {
+            let p = default_graph();
+            if p.exists() {
+                Ok(p)
+            } else {
+                anyhow::bail!(
+                    "no graph given and none at {}\n  {}\n  {}",
+                    p.display(),
+                    "pass a path:      tru focus <file.graph>",
+                    "or set the default: export TRU_GRAPH=/path/to/snapshot.graph"
+                )
+            }
+        }
+    }
 }
 
 fn inspect(path: &Path) -> Result<()> {
@@ -145,8 +176,9 @@ fn inspect(path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn focus(path: &Path, top: usize) -> Result<()> {
-    let g = Graph::open(path)?;
+fn focus(path: Option<PathBuf>, top: usize) -> Result<()> {
+    let path = resolve_graph(path)?;
+    let g = Graph::open(&path)?;
     let n_links = g.cyberlinks()?.count();
     let links = g.cyberlinks()?.map(|cl| Link { from: cl.from, to: cl.to, amount: cl.amount, valence: cl.valence });
     let fg = FocusingGraph::build(links);
