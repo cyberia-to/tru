@@ -100,7 +100,7 @@ enum Cmd {
     /// Summarize any `.cyb` container: type, name, sections.
     Inspect { path: PathBuf },
     /// Run the tri-kernel over a `.graph`: cyberank, syntropy, telemetry.
-    /// With no path, reads the local snapshot ($TRU_GRAPH or ~/.cyb/cybergraph.graph).
+    /// With no path, reads the local snapshot ($TRU_GRAPH or ~/cyb/my.graph).
     Focus {
         path: Option<PathBuf>,
         #[arg(short, long, default_value_t = 20)]
@@ -131,13 +131,15 @@ fn kv(key: &str, val: &str) -> String {
     format!("{} {}", dim(key), val)
 }
 
-/// The default local cybergraph snapshot: `$TRU_GRAPH`, else `~/.cyb/cybergraph.graph`.
+/// The default local cybergraph snapshot: `$TRU_GRAPH`, else `~/cyb/my.graph`.
+/// `~/cyb` is visible, not dotfile-hidden — nothing about a neuron's own
+/// graph needs hiding from its owner.
 fn default_graph() -> PathBuf {
     if let Ok(p) = std::env::var("TRU_GRAPH") {
         return PathBuf::from(p);
     }
     let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
-    Path::new(&home).join(".cyb").join("cybergraph.graph")
+    Path::new(&home).join("cyb").join("my.graph")
 }
 
 /// Resolve the graph path: the one given, or the local default. Errors with
