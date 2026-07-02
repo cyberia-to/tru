@@ -232,11 +232,21 @@ fn focus(path: Option<PathBuf>, top: usize) -> Result<()> {
         kv("T(ε)", &yellow(&tel.steps.to_string()))
     );
 
+    // Spectral embedding — the (x, y) mir reads for layout (Fiedler + λ₃).
+    let emb = fg.embedding(2, 200);
+    let has_xy = emb.k >= 2;
+
     let mut ranked: Vec<(usize, f64)> = result.focus.iter().map(|x| x.to_f64()).enumerate().collect();
     ranked.sort_by(|a, b| b.1.total_cmp(&a.1));
-    println!("\n{}", dim(&format!("cyberank φ*(p) — top {}", top.min(ranked.len()))));
+    let head = if has_xy { "cyberank φ*(p) · position (x,y)" } else { "cyberank φ*(p)" };
+    println!("\n{}", dim(&format!("{head} — top {}", top.min(ranked.len()))));
     for (idx, phi) in ranked.iter().take(top) {
-        println!("  {}  {}", cyan(&hex8(fg.node_id(*idx))), yellow(&format!("{phi:.6}")));
+        let pos = if has_xy {
+            dim(&format!("  ({:+.4}, {:+.4})", emb.coords[*idx][0].to_f64(), emb.coords[*idx][1].to_f64()))
+        } else {
+            String::new()
+        };
+        println!("  {}  {}{}", cyan(&hex8(fg.node_id(*idx))), yellow(&format!("{phi:.6}")), pos);
     }
     Ok(())
 }

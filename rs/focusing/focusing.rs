@@ -263,6 +263,37 @@ impl FocusingGraph {
     pub fn lambda_2(&self) -> Fx {
         self.lambda_2
     }
+
+    /// The spectral embedding [[mir]] reads: each particle's coordinate in the
+    /// space of the Laplacian's `k` lowest nontrivial eigenvectors (Fiedler
+    /// first). `iters` is the subspace-iteration count. Structurally similar
+    /// particles receive nearby coordinates.
+    pub fn embedding(&self, k: usize, iters: usize) -> SpectralEmbedding {
+        let (vectors, eigenvalues) = super::spectral::spectral_vectors(
+            &self.sym_weights,
+            &self.und_degree,
+            self.n,
+            self.lambda_max,
+            k,
+            iters,
+        );
+        let kk = vectors.len();
+        // Transpose the k eigenvectors into per-particle coordinate rows.
+        let coords: Vec<Vec<Fx>> =
+            (0..self.n).map(|i| (0..kk).map(|c| vectors[c][i]).collect()).collect();
+        SpectralEmbedding { k: kk, coords, eigenvalues }
+    }
+}
+
+/// The spectral embedding [[focusing]] emits to [[mir]] every epoch: each
+/// particle's position in the low-frequency Laplacian eigenspace.
+pub struct SpectralEmbedding {
+    /// Coordinates per particle (= number of eigenvectors extracted).
+    pub k: usize,
+    /// `coords[i]` is the k-vector for particle [`FocusingGraph::node_id`]`(i)`.
+    pub coords: Vec<Vec<Fx>>,
+    /// The k Laplacian eigenvalues, ascending (λ₂ first).
+    pub eigenvalues: Vec<Fx>,
 }
 
 // ── Output ────────────────────────────────────────────────────────────
@@ -531,5 +562,74 @@ mod tests {
             !g.node_ids().iter().any(|h| h[0] == 7 || h[0] == 8),
             "endpoints of the doubted edge must be absent"
         );
+    }
+
+    // ── spectral embedding (positions for mir) ────────────────────────
+
+    fn sgn(x: Fx) -> i32 {
+        if x > Fx::ZERO {
+            1
+        } else if x < Fx::ZERO {
+            -1
+        } else {
+            0
+        }
+    }
+
+    /// Undirected edge → a pair of unit-stake directed links.
+    fn undirected(a: u8, b: u8) -> [Link; 2] {
+        [Link::stake(hash(a), hash(b), 100), Link::stake(hash(b), hash(a), 100)]
+    }
+
+    fn barbell() -> FocusingGraph {
+        // Two triangles {1,2,3} and {4,5,6} joined by the single bridge 3–4.
+        let mut links = Vec::new();
+        for (a, b) in [(1, 2), (2, 3), (1, 3), (4, 5), (5, 6), (4, 6), (3, 4)] {
+            links.extend(undirected(a, b));
+        }
+        FocusingGraph::build(links, &Karma::none())
+    }
+
+    #[test]
+    fn fiedler_vector_separates_the_two_communities() {
+        let g = barbell();
+        let emb = g.embedding(1, 300);
+        assert_eq!(emb.k, 1);
+        let coord = |b: u8| emb.coords[node_idx(&g, b)][0];
+        // All of cluster A share one sign; all of cluster B the opposite.
+        let sa = sgn(coord(1));
+        assert!(sa != 0, "Fiedler entry should not be zero");
+        for b in [2, 3] {
+            assert_eq!(sgn(coord(b)), sa, "node {b} must share cluster A's sign");
+        }
+        for b in [4, 5, 6] {
+            assert_eq!(sgn(coord(b)), -sa, "node {b} must take cluster B's opposite sign");
+        }
+    }
+
+    #[test]
+    fn embedding_is_centered_and_orthogonal() {
+        let g = barbell();
+        let emb = g.embedding(2, 300);
+        assert_eq!(emb.k, 2);
+        // Each eigenvector is centered (orthogonal to the constant vector).
+        for c in 0..2 {
+            let sum: f64 = (0..g.n()).map(|i| emb.coords[i][c].to_f64()).sum();
+            assert!(sum.abs() < 1e-3, "eigenvector {c} not centered (Σ={sum})");
+        }
+        // The two eigenvectors are mutually orthogonal.
+        let d: f64 = (0..g.n()).map(|i| emb.coords[i][0].to_f64() * emb.coords[i][1].to_f64()).sum();
+        assert!(d.abs() < 1e-2, "eigenvectors not orthogonal (⟨v₀,v₁⟩={d})");
+        // Eigenvalues ascending and nonnegative (λ₂ ≤ λ₃).
+        assert!(emb.eigenvalues[0].to_f64() >= -1e-6);
+        assert!(emb.eigenvalues[1] >= emb.eigenvalues[0], "eigenvalues must be ascending");
+    }
+
+    #[test]
+    fn embedding_k_clamps_to_n_minus_one() {
+        let g = barbell(); // 6 nodes
+        let emb = g.embedding(100, 50);
+        assert_eq!(emb.k, 5, "cannot extract more than n−1 nontrivial eigenvectors");
+        assert!(emb.coords.iter().all(|row| row.len() == 5));
     }
 }

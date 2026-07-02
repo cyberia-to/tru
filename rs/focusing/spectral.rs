@@ -120,6 +120,101 @@ pub fn lambda_2(sym: &CsrMatrix, degree: &[Fx], n: usize, lambda_max: Fx, iters:
     }
 }
 
+/// The k leading eigenvectors of `M = λ_max·I − L` on `1^⊥` — equivalently the
+/// bottom-k nontrivial eigenvectors of the Laplacian `L` (the Fiedler vector
+/// first, then the next-lowest frequencies). These are the spectral embedding
+/// [[focusing]] emits to [[mir]]: structurally similar particles land near each
+/// other. Ordered most-dominant-first (ascending Laplacian eigenvalue).
+///
+/// Subspace (orthogonal) iteration: apply `M` to a block of `k` vectors,
+/// project each off the constant null space, re-orthogonalize by modified
+/// Gram–Schmidt, repeat a fixed `iters`. Given spectral gaps the columns
+/// converge to the individual eigenvectors; a final Rayleigh-quotient sort
+/// fixes the order. Fixed-point throughout, so the embedding is reproducible.
+/// (The spec names LOBPCG as the eventual accelerator; this is the exact object
+/// it must converge to.)
+pub fn spectral_vectors(
+    sym: &CsrMatrix,
+    degree: &[Fx],
+    n: usize,
+    lambda_max: Fx,
+    k: usize,
+    iters: usize,
+) -> (Vec<Vec<Fx>>, Vec<Fx>) {
+    let k = k.min(n.saturating_sub(1));
+    if k == 0 {
+        return (vec![], vec![]);
+    }
+
+    // Deterministic, linearly independent start block: distinct stride per
+    // column so modified Gram–Schmidt does not collapse them.
+    let mut block: Vec<Vec<Fx>> = (0..k)
+        .map(|j| {
+            let mut v: Vec<Fx> =
+                (0..n).map(|i| Fx::from_int(((i * (2 * j + 3) + j) % 13 + 1) as i64)).collect();
+            deflate_mean(&mut v);
+            v
+        })
+        .collect();
+    orthonormalize(&mut block);
+
+    let mut mv = vec![Fx::ZERO; n];
+    for _ in 0..iters {
+        for col in block.iter_mut() {
+            l_matvec(sym, degree, col, &mut mv);
+            for i in 0..n {
+                col[i] = lambda_max * col[i] - mv[i]; // (λ_max·I − L)·v
+            }
+            deflate_mean(col);
+        }
+        orthonormalize(&mut block);
+    }
+
+    // Rayleigh quotient of M per column → Laplacian eigenvalue λ = λ_max − μ.
+    let mut ranked: Vec<(Fx, Vec<Fx>)> = block
+        .into_iter()
+        .map(|v| {
+            l_matvec(sym, degree, &v, &mut mv);
+            for i in 0..n {
+                mv[i] = lambda_max * v[i] - mv[i];
+            }
+            let mu = dot(&v, &mv).div(dot(&v, &v));
+            (mu, v)
+        })
+        .collect();
+    // Most-dominant M-eigenvalue first (= smallest Laplacian eigenvalue first).
+    ranked.sort_by(|a, b| b.0.cmp(&a.0));
+
+    let mut vectors = Vec::with_capacity(k);
+    let mut eigenvalues = Vec::with_capacity(k);
+    for (mu, v) in ranked {
+        let lam = lambda_max - mu;
+        eigenvalues.push(if lam < Fx::ZERO { Fx::ZERO } else { lam });
+        vectors.push(v);
+    }
+    (vectors, eigenvalues)
+}
+
+/// Modified Gram–Schmidt: make the block mutually orthogonal (inner products
+/// via `dot`), each column re-scaled to bounded magnitude. No square root — the
+/// projection uses `dot(u,v)/dot(u,u)`, so unit L2 norm is unnecessary.
+fn orthonormalize(block: &mut [Vec<Fx>]) {
+    let k = block.len();
+    for j in 0..k {
+        for i in 0..j {
+            let denom = dot(&block[i], &block[i]);
+            if denom.is_zero() {
+                continue;
+            }
+            let coeff = dot(&block[i], &block[j]).div(denom);
+            for x in 0..block[j].len() {
+                block[j][x] = block[j][x] - coeff * block[i][x];
+            }
+        }
+        abs_max_normalize(&mut block[j]);
+    }
+}
+
 /// The composite contraction coefficient κ ([[tri-kernel]] §2.2).
 pub fn kappa(p: &FocusingParams, lambda_max: Fx, lambda_2: Fx) -> Fx {
     let heat = (Fx::ZERO - p.tau * lambda_2).exp(); // e^{−τλ₂}
