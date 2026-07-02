@@ -45,6 +45,7 @@ impl Default for FocusingParams {
 // ── Input link type ───────────────────────────────────────────────────
 
 /// A single cyberlink contributing to the field.
+#[derive(Clone)]
 pub struct Link {
     /// Signing neuron ν — the key karma is looked up under.
     pub neuron: [u8; 32],

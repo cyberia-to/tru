@@ -72,12 +72,14 @@ fn banner() -> String {
 
 fn help() {
     println!(
-        "{}\n  {}   {}\n  {}   {}\n  {}   {}\n  {}   {}\n\n  {}",
+        "{}\n  {}   {}\n  {}   {}\n  {}   {}\n  {}   {}\n  {}   {}\n\n  {}",
         dim("commands"),
         bold("inspect <file> "),
         dim("summarize any .cyb: type, name, sections"),
         bold("focus   <graph>"),
         dim("run the tri-kernel: cyberank · syntropy · telemetry"),
+        bold("impulse <graph>"),
+        dim("Δφ* of a new link: the directed syntropy gain Δφ⁺"),
         bold("vocab   <file> "),
         dim("a .vocab dictionary + self-consistency"),
         bold("model   <file> "),
@@ -106,6 +108,22 @@ enum Cmd {
         #[arg(short, long, default_value_t = 20)]
         top: usize,
     },
+    /// Compute the impulse Δφ* of one new link on a `.graph`: the directed
+    /// syntropy gain Δφ⁺ (the reward primitive) and the sparse focus shift.
+    Impulse {
+        path: PathBuf,
+        /// Source particle, by hex prefix (matched against the graph).
+        #[arg(long)]
+        from: String,
+        /// Target particle, by hex prefix.
+        #[arg(long)]
+        to: String,
+        /// Stake on the new link (smallest units).
+        #[arg(long, default_value_t = 1000)]
+        stake: u128,
+        #[arg(short, long, default_value_t = 10)]
+        top: usize,
+    },
     /// Summarize a `.vocab` dictionary and check its self-consistency.
     Vocab { path: PathBuf },
     /// Summarize a `.model` checkpoint: tensors, config, particle.
@@ -122,6 +140,7 @@ fn main() -> Result<()> {
     match Cli::parse().cmd {
         Cmd::Inspect { path } => inspect(&path),
         Cmd::Focus { path, top } => focus(path, top),
+        Cmd::Impulse { path, from, to, stake, top } => impulse(&path, &from, &to, stake, top),
         Cmd::Vocab { path } => vocab(&path),
         Cmd::Model { path } => model(&path),
     }
@@ -218,6 +237,86 @@ fn focus(path: Option<PathBuf>, top: usize) -> Result<()> {
     println!("\n{}", dim(&format!("cyberank φ*(p) — top {}", top.min(ranked.len()))));
     for (idx, phi) in ranked.iter().take(top) {
         println!("  {}  {}", cyan(&hex8(fg.node_id(*idx))), yellow(&format!("{phi:.6}")));
+    }
+    Ok(())
+}
+
+/// Read a graph's cyberlinks as focusing `Link`s (stake-only: neutral price,
+/// no karma source wired yet).
+fn read_links(g: &Graph) -> Result<Vec<Link>> {
+    Ok(g.cyberlinks()?
+        .map(|cl| Link {
+            neuron: cl.neuron,
+            from: cl.from,
+            to: cl.to,
+            amount: cl.amount,
+            valence: cl.valence,
+            price: tru::arithmetic::Fx::ONE,
+        })
+        .collect())
+}
+
+/// Resolve a hex prefix to a unique particle among `parts`.
+fn resolve_particle(parts: &[[u8; 32]], prefix: &str) -> Result<[u8; 32]> {
+    let p = prefix.trim().trim_end_matches('…').to_lowercase();
+    let hits: Vec<[u8; 32]> = parts.iter().filter(|h| hex(*h).starts_with(&p)).copied().collect();
+    match hits.as_slice() {
+        [one] => Ok(*one),
+        [] => anyhow::bail!("no particle matches prefix '{prefix}'"),
+        many => anyhow::bail!("prefix '{prefix}' is ambiguous — {} particles match", many.len()),
+    }
+}
+
+fn impulse(path: &Path, from: &str, to: &str, stake: u128, top: usize) -> Result<()> {
+    let g = Graph::open(path)?;
+    let base = read_links(&g)?;
+
+    // Particle universe: every endpoint in the base graph.
+    let mut parts: Vec<[u8; 32]> = Vec::new();
+    for l in &base {
+        for h in [l.from, l.to] {
+            if !parts.contains(&h) {
+                parts.push(h);
+            }
+        }
+    }
+    let from_h = resolve_particle(&parts, from)?;
+    let to_h = resolve_particle(&parts, to)?;
+
+    // The signal: one new link, authored by the source, at neutral market price.
+    let batch = vec![Link {
+        neuron: from_h,
+        from: from_h,
+        to: to_h,
+        amount: stake,
+        valence: 1,
+        price: tru::arithmetic::Fx::ONE,
+    }];
+    let params = FocusingParams::default();
+    let imp = tru::impulse(&base, &batch, &focusing::Karma::none(), &params, params.epsilon);
+
+    println!("{} {} {} {}", green("impulse"), cyan(&hex8(&from_h)), dim("→"), cyan(&hex8(&to_h)));
+    let sep = dim(" · ");
+    println!("  {}", kv("stake", &yellow(&stake.to_string())));
+    println!(
+        "  {}{sep}{}",
+        kv("Δφ⁺ reward", &yellow(&format!("{:.6}", imp.directed.to_f64()))),
+        kv("ΔJ", &yellow(&format!("{:+.6}", imp.delta_j.to_f64())))
+    );
+    println!(
+        "  {}{sep}{}{sep}{}",
+        kv("entropy drop", &yellow(&format!("{:+.6}", imp.entropy_drop.to_f64()))),
+        kv("discovery", &yellow(&format!("{:+.6}", imp.discovery.to_f64()))),
+        kv("‖Δφ*‖₁", &yellow(&format!("{:.6}", imp.norm_l1.to_f64())))
+    );
+
+    let mut d = imp.delta.clone();
+    d.sort_by(|a, b| b.1.to_f64().abs().total_cmp(&a.1.to_f64().abs()));
+    println!("\n{}", dim(&format!("Δφ*(p) — top {} by |shift|", top.min(d.len()))));
+    for (pid, dv) in d.iter().take(top) {
+        let v = dv.to_f64();
+        let arrow = if v >= 0.0 { green("▲") } else { paint("31", "▼") };
+        println!("  {} {}  {}", cyan(&hex8(pid)), arrow, yellow(&format!("{v:+.6}")));
     }
     Ok(())
 }
