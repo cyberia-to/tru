@@ -10,7 +10,7 @@
 //!
 //! Run: RUSTC_BOOTSTRAP=1 cargo run -p tru --example superadditivity
 
-use tru::focusing::{compute_focusing, FocusingGraph, FocusingParams, Link};
+use tru::focusing::{compute_focusing, FocusingGraph, FocusingParams, Karma, Link};
 
 const N: usize = 34;
 
@@ -54,8 +54,8 @@ fn hash(b: u8) -> [u8; 32] {
 fn links(edges: &[(u8, u8)]) -> Vec<Link> {
     let mut v = Vec::with_capacity(edges.len() * 2);
     for &(a, b) in edges {
-        v.push(Link { from: hash(a), to: hash(b), amount: 1, valence: 1 });
-        v.push(Link { from: hash(b), to: hash(a), amount: 1, valence: 1 });
+        v.push(Link::stake(hash(a), hash(b), 1));
+        v.push(Link::stake(hash(b), hash(a), 1));
     }
     v
 }
@@ -66,7 +66,7 @@ fn focus_by_node(edges: &[(u8, u8)]) -> [f64; N] {
     if edges.is_empty() {
         return out;
     }
-    let g = FocusingGraph::build(links(edges));
+    let g = FocusingGraph::build(links(edges), &Karma::none());
     let r = compute_focusing(&g, &FocusingParams::default());
     for idx in 0..g.n() {
         // φ* is fixed-point; the benchmark's task scoring is offline analysis.
@@ -81,7 +81,7 @@ fn collective(edges: &[(u8, u8)]) -> ([f64; N], f64, f64) {
     if edges.is_empty() {
         return (out, 0.0, 0.0);
     }
-    let g = FocusingGraph::build(links(edges));
+    let g = FocusingGraph::build(links(edges), &Karma::none());
     let r = compute_focusing(&g, &FocusingParams::default());
     for idx in 0..g.n() {
         out[g.node_id(idx)[0] as usize] = r.focus[idx].to_f64();

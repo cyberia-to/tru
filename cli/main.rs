@@ -182,8 +182,18 @@ fn focus(path: Option<PathBuf>, top: usize) -> Result<()> {
     let path = resolve_graph(path)?;
     let g = Graph::open(&path)?;
     let n_links = g.cyberlinks()?.count();
-    let links = g.cyberlinks()?.map(|cl| Link { from: cl.from, to: cl.to, amount: cl.amount, valence: cl.valence });
-    let fg = FocusingGraph::build(links);
+    // Preserve the real neuron and valence from each record so karma wiring is a
+    // one-line change; karma and ICBS price arrive from bbg, absent here, so this
+    // pass runs stake-only (Karma::none(), neutral price = 1).
+    let links = g.cyberlinks()?.map(|cl| Link {
+        neuron: cl.neuron,
+        from: cl.from,
+        to: cl.to,
+        amount: cl.amount,
+        valence: cl.valence,
+        price: tru::arithmetic::Fx::ONE,
+    });
+    let fg = FocusingGraph::build(links, &focusing::Karma::none());
     let params = FocusingParams::default();
     let result = tru::compute_focusing(&fg, &params);
     let tel = focusing::telemetry(&fg, &result, &params);

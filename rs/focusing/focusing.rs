@@ -46,22 +46,74 @@ impl Default for FocusingParams {
 
 /// A single cyberlink contributing to the field.
 pub struct Link {
+    /// Signing neuron ν — the key karma is looked up under.
+    pub neuron: [u8; 32],
     /// Source particle (32-byte hemera hash).
     pub from: [u8; 32],
     /// Target particle (32-byte hemera hash).
     pub to: [u8; 32],
     /// Stake amount (raw token units).
     pub amount: u128,
-    /// Valence: +1 affirm, -1 challenge, 0 void/hold.
+    /// Valence: +1 affirm, -1 challenge, 0 void/hold. Does not enter `A_eff`
+    /// directly ([[focusing]]): its epistemic effect is mediated through `price`.
     pub valence: i8,
+    /// Market believability `f(price(ℓ)) ∈ [0,1]`: the ICBS price mapped to an
+    /// edge multiplier. `Fx::ONE` is market-neutral (fully believed); `ZERO`
+    /// is fully doubted, structurally pruning the edge. Supplied by [[bbg]].
+    pub price: Fx,
+}
+
+impl Link {
+    /// A stake-only link with a neutral market (`price = 1`) and its own neuron
+    /// as author. Recovers the pre-karma/price behaviour exactly.
+    pub fn stake(from: [u8; 32], to: [u8; 32], amount: u128) -> Self {
+        Self { neuron: from, from, to, amount, valence: 1, price: Fx::ONE }
+    }
+}
+
+/// Per-neuron [[karma]] `κ(ν)`: the non-transferable BTS trust multiplier read
+/// from [[bbg]] each epoch. An unknown neuron scores the neutral baseline
+/// `Fx::ONE` — new identities are karma-light, never karma-negative.
+#[derive(Default)]
+pub struct Karma(HashMap<[u8; 32], Fx>);
+
+impl Karma {
+    /// No karma data — every neuron scores the neutral baseline. Recovers the
+    /// stake-only weighting.
+    pub fn none() -> Self {
+        Self(HashMap::new())
+    }
+
+    /// Karma from an explicit `(neuron, κ)` table.
+    pub fn from_pairs(pairs: impl IntoIterator<Item = ([u8; 32], Fx)>) -> Self {
+        Self(pairs.into_iter().collect())
+    }
+
+    /// `κ(ν)`, defaulting to the neutral baseline `Fx::ONE`.
+    pub fn get(&self, neuron: &[u8; 32]) -> Fx {
+        self.0.get(neuron).copied().unwrap_or(Fx::ONE)
+    }
+}
+
+/// The believability multiplier `f(price)`, clamped to `[0,1]`.
+fn clamp01(x: Fx) -> Fx {
+    if x < Fx::ZERO {
+        Fx::ZERO
+    } else if x > Fx::ONE {
+        Fx::ONE
+    } else {
+        x
+    }
 }
 
 // ── FocusingGraph ─────────────────────────────────────────────────────
 
 /// Pre-built adjacency structures for one coupled tri-kernel computation.
 ///
-/// Effective adjacency is stake-weighted: `A_eff(p,q) = Σ_{ℓ: p→q} stake(ℓ)`.
-/// (Karma and market price join in M3; until then stake is the weight.)
+/// Effective adjacency is the honesty-weighted sum ([[focusing]], [[truth-scoring]]):
+/// `A_eff(p,q) = Σ_{ℓ: p→q} stake(ℓ)·κ(ν(ℓ))·f(price(ℓ))`. Stake is the economic
+/// commitment, `κ(ν)` the neuron's [[karma]], `f(price)` the ICBS believability.
+/// With `Karma::none()` and neutral `price = 1` this reduces to stake-weighting.
 pub struct FocusingGraph {
     n: usize,
     /// Particle hash at each node index.
@@ -83,23 +135,38 @@ pub struct FocusingGraph {
 }
 
 impl FocusingGraph {
-    /// Build from cyberlinks. Self-loops and zero-amount links are skipped.
-    pub fn build(links: impl IntoIterator<Item = Link>) -> Self {
-        // Keep raw amounts as exact integers; normalize to fixed-point below.
-        let raw_amounts: Vec<([u8; 32], [u8; 32], u128)> = links
-            .into_iter()
-            .filter_map(|l| if l.amount == 0 || l.from == l.to { None } else { Some((l.from, l.to, l.amount)) })
-            .collect();
+    /// Build the honesty-weighted effective adjacency from cyberlinks and the
+    /// epoch's [[karma]] table. Self-loops, zero-stake links, and links the
+    /// market fully doubts (`f(price)·κ = 0`) are skipped — a market-rejected
+    /// link is structurally absent, not merely light.
+    pub fn build(links: impl IntoIterator<Item = Link>, karma: &Karma) -> Self {
+        // Keep raw stake as exact integers; the karma·price multipliers are
+        // bounded and fold onto the fixed-point stake weight below.
+        let kept: Vec<Link> =
+            links.into_iter().filter(|l| l.amount != 0 && l.from != l.to).collect();
 
-        if raw_amounts.is_empty() {
+        if kept.is_empty() {
             return Self::empty();
         }
 
         // Stake weights are scale-invariant for φ*; normalize by the largest so
         // they land in (0,1] (comparable to μ=τ=1) and never overflow the field.
-        let max_amount = raw_amounts.iter().map(|&(_, _, a)| a).max().unwrap_or(1);
-        let raw: Vec<([u8; 32], [u8; 32], Fx)> =
-            raw_amounts.iter().map(|&(f, t, a)| (f, t, Fx::ratio_u128(a, max_amount))).collect();
+        // Effective weight w = stake·κ(ν)·f(price): κ(ν) ≥ 0 (default 1),
+        // f(price) ∈ [0,1], so w ≤ stake ≤ 1 and overflow safety is preserved.
+        let max_amount = kept.iter().map(|l| l.amount).max().unwrap_or(1);
+        let raw: Vec<([u8; 32], [u8; 32], Fx)> = kept
+            .iter()
+            .map(|l| {
+                let stake = Fx::ratio_u128(l.amount, max_amount);
+                let w = stake * karma.get(&l.neuron) * clamp01(l.price);
+                (l.from, l.to, w)
+            })
+            .filter(|&(_, _, w)| !w.is_zero())
+            .collect();
+
+        if raw.is_empty() {
+            return Self::empty();
+        }
 
         // Node indices, assigned by first appearance (deterministic).
         let mut node_ids: Vec<[u8; 32]> = Vec::new();
@@ -276,7 +343,7 @@ mod tests {
     }
 
     fn link(from: u8, to: u8, amount: u128) -> Link {
-        Link { from: hash(from), to: hash(to), amount, valence: 1 }
+        Link::stake(hash(from), hash(to), amount)
     }
 
     fn node_idx(g: &FocusingGraph, b: u8) -> usize {
@@ -286,7 +353,7 @@ mod tests {
     #[test]
     fn focus_sums_to_one() {
         let links = vec![link(1, 2, 100), link(2, 3, 50), link(3, 1, 200)];
-        let g = FocusingGraph::build(links);
+        let g = FocusingGraph::build(links, &Karma::none());
         let r = compute_focusing(&g, &FocusingParams::default());
         let total: f64 = r.focus.iter().map(|x| x.to_f64()).sum();
         assert!((total - 1.0).abs() < 1e-6, "focus sums to {total}");
@@ -296,15 +363,15 @@ mod tests {
     #[test]
     fn deterministic_bit_identical() {
         let mk = || vec![link(1, 2, 100), link(2, 3, 50), link(3, 1, 200), link(4, 1, 300)];
-        let a = compute_focusing(&FocusingGraph::build(mk()), &FocusingParams::default());
-        let b = compute_focusing(&FocusingGraph::build(mk()), &FocusingParams::default());
+        let a = compute_focusing(&FocusingGraph::build(mk(), &Karma::none()), &FocusingParams::default());
+        let b = compute_focusing(&FocusingGraph::build(mk(), &Karma::none()), &FocusingParams::default());
         assert!(a.focus.iter().zip(&b.focus).all(|(x, y)| x.raw() == y.raw()), "φ* not bit-identical across runs");
     }
 
     #[test]
     fn contraction_below_one() {
         let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
-        let g = FocusingGraph::build(links);
+        let g = FocusingGraph::build(links, &Karma::none());
         let p = FocusingParams::default();
         let kappa = contraction(&g, &p);
         assert!(kappa < Fx::ONE, "κ = {} must be < 1", kappa.to_f64());
@@ -316,7 +383,7 @@ mod tests {
     #[test]
     fn derived_steps_reach_the_fixed_point() {
         let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
-        let g = FocusingGraph::build(links);
+        let g = FocusingGraph::build(links, &Karma::none());
         let p = FocusingParams::default();
         let t = derived_steps(&g, &p);
         assert!(t > 0 && t < p.iter_cap, "derived T = {t} should be a real step count");
@@ -330,7 +397,7 @@ mod tests {
     #[test]
     fn heat_conserves_mass_and_smooths() {
         let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
-        let g = FocusingGraph::build(links);
+        let g = FocusingGraph::build(links, &Karma::none());
         let n = g.n();
         let i1 = node_idx(&g, 1);
         // A delta spike at node 1.
@@ -348,7 +415,7 @@ mod tests {
     #[test]
     fn high_in_stake_ranks_higher() {
         let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 1000)];
-        let g = FocusingGraph::build(links);
+        let g = FocusingGraph::build(links, &Karma::none());
         let r = compute_focusing(&g, &FocusingParams::default());
         let (i1, i3) = (node_idx(&g, 1), node_idx(&g, 3));
         assert!(r.focus[i1] > r.focus[i3], "high-in-stake node 1 should outrank node 3");
@@ -357,7 +424,7 @@ mod tests {
     #[test]
     fn well_linked_node_ranks_higher() {
         let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
-        let g = FocusingGraph::build(links);
+        let g = FocusingGraph::build(links, &Karma::none());
         let r = compute_focusing(&g, &FocusingParams::default());
         let (i1, i2) = (node_idx(&g, 1), node_idx(&g, 2));
         assert!(r.focus[i1] > r.focus[i2], "well-linked node 1 should outrank node 2");
@@ -369,13 +436,13 @@ mod tests {
         // proportionally-smaller graph (weights are scale-invariant).
         let big = 1_000_000_000_000_000u128;
         let large = vec![
-            Link { from: hash(1), to: hash(2), amount: big, valence: 1 },
-            Link { from: hash(2), to: hash(3), amount: big / 2, valence: 1 },
-            Link { from: hash(4), to: hash(1), amount: big * 3, valence: 1 },
+            Link::stake(hash(1), hash(2), big),
+            Link::stake(hash(2), hash(3), big / 2),
+            Link::stake(hash(4), hash(1), big * 3),
         ];
         let small = vec![link(1, 2, 1000), link(2, 3, 500), link(4, 1, 3000)];
-        let rl = compute_focusing(&FocusingGraph::build(large), &FocusingParams::default());
-        let rs = compute_focusing(&FocusingGraph::build(small), &FocusingParams::default());
+        let rl = compute_focusing(&FocusingGraph::build(large, &Karma::none()), &FocusingParams::default());
+        let rs = compute_focusing(&FocusingGraph::build(small, &Karma::none()), &FocusingParams::default());
         let total: f64 = rl.focus.iter().map(|x| x.to_f64()).sum();
         assert!((total - 1.0).abs() < 1e-6, "large-stake φ* sums to {total}");
         assert!(rl.focus.iter().all(|x| *x > Fx::ZERO));
@@ -384,20 +451,84 @@ mod tests {
 
     #[test]
     fn empty_graph() {
-        let g = FocusingGraph::build(vec![]);
+        let g = FocusingGraph::build(vec![], &Karma::none());
         assert_eq!(g.n(), 0);
         assert!(compute_focusing(&g, &FocusingParams::default()).focus.is_empty());
     }
 
     #[test]
     fn self_loops_excluded() {
-        let g = FocusingGraph::build(vec![Link { from: hash(1), to: hash(1), amount: 100, valence: 1 }]);
+        let g = FocusingGraph::build(vec![Link::stake(hash(1), hash(1), 100)], &Karma::none());
         assert_eq!(g.n(), 0);
     }
 
     #[test]
     fn zero_amount_excluded() {
-        let g = FocusingGraph::build(vec![link(1, 2, 0), link(2, 3, 50)]);
+        let g = FocusingGraph::build(vec![link(1, 2, 0), link(2, 3, 50)], &Karma::none());
         assert_eq!(g.n(), 2);
+    }
+
+    // ── honesty weighting: karma and market price ─────────────────────
+
+    // A voter V(=5) splits its focus between two otherwise-symmetric
+    // candidates A(=1) and B(=2), each of which feeds a sink C(=3) that returns
+    // to V. V has two out-edges, so re-weighting one genuinely redirects its
+    // diffusion mass — the regime where honesty weighting shows up in the rank.
+    fn voter_graph(w_a: (/*neuron*/ [u8; 32], /*price*/ Fx), w_b: ([u8; 32], Fx)) -> Vec<Link> {
+        vec![
+            Link { neuron: w_a.0, from: hash(5), to: hash(1), amount: 100, valence: 1, price: w_a.1 },
+            Link { neuron: w_b.0, from: hash(5), to: hash(2), amount: 100, valence: 1, price: w_b.1 },
+            link(1, 3, 100), // A → C
+            link(2, 3, 100), // B → C
+            link(3, 5, 100), // C → V
+        ]
+    }
+
+    #[test]
+    fn karma_amplifies_the_link_it_weights() {
+        let (sign_a, sign_b) = (hash(7), hash(8));
+        let mk = || voter_graph((sign_a, Fx::ONE), (sign_b, Fx::ONE));
+
+        // Neutral: A and B are symmetric, so they share focus exactly.
+        let g0 = FocusingGraph::build(mk(), &Karma::none());
+        let r0 = compute_focusing(&g0, &FocusingParams::default());
+        let gap = (r0.focus[node_idx(&g0, 1)].to_f64() - r0.focus[node_idx(&g0, 2)].to_f64()).abs();
+        assert!(gap < 1e-6, "A and B must be symmetric under no karma (Δ={gap})");
+
+        // κ=3 on A's signer sends more of V's focus to A: A outranks B.
+        let g1 = FocusingGraph::build(mk(), &Karma::from_pairs([(sign_a, Fx::from_int(3))]));
+        let r1 = compute_focusing(&g1, &FocusingParams::default());
+        assert!(
+            r1.focus[node_idx(&g1, 1)] > r1.focus[node_idx(&g1, 2)],
+            "κ=3 on the A-link should make A outrank the symmetric B"
+        );
+    }
+
+    #[test]
+    fn market_price_scales_the_link_it_weights() {
+        let (na, nb) = (hash(7), hash(8));
+        // f(price)=0.5 on the B-link, full belief on A: A outranks B.
+        let g = FocusingGraph::build(
+            voter_graph((na, Fx::ONE), (nb, Fx::from_ratio(1, 2))),
+            &Karma::none(),
+        );
+        let r = compute_focusing(&g, &FocusingParams::default());
+        assert!(
+            r.focus[node_idx(&g, 1)] > r.focus[node_idx(&g, 2)],
+            "a fully-believed link should outrank a half-believed one"
+        );
+    }
+
+    #[test]
+    fn market_doubt_prunes_the_edge() {
+        // f(price) = 0 (fully doubted): the edge is structurally absent, so its
+        // endpoints never enter the graph.
+        let doubted = Link { neuron: hash(9), from: hash(7), to: hash(8), amount: 100, valence: 1, price: Fx::ZERO };
+        let g = FocusingGraph::build(vec![doubted, link(1, 2, 100)], &Karma::none());
+        assert_eq!(g.n(), 2, "a fully-doubted edge must create no nodes");
+        assert!(
+            !g.node_ids().iter().any(|h| h[0] == 7 || h[0] == 8),
+            "endpoints of the doubted edge must be absent"
+        );
     }
 }
