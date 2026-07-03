@@ -9,9 +9,12 @@
 //! randomized-SVD milestone.
 
 pub mod arch;
+pub mod compile;
 pub mod dialect;
 pub mod index;
+pub mod norm;
 
 pub use arch::Arch;
+pub use compile::compile;
 pub use dialect::{Dialects, BOTTOM};
 pub use index::{axon, effective_stake, Adjacency, Edge, ParticleIndex};

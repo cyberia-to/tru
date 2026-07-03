@@ -72,7 +72,7 @@ fn banner() -> String {
 
 fn help() {
     println!(
-        "{}\n  {}   {}\n  {}   {}\n  {}   {}\n  {}   {}\n  {}   {}\n\n  {}",
+        "{}\n  {}   {}\n  {}   {}\n  {}   {}\n  {}   {}\n  {}   {}\n  {}   {}\n\n  {}",
         dim("commands"),
         bold("inspect <file> "),
         dim("summarize any .cyb: type, name, sections"),
@@ -80,6 +80,8 @@ fn help() {
         dim("run the tri-kernel: cyberank · syntropy · telemetry"),
         bold("impulse <graph>"),
         dim("Δφ* of a new link: the directed syntropy gain Δφ⁺"),
+        bold("compile <graph>"),
+        dim("CT-0: derive a .model's architecture from the graph"),
         bold("vocab   <file> "),
         dim("a .vocab dictionary + self-consistency"),
         bold("model   <file> "),
@@ -124,6 +126,13 @@ enum Cmd {
         #[arg(short, long, default_value_t = 10)]
         top: usize,
     },
+    /// Compile a `.graph` into a `.model` (CT-0): derive the architecture from
+    /// the graph spectrum, package config/vocab/norms.
+    Compile {
+        path: PathBuf,
+        #[arg(short, long, default_value = "out.model")]
+        out: PathBuf,
+    },
     /// Summarize a `.vocab` dictionary and check its self-consistency.
     Vocab { path: PathBuf },
     /// Summarize a `.model` checkpoint: tensors, config, particle.
@@ -141,6 +150,7 @@ fn main() -> Result<()> {
         Cmd::Inspect { path } => inspect(&path),
         Cmd::Focus { path, top } => focus(path, top),
         Cmd::Impulse { path, from, to, stake, top } => impulse(&path, &from, &to, stake, top),
+        Cmd::Compile { path, out } => compile(&path, &out),
         Cmd::Vocab { path } => vocab(&path),
         Cmd::Model { path } => model(&path),
     }
@@ -328,6 +338,39 @@ fn impulse(path: &Path, from: &str, to: &str, stake: u128, top: usize) -> Result
         let arrow = if v >= 0.0 { green("▲") } else { paint("31", "▼") };
         println!("  {} {}  {}", cyan(&hex8(pid)), arrow, yellow(&format!("{v:+.6}")));
     }
+    Ok(())
+}
+
+fn compile(path: &Path, out: &Path) -> Result<()> {
+    let g = Graph::open(path)?;
+    let model = tru::pass::compile(&g)?;
+    model.write(out)?;
+
+    let sep = dim(" · ");
+    println!("{} {} {} {}", green("compile"), bold(g.name()), dim("→"), bold(&model.name));
+    // Surface the derived architecture from the config section.
+    let field = |key: &str| -> String {
+        model
+            .config
+            .lines()
+            .find(|l| l.trim_start().starts_with(key))
+            .and_then(|l| l.split('=').nth(1))
+            .map(|v| v.trim().to_string())
+            .unwrap_or_default()
+    };
+    println!(
+        "  {}{sep}{}{sep}{}",
+        kv("d", &yellow(&field("hidden_size"))),
+        kv("h", &yellow(&field("num_attention_heads"))),
+        kv("L", &yellow(&field("num_hidden_layers"))),
+    );
+    println!(
+        "  {}{sep}{}",
+        kv("particles", &yellow(&field("vocab_size"))),
+        kv("params", &yellow(&field("parameters"))),
+    );
+    println!("  {}{sep}{}", kv("tensors", &yellow(&model.tensors.len().to_string())), kv("particle", &cyan(&hex8(&model.particle()))));
+    println!("  {} {}", dim("wrote"), out.display());
     Ok(())
 }
 
