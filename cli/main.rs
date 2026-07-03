@@ -203,7 +203,7 @@ fn focus(path: Option<PathBuf>, top: usize) -> Result<()> {
     let n_links = g.cyberlinks()?.count();
     // Preserve the real neuron and valence from each record so karma wiring is a
     // one-line change; karma and ICBS price arrive from bbg, absent here, so this
-    // pass runs stake-only (Karma::none(), neutral price = 1).
+    // pass runs stake-only (Context::none(), neutral price = 1).
     let links = g.cyberlinks()?.map(|cl| Link {
         neuron: cl.neuron,
         from: cl.from,
@@ -212,7 +212,7 @@ fn focus(path: Option<PathBuf>, top: usize) -> Result<()> {
         valence: cl.valence,
         price: tru::arithmetic::Fx::ONE,
     });
-    let fg = FocusingGraph::build(links, &focusing::Karma::none());
+    let fg = FocusingGraph::build(links, &focusing::Context::none());
     let params = FocusingParams::default();
     let result = tru::compute_focusing(&fg, &params);
     let tel = focusing::telemetry(&fg, &result, &params);
@@ -303,7 +303,7 @@ fn impulse(path: &Path, from: &str, to: &str, stake: u128, top: usize) -> Result
         price: tru::arithmetic::Fx::ONE,
     }];
     let params = FocusingParams::default();
-    let imp = tru::impulse(&base, &batch, &focusing::Karma::none(), &params, params.epsilon);
+    let imp = tru::impulse(&base, &batch, &focusing::Context::none(), &params, params.epsilon);
 
     println!("{} {} {} {}", green("impulse"), cyan(&hex8(&from_h)), dim("→"), cyan(&hex8(&to_h)));
     let sep = dim(" · ");

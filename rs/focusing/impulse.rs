@@ -23,7 +23,7 @@
 
 use crate::arithmetic::Fx;
 
-use super::focusing::{compute_focusing, FocusingGraph, FocusingParams, Karma, Link};
+use super::focusing::{compute_focusing, Context, FocusingGraph, FocusingParams, Link};
 use super::measures::entropy;
 
 /// The proven focus shift of one signal.
@@ -55,23 +55,23 @@ fn abs(x: Fx) -> Fx {
     }
 }
 
-/// Compute the impulse of `batch` applied on top of `base`, under `karma` and
-/// `params`. `epsilon` is the sparsity floor: Δφ* entries below it are dropped
-/// (the same precision floor the locality bound uses).
+/// Compute the impulse of `batch` applied on top of `base`, under the attention
+/// `ctx` and `params`. `epsilon` is the sparsity floor: Δφ* entries below it are
+/// dropped (the same precision floor the locality bound uses).
 pub fn impulse(
     base: &[Link],
     batch: &[Link],
-    karma: &Karma,
+    ctx: &Context,
     params: &FocusingParams,
     epsilon: Fx,
 ) -> Impulse {
     // φ* before: the graph the neuron observed.
-    let g0 = FocusingGraph::build(base.iter().cloned(), karma);
+    let g0 = FocusingGraph::build(base.iter().cloned(), ctx);
     let r0 = compute_focusing(&g0, params);
 
     // φ* after: the same graph with the signal's links added.
     let union: Vec<Link> = base.iter().cloned().chain(batch.iter().cloned()).collect();
-    let g1 = FocusingGraph::build(union, karma);
+    let g1 = FocusingGraph::build(union, ctx);
     let r1 = compute_focusing(&g1, params);
 
     // φ*_before(p) by particle hash (0 for particles the batch introduced).
@@ -133,7 +133,7 @@ mod tests {
     fn a_new_link_shifts_focus_and_is_local() {
         let base = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100)];
         let batch = vec![link(3, 1, 400)]; // reinforce 1's inbound
-        let imp = impulse(&base, &batch, &Karma::none(), &FocusingParams::default(), eps());
+        let imp = impulse(&base, &batch, &Context::none(), &FocusingParams::default(), eps());
         assert!(!imp.delta.is_empty(), "a reshaping link must move φ*");
         assert!(imp.norm_l1 > Fx::ZERO, "‖Δφ*‖₁ must be positive");
         // directed is the clip of ΔJ.
@@ -146,7 +146,7 @@ mod tests {
     fn delta_j_decomposes_into_entropy_drop_plus_discovery() {
         let base = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100)];
         let batch = vec![link(1, 4, 250)]; // introduces particle 4 (discovery)
-        let imp = impulse(&base, &batch, &Karma::none(), &FocusingParams::default(), eps());
+        let imp = impulse(&base, &batch, &Context::none(), &FocusingParams::default(), eps());
         let lhs = imp.delta_j.to_f64();
         let rhs = imp.entropy_drop.to_f64() + imp.discovery.to_f64();
         assert!((lhs - rhs).abs() < 1e-3, "ΔJ ({lhs}) ≠ entropy_drop + discovery ({rhs})");
@@ -157,10 +157,10 @@ mod tests {
     #[test]
     fn discovery_term_fires_only_on_new_particles() {
         let base = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100)];
-        let disc = impulse(&base, &vec![link(1, 9, 200)], &Karma::none(), &FocusingParams::default(), eps());
+        let disc = impulse(&base, &vec![link(1, 9, 200)], &Context::none(), &FocusingParams::default(), eps());
         assert!(disc.discovery > Fx::ZERO, "a new particle must charge discovery > 0");
 
-        let reuse = impulse(&base, &vec![link(1, 3, 200)], &Karma::none(), &FocusingParams::default(), eps());
+        let reuse = impulse(&base, &vec![link(1, 3, 200)], &Context::none(), &FocusingParams::default(), eps());
         assert!(abs(reuse.discovery) < eps(), "no new particle ⇒ discovery ≈ 0 (got {})", reuse.discovery.to_f64());
     }
 
@@ -168,7 +168,7 @@ mod tests {
     #[test]
     fn first_links_from_an_empty_base() {
         let batch = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100)];
-        let imp = impulse(&[], &batch, &Karma::none(), &FocusingParams::default(), eps());
+        let imp = impulse(&[], &batch, &Context::none(), &FocusingParams::default(), eps());
         assert!(!imp.delta.is_empty(), "first links must register a shift");
         assert_eq!(imp.discovery.raw(), Fx::ZERO.raw(), "empty base has no discovery ratio");
         // every Δφ* entry equals φ*_after (before was zero).
@@ -184,7 +184,7 @@ mod tests {
         // uniform without adding particles — ΔJ < 0, so directed clips to 0.
         let base = vec![link(2, 1, 1000), link(3, 1, 1000), link(1, 2, 10)];
         let batch = vec![link(1, 2, 5000), link(1, 3, 5000)];
-        let imp = impulse(&base, &batch, &Karma::none(), &FocusingParams::default(), eps());
+        let imp = impulse(&base, &batch, &Context::none(), &FocusingParams::default(), eps());
         assert!(imp.delta_j < Fx::ZERO, "this batch should lower syntropy (ΔJ={})", imp.delta_j.to_f64());
         assert_eq!(imp.directed.raw(), Fx::ZERO.raw(), "a syntropy-lowering batch must mint nothing");
     }

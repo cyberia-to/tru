@@ -76,7 +76,7 @@ pub fn telemetry(g: &FocusingGraph, result: &FocusingResult, p: &FocusingParams)
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::focusing::{compute_focusing, FocusingGraph, Karma, Link};
+    use crate::focusing::{compute_focusing, Context, FocusingGraph, Link};
 
     fn hash(b: u8) -> [u8; 32] {
         let mut h = [0u8; 32];
@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn cyberank_reads_focus_by_particle() {
-        let g = FocusingGraph::build(vec![link(1, 2, 100), link(2, 3, 50), link(3, 1, 200)], &Karma::none());
+        let g = FocusingGraph::build(vec![link(1, 2, 100), link(2, 3, 50), link(3, 1, 200)], &Context::none());
         let r = compute_focusing(&g, &crate::focusing::FocusingParams::default());
         // present particle → its focus; a total-mass check ties it to φ*
         let sum: f64 = [1u8, 2, 3].iter().map(|&b| cyberank(&g, &r, &hash(b)).to_f64()).sum();
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn result_carries_syntropy() {
-        let g = FocusingGraph::build(vec![link(1, 2, 100), link(2, 3, 50), link(4, 1, 300)], &Karma::none());
+        let g = FocusingGraph::build(vec![link(1, 2, 100), link(2, 3, 50), link(4, 1, 300)], &Context::none());
         let r = compute_focusing(&g, &crate::focusing::FocusingParams::default());
         assert!(r.syntropy.to_f64() >= -1e-4, "emitted syntropy ≥ 0");
         assert_eq!(r.syntropy.raw(), syntropy(&r.focus).raw(), "emitted J matches recomputed J");
