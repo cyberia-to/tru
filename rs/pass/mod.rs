@@ -8,8 +8,10 @@
 //! SVD-derived weight passes (embed, attn, mlp) land with the fixed-point
 //! randomized-SVD milestone.
 
+pub mod arch;
 pub mod dialect;
 pub mod index;
 
+pub use arch::Arch;
 pub use dialect::{Dialects, BOTTOM};
 pub use index::{axon, effective_stake, Adjacency, Edge, ParticleIndex};
