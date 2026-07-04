@@ -207,7 +207,7 @@ impl Model {
             size: u64,
         }
         let index: HashMap<String, T> = toml::from_str(&tensors_toml)?;
-        let mut tensors: Vec<Tensor> = Vec::with_capacity(index.len());
+        let mut tensors: Vec<(u64, Tensor)> = Vec::with_capacity(index.len());
         for (name, t) in index {
             let enc = Encoding::parse(&t.encoding)?;
             let (o, sz) = (t.offset as usize, t.size as usize);
@@ -223,9 +223,12 @@ impl Model {
                     Encoding::U32 => Fx::from_ratio(i32::from_le_bytes([c[0], c[1], c[2], c[3]]) as i64, scale),
                 })
                 .collect();
-            tensors.push(Tensor { name, shape: t.shape, encoding: enc, data });
+            tensors.push((t.offset, Tensor { name, shape: t.shape, encoding: enc, data }));
         }
-        tensors.sort_by(|a, b| a.name.cmp(&b.name));
+        // Restore write order (weights are laid out by offset) so a reloaded
+        // model re-serializes byte-identically.
+        tensors.sort_by_key(|(offset, _)| *offset);
+        let tensors: Vec<Tensor> = tensors.into_iter().map(|(_, t)| t).collect();
 
         Ok(Self {
             name: fm.cyb.name,

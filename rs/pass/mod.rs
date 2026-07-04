@@ -9,10 +9,14 @@
 //! randomized-SVD milestone.
 
 pub mod arch;
+pub mod attn;
 pub mod compile;
 pub mod dialect;
+pub mod embed;
 pub mod index;
+pub mod mlp;
 pub mod norm;
+pub mod svd;
 
 pub use arch::Arch;
 pub use compile::compile;

@@ -7,7 +7,7 @@
 //! the fixed-point randomized-SVD milestone; the `card` states this plainly, so
 //! the artifact is honest about what it contains.
 
-use super::{arch, dialect, index, norm};
+use super::{arch, attn, dialect, embed, index, mlp, norm};
 use crate::error::Result;
 use crate::graph::Graph;
 use crate::model::Model;
@@ -24,13 +24,26 @@ pub fn compile(graph: &Graph) -> Result<Model> {
     let dialects = dialect::discover(&particles, &edges);
     let a = arch::compute(&adj, dialects.len(), block);
 
+    // Weight passes 4–6, then norms (pass 7). Storage order (§10.5): embedding
+    // first, then the attention/MLP/norm tensors, in a fixed deterministic order.
+    let embedding = embed::embed(&adj, &a.phi, a.d);
+    let attn_tensors = attn::attention(&edges, &dialects, &embedding.data, &a.phi, a.d, a.h, a.l, a.diameter);
+    let mlp_tensors = mlp::mlp(a.d, a.l);
+    let norm_tensors = norm::layernorms(a.d, a.l);
+
+    let mut tensors = Vec::with_capacity(1 + attn_tensors.len() + mlp_tensors.len() + norm_tensors.len());
+    tensors.push(embedding);
+    tensors.extend(attn_tensors);
+    tensors.extend(mlp_tensors);
+    tensors.extend(norm_tensors);
+
     let mut model = Model::new(format!("{}-ct0", graph.name()));
     model.card = card(graph.name(), &a, &dialects);
     model.config = config_toml(&a);
     model.program = program();
     model.vocab = vocab_toml(&particles);
     model.eval = eval_toml(&a);
-    model.tensors = norm::layernorms(a.d, a.l);
+    model.tensors = tensors;
     Ok(model)
 }
 
@@ -52,9 +65,9 @@ fn card(name: &str, a: &arch::Arch, dialects: &dialect::Dialects) -> String {
          Architecture derived from the graph spectrum: φ* (PageRank), \
          d* (effective rank of the φ*-weighted adjacency), h*={h} dialects, \
          L* (diameter × mixing time, κ={kappa:.3}, λ₂={l2:.4}, diameter={diam}).\n\n\
-         Structural compile: config, vocab, and layer norms are complete. The \
-         embedding, attention, and Clifford-MLP weight tensors land with the \
-         fixed-point randomized-SVD pass.\n",
+         Full CT-0 compile: embedding (SVD of the φ*-weighted adjacency), \
+         per-head attention projections, Clifford-MLP weights, and layer norms \
+         are all emitted, fixed-point over the Goldilocks field.\n",
         name = name,
         block = a.block,
         d = a.d,

@@ -76,15 +76,16 @@ fn abs_max_normalize(v: &mut [Fx]) {
 // ── normalized Fx adjacency ───────────────────────────────────────────
 
 /// Directed adjacency with Fx weights (scaled by the max weight so they land in
-/// (0,1]) plus the transpose lists, for the spectral computations.
-struct FxAdj {
-    n: usize,
-    out: Vec<Vec<(u32, Fx)>>,
-    inc: Vec<Vec<(u32, Fx)>>,
+/// (0,1]) plus the transpose lists, for the spectral computations. Shared with
+/// passes 4–5 (embedding, attention).
+pub(crate) struct FxAdj {
+    pub(crate) n: usize,
+    pub(crate) out: Vec<Vec<(u32, Fx)>>,
+    pub(crate) inc: Vec<Vec<(u32, Fx)>>,
 }
 
 impl FxAdj {
-    fn from(adj: &Adjacency) -> Self {
+    pub(crate) fn from(adj: &Adjacency) -> Self {
         let n = adj.n;
         let maxw = adj.out.iter().flatten().map(|&(_, w)| w).max().unwrap_or(1).max(1) as u128;
         let mut out = vec![Vec::new(); n];
@@ -100,7 +101,7 @@ impl FxAdj {
     }
 
     /// `(A·x)_i = Σ_j A[i][j] x_j`.
-    fn a(&self, x: &[Fx], out: &mut [Fx]) {
+    pub(crate) fn a(&self, x: &[Fx], out: &mut [Fx]) {
         for i in 0..self.n {
             let mut s = Fx::ZERO;
             for &(j, w) in &self.out[i] {
@@ -111,7 +112,7 @@ impl FxAdj {
     }
 
     /// `(Aᵀ·x)_j = Σ_i A[i][j] x_i`.
-    fn at(&self, x: &[Fx], out: &mut [Fx]) {
+    pub(crate) fn at(&self, x: &[Fx], out: &mut [Fx]) {
         for j in 0..self.n {
             let mut s = Fx::ZERO;
             for &(i, w) in &self.inc[j] {
@@ -171,77 +172,24 @@ fn pagerank(g: &FxAdj) -> Vec<Fx> {
 
 // ── §5.2 embedding dimension d* via singular spectrum of M ─────────────
 
-/// Top-`k` singular values of `M = diag(√φ)·A·diag(√φ)`, by subspace iteration
-/// on `MᵀM` (eigenvalues = σ²). Fixed-point; deterministic start block.
-fn singular_values(g: &FxAdj, phi: &[Fx], k: usize, iters: usize) -> Vec<Fx> {
+/// Truncated SVD of `M = diag(√φ)·A·diag(√φ)` — the φ*-weighted adjacency
+/// (§5.2). Shared by pass 3 (d* from σ) and pass 4 (embedding from U, σ).
+pub(crate) fn m_svd(g: &FxAdj, phi: &[Fx], k: usize, iters: usize) -> super::svd::Svd {
     let n = g.n;
-    let k = k.min(n);
-    if k == 0 {
-        return vec![];
-    }
     let ds: Vec<Fx> = phi.iter().map(|&p| p.sqrt()).collect();
-
-    // MᵀM x = D_s Aᵀ D_s · D_s A D_s x.
-    let mtm = |x: &[Fx], scratch: &mut [Fx], out: &mut [Fx]| {
+    let apply_m = |x: &[Fx]| -> Vec<Fx> {
         let t: Vec<Fx> = (0..n).map(|i| ds[i] * x[i]).collect();
-        g.a(&t, scratch); // A (D_s x)
-        for i in 0..n {
-            scratch[i] = ds[i] * ds[i] * scratch[i]; // D_s² (A D_s x)
-        }
-        g.at(scratch, out); // Aᵀ D_s² A D_s x
-        for i in 0..n {
-            out[i] = ds[i] * out[i]; // D_s Aᵀ D_s² A D_s x
-        }
+        let mut ax = vec![Fx::ZERO; n];
+        g.a(&t, &mut ax);
+        (0..n).map(|i| ds[i] * ax[i]).collect()
     };
-
-    // Deterministic, independent start block.
-    let mut block: Vec<Vec<Fx>> = (0..k)
-        .map(|c| {
-            let mut v: Vec<Fx> = (0..n).map(|i| Fx::from_int(((i * (2 * c + 3) + c) % 13 + 1) as i64)).collect();
-            abs_max_normalize(&mut v);
-            v
-        })
-        .collect();
-    orthonormalize(&mut block);
-
-    let mut scratch = vec![Fx::ZERO; n];
-    let mut out = vec![Fx::ZERO; n];
-    for _ in 0..iters {
-        for col in block.iter_mut() {
-            mtm(col, &mut scratch, &mut out);
-            col.copy_from_slice(&out);
-        }
-        orthonormalize(&mut block);
-    }
-
-    // Rayleigh quotient → eigenvalue of MᵀM = σ².
-    let mut sigmas: Vec<Fx> = block
-        .iter()
-        .map(|v| {
-            mtm(v, &mut scratch, &mut out);
-            let eig = dot(v, &out).div(dot(v, v));
-            if eig < Fx::ZERO { Fx::ZERO } else { eig.sqrt() }
-        })
-        .collect();
-    sigmas.sort_by(|a, b| b.cmp(a));
-    sigmas
-}
-
-fn orthonormalize(block: &mut [Vec<Fx>]) {
-    let k = block.len();
-    for j in 0..k {
-        for i in 0..j {
-            let denom = dot(&block[i], &block[i]);
-            if denom.is_zero() {
-                continue;
-            }
-            let coeff = dot(&block[i], &block[j]).div(denom);
-            for x in 0..block[j].len() {
-                block[j][x] = block[j][x] - coeff * block[i][x];
-            }
-        }
-        abs_max_normalize(&mut block[j]);
-    }
+    let apply_mt = |x: &[Fx]| -> Vec<Fx> {
+        let t: Vec<Fx> = (0..n).map(|i| ds[i] * x[i]).collect();
+        let mut atx = vec![Fx::ZERO; n];
+        g.at(&t, &mut atx);
+        (0..n).map(|i| ds[i] * atx[i]).collect()
+    };
+    super::svd::top_svd(n, &apply_m, &apply_mt, k, iters)
 }
 
 /// d* = ceil(exp(−Σ σ̂ ln σ̂)) — the exp-entropy (effective rank) of the
@@ -387,7 +335,7 @@ pub fn compute(adj: &Adjacency, h_star: usize, block: u64) -> Arch {
     }
 
     let phi = pagerank(&g);
-    let sigmas = singular_values(&g, &phi, 1024, 120);
+    let sigmas = m_svd(&g, &phi, 1024, 120).sigma;
     let d0 = effective_dim(&sigmas).clamp(64, 4096);
     let d = round_to_multiple(d0, h).clamp(64, 4096);
 
