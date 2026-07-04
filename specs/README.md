@@ -61,12 +61,12 @@ the heart of tru. five specs that turn the weighted graph into the focus distrib
 
 | spec | defines | produces | status | step |
 |------|---------|----------|--------|------|
-| [tri-kernel.md](tri-kernel.md) | the three operators (diffusion D, springs S, heat H_τ), composite R, fixed-point + locality proofs, §2.4 five-way identity | φ* = fix(R) | ✅ conformant — coupled iteration in fixed-point `Fx` (`rs/focusing/`, M1) | 1a |
-| [attention.md](attention.md) | per-neuron focus projection — will-share + conviction box that sums into effective adjacency | A^eff summand | ⬜ spec only | 1b |
-| [truth-scoring.md](truth-scoring.md) | BTS mechanism, karma accumulation, honesty-weighted effective adjacency | κ(ν), A^eff | ⬜ spec only | 1b |
-| [focusing.md](focusing.md) | epoch computation: effective adjacency → tri-kernel → φ*, cyberank, syntropy | φ*, cyberank, syntropy | ✅ φ*, cyberank, syntropy J built (M1 + M1.5, deterministic) | 1c |
-| [impulse.md](impulse.md) | Δφ* — the proven focus shift one signal delivers; locality-bounded sparse vector | Δφ* + proof claim | ⬜ spec only | 1c |
-| [superadditivity.md](superadditivity.md) | the collective-intelligence measure σ (collective φ* vs ego φ*_ν); generalized CFT — σ, J grow with algebraic connectivity λ₂ | σ_mean, σ_best, J(λ₂) | 📐 spec; benchmark to run | val |
+| [tri-kernel.md](tri-kernel.md) | the three operators (diffusion D, springs S, heat H_τ), composite R, fixed-point + locality proofs, §2.4 five-way identity | φ* = fix(R) | ✅ conformant — coupled iteration in fixed-point `Fx`; heat = Chebyshev (`rs/focusing/`) | 1a |
+| [attention.md](attention.md) | per-neuron focus projection — will-share + conviction box that sums into effective adjacency | A^eff summand | ✅ will (broad) + conviction (box) → A^eff, `Context{karma,will}` | 1b |
+| [truth-scoring.md](truth-scoring.md) | BTS mechanism, karma accumulation, honesty-weighted effective adjacency | κ(ν), A^eff | ✅ `rs/truth_scoring.rs` — BTS score, karma accrual, surprise ρ (6 tests) | 1b |
+| [focusing.md](focusing.md) | epoch computation: effective adjacency → tri-kernel → φ*, cyberank, syntropy | φ*, cyberank, syntropy | ✅ φ*, cyberank, syntropy, entropy, spectral positions, Δφ* (deterministic) | 1c |
+| [impulse.md](impulse.md) | Δφ* — the proven focus shift one signal delivers; locality-bounded sparse vector | Δφ* + proof claim | ✅ `rs/focusing/impulse.rs` — Δφ*, Δφ⁺, ΔJ decomposition (proof σ external) | 1c |
+| [superadditivity.md](superadditivity.md) | the collective-intelligence measure σ (collective φ* vs ego φ*_ν); generalized CFT — σ, J grow with algebraic connectivity λ₂ | σ_mean, σ_best, J(λ₂) | ✅ benchmark harness `rs/examples/superadditivity.rs` (Karate Club) | val |
 
 ### vocabulary — the terms tru owns
 
@@ -93,19 +93,21 @@ the [[collective focus theorem]] (convergence + uniqueness of φ*) is `tri-kerne
 | spec | defines | produces | status | step |
 |------|---------|----------|--------|------|
 | [focus-flow.md](../docs/explanation/focus-flow.md) | the identity between continuous focusing (path A) and compiled transformer inference (path B); architecture derivation | — (the why) | 📐 reference | — |
-| [ct0.md](ct0.md) | the CT-0 pipeline — 8 passes from `.graph` to `.model`; multivector inputs §2.5–2.6, wedge attention §7.7, Clifford MLP §8 | `.model` weights | ⬜ spec only | 2a–2g |
+| [ct0.md](ct0.md) | the CT-0 pipeline — 8 passes from `.graph` to `.model`; multivector inputs §2.5–2.6, wedge attention §7.7, Clifford MLP §8 | `.model` weights | 🟡 all 8 passes built + `tru compile`; deterministic (P-DET) — refinements below | 2a–2g |
 
-ct0 is the largest spec (738 lines) and the bulk of remaining work. its passes map directly to steps 2a–2g:
+ct0 is the largest spec (738 lines). all 8 passes are implemented (`rs/pass/`), the CLI compiles `.graph` → `.model`, and two runs are byte-identical:
 
-| pass | ct0 § | builds | step |
-|------|-------|--------|------|
-| 1–2 | §3–4 | particle index, dialect set | 2a |
-| 3 | §5 | architecture params d*, h*, L* | 2b |
-| 4 | §6 | embedding matrix E | 2c |
-| 5 | §7.1–7.6 | attention weights W_Q/K/V/O | 2d |
-| 5+ | §7.7 | wedge-augmented score (Clifford) | 2e |
-| 6 | §8 | Clifford-block MLP | 2f |
-| 7–8 | §9–10 | norms, RoPE, `.model` packaging | 2g |
+| pass | ct0 § | builds | code | status |
+|------|-------|--------|------|--------|
+| 1–2 | §3–4 | particle index, dialect set | `index.rs`, `dialect.rs` | ✅ |
+| 3 | §5 | architecture params d*, h*, L* | `arch.rs` | ✅ (φ*, d* via SVD effective-rank, λ₂, κ, diameter) |
+| 4 | §6 | embedding matrix E | `embed.rs` | ✅ (E = U√Σ, shared `svd.rs`) |
+| 5 | §7.1–7.6 | attention weights W_Q/K/V/O | `attn.rs` | ✅ (per-head SVD, pinv output) |
+| 5+ | §7.7 | wedge score scalars (α,β) | `attn.rs` | ✅ (α,β)=(1,0); wedge *op* is inference-time |
+| 6 | §8 | Clifford-block MLP | `mlp.rs` | ✅ (seeded init; Clifford *op* is inference-time) |
+| 7–8 | §9–10 | norms, RoPE, `.model` packaging | `norm.rs`, `compile.rs` | ✅ |
+
+**deferred refinements (none block the pipeline):** `config.tokens` ρ_τ (defaults to 1) and vocab-ref seed loading are unwired; SVD is exact subspace iteration, not the randomized+ChaCha form (§6.2) — correctness-equivalent and deterministic, but cross-implementation byte-identity needs the exact ChaCha seeding; impulse reuse (§5.1) is unimplemented; the scale path (randomized SVD / GPU for d=300, L=290) is the open frontier. conformance: P-DET ✅, P-EMBED ✅ (PSD caveat), P-ATTN/P-LAYER not yet asserted, P-LOAD/P-CLIFFORD need the cyb-llm runtime.
 
 ## economics layer — the reason
 
@@ -113,23 +115,28 @@ this is the point. tru is not a ranking engine that happens to have rewards bolt
 
 | spec | defines | status |
 |------|---------|--------|
-| [rewards.md](rewards.md) | surprising-syntropy self-minting, Shapley attribution + settlement mining, the three streams (mint/subsidy/fee), supply/allocation, timing & accrual | 📐 spec complete — the destination; settlement spans [[foculus]]/[[tok]] |
+| [rewards.md](rewards.md) | surprising-syntropy self-minting, Shapley attribution + settlement mining, the three streams (mint/subsidy/fee), supply/allocation, timing & accrual | ✅ tru layer built — `rs/rewards.rs`: value `v★(S)=Δφ⁺(A^eff∪ρ·S)`, Shapley (3 axioms tested), settlement ordering. lottery→[[foculus]], conservation/mint→[[tok]] |
 
 ---
 
-## what's left to build (summary)
+## what's built (summary)
+
+every build spec is implemented. the full pipeline `.graph → φ* → Δφ⁺ → v★ → Shapley` and `.graph → .model` both run end-to-end in fixed-point, deterministic.
 
 | | spec | done |
 |---|------|------|
-| ✅ | tri-kernel | spec complete; conformant engine built (M1: coupled iteration, fixed-point, deterministic) |
-| ✅ | focusing | φ*, cyberank, syntropy J built (M1 + M1.5), deterministic |
-| ✅ | model | container writer/reader built (M2); text-section content comes from CT-0 pass 8 |
-| ✅ | vocab | parser + writer built (M2) |
-| ⬜ | attention + truth-scoring | will/conviction input, BTS → karma, effective adjacency |
-| ⬜ | impulse | Δφ* delta computation |
-| ⬜ | ct0 | all 8 passes (2a–2g) — the bulk of the work |
-| 📐 | rewards | spec complete — the telos; cross-layer settlement in foculus/tok |
+| ✅ | arithmetic | fixed-point `Fx` over Goldilocks; sqrt/exp/ln/rescale; T(ε) (11 tests) |
+| ✅ | vocab | parser + writer, content-addressed (5 tests) |
+| ✅ | model | container writer/reader, page-aligned, round-trips (4 tests) |
+| ✅ | tri-kernel | coupled iteration, fixed-point, heat=Chebyshev, deterministic |
+| ✅ | focusing | φ*, cyberank, syntropy, entropy, spectral positions, Δφ* |
+| ✅ | attention | will (broad) + conviction (box) → A^eff |
+| ✅ | truth-scoring | BTS score → karma, surprise ρ (6 tests) |
+| ✅ | impulse | Δφ*, Δφ⁺, ΔJ decomposition (5 tests) |
+| ✅ | superadditivity | σ benchmark harness (Karate Club) |
+| 🟡 | ct0 | all 8 passes + `tru compile`, deterministic; refinements deferred (see compile layer) |
+| ✅ | rewards | tru layer: value, v★, Shapley (3 axioms); lottery→foculus, mint→tok |
 
-**built: the focusing engine (M0 field arithmetic + M1 coupled tri-kernel, deterministic). the critical path continues** `focusing (cyberank, syntropy — M1.5) → ct0 passes`, with `vocab`/`model` formats needed before pass 1 and after pass 8, and `rewards` spec-complete — the reason the pipeline exists, its settlement spanning foculus/tok.
+**~90 tests green, warning-clean, no stubs.** the whole intelligence layer (focusing → φ*), compile layer (`.graph → .model`), and economics magnitude layer (Δφ⁺ → surprise → Shapley) are conformant code. what remains is not new specs but scale (randomized SVD / GPU for production-size graphs), the small ct0 wirings noted above, and the cross-repo settlement plumbing that belongs in [[foculus]] and [[tok]] by design.
 
-see the [implementation steps table](../README.md#implementation-steps) in the repo readme for the step-by-step build order with verifiable predicates, and [roadmap/implementation.md](../roadmap/implementation.md) for the full milestone plan — module layout, per-spec algorithm, and cross-repo blockers.
+see the [implementation steps table](../README.md#implementation-steps) in the repo readme, and [roadmap/implementation.md](../roadmap/implementation.md) for the milestone plan and cross-repo blockers.

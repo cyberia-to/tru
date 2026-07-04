@@ -38,13 +38,15 @@ this is why tru runs locally on every [[neuron]], not only on validators. valida
 the `tru` binary reads `.cyb` containers and runs the engine. built and verified:
 
 ```
-tru inspect <file>      # any .cyb: type, name, sections + sizes
-tru focus   [graph]     # run the tri-kernel: cyberank, syntropy J, telemetry (κ, λ₂, T(ε))
-tru vocab   <file>      # .vocab: entries, file particle, self-consistency
-tru model   <file>      # .model: tensors, config, particle
+tru inspect <file>                     # any .cyb: type, name, sections + sizes
+tru focus   [graph]                    # tri-kernel: cyberank, syntropy J, telemetry, spectral (x,y)
+tru impulse <graph> --from P --to Q     # Δφ* of a new link: the directed syntropy gain Δφ⁺
+tru compile <graph> -o out.model        # CT-0: derive a .model's architecture from the graph
+tru vocab   <file>                     # .vocab: entries, file particle, self-consistency
+tru model   <file>                     # .model: tensors, config, particle
 ```
 
-`focus` is the showcase — it computes φ* over a `.graph` in fixed-point over the [[Goldilocks field]] (deterministic, no floats) and prints the cyberank ranking, [[syntropy]], and the contraction κ / algebraic connectivity λ₂ / derived step count. generate demo files with `cargo run -p tru --example gen_demo -- /tmp`.
+`focus` is the showcase — it computes φ* over a `.graph` in fixed-point over the [[Goldilocks field]] (deterministic, no floats) and prints the cyberank ranking with each particle's spectral position, [[syntropy]], and the contraction κ / algebraic connectivity λ₂ / derived step count. `impulse` prices one new link's directed focus shift; `compile` runs the full CT-0 pipeline to a deterministic `.model`. generate demo files with `cargo run -p tru --example gen_demo -- /tmp`.
 
 `focus` needs no argument: it defaults to `$TRU_GRAPH`, or `~/cyb/my.graph` — the neuron's own local snapshot, kept in a visible directory (`~/cyb`, not a dotfile).
 
@@ -105,21 +107,23 @@ the reward layer turns φ* into [[CYB]]: a neuron self-mints the surprising synt
 
 the steps below are in dependency order. each step has a clear input, output, and verifiable predicate. the full milestone plan — module layout, per-spec algorithm, predicate names, and cross-repo blockers — is [roadmap/implementation.md](roadmap/implementation.md).
 
-| step | what | output | verifies |
-|------|------|--------|----------|
-| 0a | implement `.vocab` parser | `Vocab` struct, particle → bytes lookup | round-trip: hash of parsed vocab matches declared particle |
-| 0b | implement `.model` writer/reader | `.cyb` container, mmap-able weights | P-LOAD: cyb-llm loads and runs one forward pass |
-| 1a | implement tri-kernel | operators D, S, H_τ; composite R; power iteration | contraction coefficient κ < 1; convergence in expected steps |
-| 1b | implement truth-scoring | BTS score → karma; karma-weighted effective adjacency | karma monotone with correct predictions; adjacency matches §3.4 of focusing spec |
-| 1c | implement focusing epoch | φ*, cyberank, syntropy, Δφ* per epoch | Σφ*(p) = 1; cyberank matches §3 of focusing spec |
-| 2a | implement pass 1–2 | particle index, dialect set | P-DET: two runs produce identical index |
-| 2b | implement pass 3 | d*, h*, L* from φ* and graph structure | arch params within clamped bounds; kappa matches contraction rate |
-| 2c | implement pass 4 | embedding matrix E | P-EMBED: ‖EE⊤ − M‖_F / ‖M‖_F ≤ 0.05 |
-| 2d | implement pass 5 | attention weights W_Q, W_K, W_V, W_O; alpha_beta | P-ATTN: Pearson ≥ 0.7 per head |
-| 2e | implement pass 5 Clifford | wedge-augmented score (ct0 §7.7); alpha_beta tensor | P-CLIFFORD-A: Wedge(H,H) = 0; P-CLIFFORD-B: zero-bivector degeneracy |
-| 2f | implement pass 6 | Clifford-block MLP weights | P-CLIFFORD-C: jet equivalence |
-| 2g | implement pass 7–8 | norms, RoPE config, full `.model` packaging | P-DET: byte-identical on two runs; P-LOAD: loads and runs |
-| 3 | implement render phases 1–3 | cyb WorldState::Graph | P-RENDER-TOPO, P-RENDER-POS, P-RENDER-FPS |
+| step | what | output | verifies | status |
+|------|------|--------|----------|--------|
+| 0a | implement `.vocab` parser | `Vocab` struct, particle → bytes lookup | round-trip: hash of parsed vocab matches declared particle | ✅ |
+| 0b | implement `.model` writer/reader | `.cyb` container, mmap-able weights | P-LOAD: cyb-llm loads and runs one forward pass | ✅ writer/reader; P-LOAD needs cyb-llm |
+| 1a | implement tri-kernel | operators D, S, H_τ; composite R; power iteration | contraction coefficient κ < 1; convergence in expected steps | ✅ |
+| 1b | implement truth-scoring | BTS score → karma; karma-weighted effective adjacency | karma monotone with correct predictions; adjacency matches §3.4 of focusing spec | ✅ |
+| 1c | implement focusing epoch | φ*, cyberank, syntropy, Δφ* per epoch | Σφ*(p) = 1; cyberank matches §3 of focusing spec | ✅ |
+| 2a | implement pass 1–2 | particle index, dialect set | P-DET: two runs produce identical index | ✅ |
+| 2b | implement pass 3 | d*, h*, L* from φ* and graph structure | arch params within clamped bounds; kappa matches contraction rate | ✅ |
+| 2c | implement pass 4 | embedding matrix E | P-EMBED: ‖EE⊤ − M‖_F / ‖M‖_F ≤ 0.05 | ✅ (P-EMBED holds for PSD M) |
+| 2d | implement pass 5 | attention weights W_Q, W_K, W_V, W_O; alpha_beta | P-ATTN: Pearson ≥ 0.7 per head | ✅ built; P-ATTN not yet asserted |
+| 2e | implement pass 5 Clifford | wedge-augmented score (ct0 §7.7); alpha_beta tensor | P-CLIFFORD-A: Wedge(H,H) = 0; P-CLIFFORD-B: zero-bivector degeneracy | ✅ α,β emitted; wedge op is inference-time |
+| 2f | implement pass 6 | Clifford-block MLP weights | P-CLIFFORD-C: jet equivalence | ✅ seeded init; jet is inference-time |
+| 2g | implement pass 7–8 | norms, RoPE config, full `.model` packaging | P-DET: byte-identical on two runs; P-LOAD: loads and runs | ✅ P-DET; P-LOAD needs cyb-llm |
+| 3 | implement render phases 1–3 | cyb WorldState::Graph | P-RENDER-TOPO, P-RENDER-POS, P-RENDER-FPS | ⬜ owned by [[mir]] |
+
+steps 0a–2g are implemented and tested; `tru compile <graph>` runs the full CT-0 pipeline end-to-end (deterministic). the economics layer (`rewards`) beyond the pipeline is built on the tru side too — value `v★`, Shapley attribution, settlement ordering — with the leaderless lottery in [[foculus]] and conservation/mint in [[tok]] by design.
 
 ## in the stack
 
@@ -146,7 +150,7 @@ start with [specs/README.md](specs/README.md) — the build map with layers and 
 - [specs/model.md](specs/model.md) — .model container format
 - [specs/truth-scoring.md](specs/truth-scoring.md) — BTS, karma, honesty weighting
 - [specs/vocab.md](specs/vocab.md) — .vocab particle dictionary format
-- [specs/rewards.md](specs/rewards.md) — reward model (incomplete, out of v0.1 scope)
+- [specs/rewards.md](specs/rewards.md) — reward model; tru layer built (value, Shapley); settlement spans foculus/tok
 
 ## docs
 
