@@ -17,6 +17,7 @@ pub mod focusing;
 pub mod graph;
 pub mod model;
 pub mod pass;
+pub mod rewards;
 pub mod truth_scoring;
 pub mod vocab;
 
@@ -25,4 +26,5 @@ pub use error::{McError, Result};
 pub use focusing::{compute_focusing, impulse, Context, FocusingGraph, FocusingParams, FocusingResult, Impulse, Karma, Link, Will};
 pub use graph::{Cyberlink, Graph};
 pub use model::Model;
+pub use rewards::{shapley, value, Contribution};
 pub use truth_scoring::{accumulate, bts_scores, surprise, Report};
