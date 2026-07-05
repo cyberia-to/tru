@@ -1,23 +1,25 @@
 # tru
 
-**Compile a transformer from a knowledge graph — no training, no dataset, no gradient descent.**
+**A convergence engine that computes collective truth — and pays for creating it.**
 
-The architecture and every weight fall out of the graph's own spectrum. The compile is a pure function: the same graph produces a byte-identical model, in seconds, on a CPU. No floats anywhere in the path — fixed-point over the Goldilocks field — so two machines get the same result, and the result is verifiable.
+tru turns a knowledge graph into **φ\***, the closest approximation to shared knowledge a network of agents can compute. From that one computation come two missions, and they are inseparable:
 
-tru does two things, and they are the same thing at different scales:
+- **Truth** — rank every idea by the focus it has earned, and *compile* the graph directly into a transformer. No training: the model's architecture and weights are derived from the graph's own spectrum.
+- **Reward** — mint currency for knowledge itself. New money appears only when, and exactly where, a contribution makes the graph more coherent. No aggregator decides who earned what; each contributor self-mints against the shift it provably caused.
 
-- **focus** — turn a weighted graph into **φ\***, a collective-attention distribution: a truth-weighted ranking of every node, computed by iterating a three-operator kernel to a fixed point.
-- **compile** — freeze that φ\* into a Llama-shaped transformer. Embedding dimension, head count, layer depth, and all weight matrices are *derived* from the φ\*-weighted adjacency. Not trained. Compiled.
+Truth is the unit of account. Computing what the network knows and paying the people who add to it are the same event, priced in the same quantity.
 
-Focusing is the continuous limit; the compiled model is that limit frozen at finite depth.
+Everything runs in fixed-point over the Goldilocks field — no floats in the provable path — so the result is deterministic, reproducible bit-for-bit, and therefore *verifiable*. That is what lets truth be money.
 
 ---
 
-## Why compile instead of train
+## Mission 1 — Truth: rank a graph, compile a model
 
-A trained model needs a dataset, GPUs, days of compute, and lands at weights you cannot reproduce. tru's compile is deterministic and cheap:
+tru reads a graph weighted by honesty — stake is commitment, [karma](specs/truth-scoring.md) is a track record of being right before the crowd, market price prunes links nobody believes — and iterates a three-operator kernel to its unique fixed point **φ\***. Every node's φ\*(p) is the focus it has earned from the entire weighted graph. No authority assigns it; it converges.
 
-| | training | tru compile |
+That same φ\* **compiles into a transformer.** The embedding dimension is the effective rank of the graph's spectrum; the attention heads are its discovered dialects; the layer depth is its diameter times its mixing time. The architecture is not configured — it is *measured*. The graph decides what shape of model it wants to be.
+
+| | training a model | compiling one with tru |
 |---|---|---|
 | input | a curated dataset | a graph snapshot |
 | cost | GPU-days | CPU-seconds |
@@ -25,7 +27,17 @@ A trained model needs a dataset, GPUs, days of compute, and lands at weights you
 | arithmetic | float | fixed-point (Goldilocks field) |
 | provenance | opaque | the model *is* a hash of the graph |
 
-The architecture is not configured — it is measured. The embedding dimension is the effective rank of the graph's spectrum; the head count is the number of discovered dialects; the layer depth is the graph's diameter times its mixing time. The graph decides what shape of model it wants to be.
+## Mission 2 — Reward: mint money for creating knowledge
+
+This is why any of it runs. tru is a **minting engine whose unit of account is proven focus shift.**
+
+When a contribution reshapes the graph, focus rolls to a new resting place and the drop in free energy — the gain in **syntropy** — is the value created. tru measures it as **Δφ⁺**, the directed focus impulse. A contributor computes Δφ⁺ locally, proves it, and self-mints in proportion. There is no central aggregator deciding who contributed what, and no emission untethered from contribution:
+
+> **New money is minted only when, and exactly where, knowledge is created.** Inflation is not a policy — it is the measure of a physical process.
+
+The division is fair by construction. Overlapping contributions split by [Shapley value](specs/rewards.md); each is weighted by its **surprise** — how far it beat the crowd's own prediction — so a copy of the consensus earns nothing however large its raw shift. Honesty is priced in, not assumed: the same Bayesian-truth-serum score that pays truth-tellers slashes noise.
+
+`tru impulse` prices a single contribution live; `tru`'s reward layer computes the surprise-weighted value and its Shapley division. (The leaderless settlement that distributes the computation across the network, and the mint itself, live in the sibling consensus and token layers — see **Status** below.)
 
 ---
 
@@ -40,14 +52,14 @@ git clone https://github.com/cyberia-to/hemera   # content-addressing / hashing
 cd tru && cargo build --release
 ```
 
-Generate a demo graph and try the three commands:
+Generate a demo graph and try all three:
 
 ```sh
 cargo run -p tru --example gen_demo -- /tmp        # writes /tmp/demo.graph
 alias tru=./target/release/tru
 ```
 
-**Rank a graph** — compute φ\* and each node's spectral position:
+**Truth — rank the graph** (φ\* and each node's spectral position):
 
 ```
 $ tru focus /tmp/demo.graph
@@ -63,17 +75,7 @@ cyberank φ*(p) · position (x,y) — top 4
   0400000000000000…  0.145001  (+0.6239, -0.7471)
 ```
 
-**Price a contribution** — how much a new link sharpens collective focus (Δφ⁺):
-
-```
-$ tru impulse /tmp/demo.graph --from 02 --to 01 --stake 8000
-impulse 0200000000000000… → 0100000000000000…
-  stake 8000
-  Δφ⁺ reward 0.072235 · ΔJ +0.072235
-  entropy drop +0.072235 · discovery +0.000000 · ‖Δφ*‖₁ 0.324732
-```
-
-**Compile a model** — derive a transformer from the graph:
+**Truth — compile a model** (a transformer derived from the graph):
 
 ```
 $ tru compile /tmp/demo.graph -o /tmp/demo.model
@@ -84,18 +86,19 @@ compile demo-graph → demo-graph-ct0
   wrote /tmp/demo.model
 ```
 
-Run it twice — the `particle` (the model's hash) is identical. That is the determinism guarantee.
+Run it twice — the `particle` (the model's hash) is identical. That reproducibility is the whole point.
 
----
+**Reward — price a contribution** (how much a new link sharpens collective focus):
 
-## The three capabilities
+```
+$ tru impulse /tmp/demo.graph --from 02 --to 01 --stake 8000
+impulse 0200000000000000… → 0100000000000000…
+  stake 8000
+  Δφ⁺ reward 0.072235 · ΔJ +0.072235
+  entropy drop +0.072235 · discovery +0.000000 · ‖Δφ*‖₁ 0.324732
+```
 
-| command | computes | use |
-|---|---|---|
-| `tru focus <graph>` | φ\*, cyberank, syntropy, spectral positions | rank a graph; a truth-weighted PageRank with geometry |
-| `tru impulse <graph> --from P --to Q` | Δφ⁺, the directed focus shift of one link | price a contribution's information gain |
-| `tru compile <graph> -o <model>` | a Llama-shaped `.model` (CT-0) | turn a graph into an inference-ready transformer |
-| `tru inspect / vocab / model <file>` | container summaries | read `.graph` / `.vocab` / `.model` files |
+That Δφ⁺ is what a contributor mints against — a copy would price at zero.
 
 ---
 
@@ -106,41 +109,36 @@ Run it twice — the `particle` (the model's hash) is identical. That is the det
                             │
                      ┌──────▼──────┐
                      │  FOCUSING   │   tri-kernel: diffusion + springs + heat,
-                     │  → φ*       │   blended and iterated to a fixed point,
-                     └──────┬──────┘   honesty-weighted (karma · market · surprise)
+                     │  → φ*       │   blended into one contraction, iterated to
+                     └──────┬──────┘   its fixed point, honesty-weighted
               φ*            │
-        ┌─────────────┬─────┴──────┐
-        ▼             ▼            ▼
-   ┌─────────┐  ┌──────────┐  ┌─────────┐
-   │ COMPILE │  │ IMPULSE  │  │  RANK   │
-   │ → .model│  │ → Δφ⁺    │  │ cyberank│
-   └─────────┘  └────┬─────┘  └─────────┘
-   CT-0, 8 passes    │ Δφ⁺ → surprise-weighted value → Shapley
-                     ▼
-                  rewards
+        ┌─────────────┬─────┴───────────┐
+        ▼             ▼                 ▼
+   ┌─────────┐  ┌──────────┐      ┌───────────┐
+   │  RANK   │  │ COMPILE  │      │  IMPULSE  │
+   │ cyberank│  │ → .model │      │  → Δφ⁺    │
+   └─────────┘  └──────────┘      └─────┬─────┘
+     truth        truth                 │ surprise-weighted value → Shapley
+                  CT-0, 8 passes        ▼
+                                     REWARD → mint
 ```
 
-**Focusing** runs the tri-kernel — three graph operators (a random walk, a screened-spring solve, and a heat kernel) blended into one contraction and iterated to its unique fixed point φ\*. The graph is weighted by honesty before it is read: stake is commitment, karma is a track record of being right before the crowd, and market price prunes links nobody believes.
+One kernel, computed once, feeds all three. **Focusing** blends a random walk, a screened-spring solve, and a heat kernel into a single contraction and iterates to φ\*. **Compilation (CT-0)** factorizes the φ\*-weighted adjacency into an embedding, per-head attention, and a Clifford MLP — eight deterministic passes. **Impulse** measures the [syntropy](docs/terms/syntropy.md) gain one signal produces, and the reward layer divides it by Shapley over surprising contributions.
 
-**Compilation (CT-0)** is eight passes from `.graph` to `.model`: index the particles, discover dialects (which become attention heads), derive the architecture from the spectrum, and factorize the φ\*-weighted adjacency into an embedding, per-head attention projections, and a Clifford MLP. When the graph carries no geometric (bivector) data, the output is byte-identical to a plain scalar transformer.
-
-**Impulse** measures Δφ⁺ — the gain in [syntropy](docs/terms/syntropy.md) one signal produces — the quantity a contributor is paid against. `tru`'s reward layer divides it fairly by Shapley value; the leaderless settlement that distributes the computation lives in sibling repos (`foculus`, `tok`).
-
-Every number is fixed-point over the Goldilocks field (p = 2⁶⁴ − 2³² + 1). No float touches the provable path, so the whole pipeline is deterministic and reproducible bit-for-bit.
+Every number is a field element modulo p = 2⁶⁴ − 2³² + 1. No float touches the provable path, so truth is the same on every machine — and a proof of Δφ⁺ is a claim on newly minted currency.
 
 ---
 
 ## Status — 0.1
 
-Reference implementation. The full pipeline runs end-to-end and is deterministic:
+Reference implementation. Both missions run end-to-end and are deterministic:
 
-- ✅ focusing engine (φ\*, cyberank, syntropy, spectral positions, Δφ⁺)
-- ✅ honesty weighting (BTS → karma, will + conviction, market price, surprise ρ)
-- ✅ CT-0 compiler — all 8 passes, `.graph → .model`, byte-identical across runs
-- ✅ reward magnitude (value, Shapley attribution)
+- ✅ **truth** — φ\*, cyberank, syntropy, spectral positions; honesty weighting (BTS → karma, will + conviction, market price, surprise ρ)
+- ✅ **model** — CT-0 compiler, all 8 passes, `.graph → .model`, byte-identical across runs
+- ✅ **reward** — Δφ⁺ impulse, surprise-weighted value, Shapley attribution (the mintable quantity and its fair division)
 - ✅ builds on stable Rust · 87 tests · clippy-clean · fixed-point throughout
 
-**What's next (post-0.1):** scale — the SVD is exact subspace iteration, correct but not yet the randomized/GPU form needed for million-node graphs. Runtime interop (loading a `.model` into an inference engine) and cross-repo settlement (foculus/tok) are outside this crate by design.
+**Boundaries by design.** tru owns *magnitude* — what a contribution is worth and who earned it. The leaderless settlement lottery that computes it across the network lives in `foculus`; conservation and the actual mint live in `tok`. Scale (a randomized/GPU SVD for million-node graphs) and runtime inference (loading a `.model` into an engine) are the post-0.1 frontiers.
 
 See [`specs/README.md`](specs/README.md) for the per-spec status map.
 
@@ -148,16 +146,16 @@ See [`specs/README.md`](specs/README.md) for the per-spec status map.
 
 ## Where it fits
 
-tru is the intelligence layer of a larger stack. It is the only component that understands graph structure: it computes φ\* and compiles `.model` files; the inference engine, the renderer, and the consensus layer consume its outputs and stay graph-agnostic. The graph snapshots come from `cybergraph`; finality comes from `foculus`.
+tru is the intelligence-and-economics layer of the cyber stack — the only component that understands graph structure. It computes φ\*, compiles `.model` files, and prices Δφ⁺; the inference engine, the renderer, the consensus layer, and the token layer consume its outputs and stay graph-agnostic. Graph snapshots come from `cybergraph`; finality from `foculus`; minting from `tok`.
 
 ---
 
 ## Learn more
 
 - **[specs/README.md](specs/README.md)** — the build map: every spec, what it produces, and its status
+- **[specs/rewards.md](specs/rewards.md)** — surprising-syntropy minting, Shapley settlement, the whole reward economy
 - **[specs/ct0.md](specs/ct0.md)** — the CT-0 compile, all 8 passes, conformance predicates
 - **[specs/focusing.md](specs/focusing.md)** · **[specs/tri-kernel.md](specs/tri-kernel.md)** — how φ\* is computed
-- **[specs/rewards.md](specs/rewards.md)** — surprising-syntropy minting and Shapley settlement
 - **[docs/explanation/overview.md](docs/explanation/overview.md)** — what tru computes and why
 
 ## License
