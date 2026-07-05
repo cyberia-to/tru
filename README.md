@@ -150,13 +150,55 @@ tru is the intelligence-and-economics layer of the cyber stack — the only comp
 
 ---
 
-## Learn more
+## Concepts
 
-- **[specs/README.md](specs/README.md)** — the build map: every spec, what it produces, and its status
-- **[specs/rewards.md](specs/rewards.md)** — surprising-syntropy minting, Shapley settlement, the whole reward economy
-- **[specs/ct0.md](specs/ct0.md)** — the CT-0 compile, all 8 passes, conformance predicates
-- **[specs/focusing.md](specs/focusing.md)** · **[specs/tri-kernel.md](specs/tri-kernel.md)** — how φ\* is computed
-- **[docs/explanation/overview.md](docs/explanation/overview.md)** — what tru computes and why
+tru owns a precise vocabulary — every term is a page in [`docs/terms/`](docs/terms/). Start here to read the internals; each idea is one file.
+
+**Truth & focus**
+
+| term | is |
+|---|---|
+| [focus](docs/terms/focus.md) | φ\*, the collective attention distribution — the tri-kernel's fixed point |
+| [cyberank](docs/terms/cyberank.md) | focus per particle, φ\*(p) — the canonical ranking, summing to 1 |
+| [syntropy](docs/terms/syntropy.md) | the order in the graph, in bits — the quantity tru exists to grow |
+| [convergence](docs/terms/convergence.md) | iteration toward a destination that iteration itself defines |
+
+**Staking & honesty**
+
+| term | is |
+|---|---|
+| [valence](docs/terms/valence.md) | the ternary epistemic field of a link, v ∈ {−1, 0, +1} |
+| [will](docs/terms/will.md) | committed capacity to act — balance locked for a duration |
+| [conviction](docs/terms/conviction.md) | the capital a neuron stakes on a single link |
+| [axon](docs/terms/axon.md) | the bundle of all links between two particles — itself a particle |
+| [serum](docs/terms/serum.md) | Prelec's Bayesian Truth Serum — honesty as the optimal strategy |
+| [honesty](docs/terms/honesty.md) | why neurons act honestly: incentive, not enforcement |
+
+**Markets & epistemics**
+
+| term | is |
+|---|---|
+| [market](docs/terms/market.md) · [inhibition](docs/terms/inhibition.md) | the two-dimensional epistemic price, and why markets are load-bearing |
+| [true](docs/terms/true.md) · [false](docs/terms/false.md) · [void](docs/terms/void.md) | the attractor states of a link |
+| [two kinds of knowledge](docs/terms/two%20kinds%20of%20knowledge.md) | the irreducible split the graph holds |
+| [the true-false problem](docs/terms/true-false%20problem.md) | the foundational problem of cyber inference |
+
+## Deep dives
+
+The "why" behind the code, in [`docs/explanation/`](docs/explanation/):
+
+- **[overview](docs/explanation/overview.md)** — what tru computes and why it exists
+- **[the tri-kernel](docs/explanation/tri-kernel.md)** — why diffusion, springs, and heat are the minimal sufficient basis
+- **[the collective focus theorem](docs/explanation/collective-focus-theorem.md)** — convergence and uniqueness of φ\*
+- **[focus-flow](docs/explanation/focus-flow.md)** · **[graph-native transformer](docs/explanation/graph-native-transformer.md)** — why a graph *is* a transformer
+- **[the knowledge economy](docs/explanation/knowledge-economy.md)** · **[incentives](docs/explanation/incentives.md)** — how truth becomes money
+- **[epistemic markets](docs/explanation/epistemic-markets.md)** · **[honesty](docs/explanation/honesty.md)** — the market and the serum
+
+## Specs
+
+The normative build map — every spec, what it produces, and its status: **[specs/README.md](specs/README.md)**.
+
+Highlights: [ct0.md](specs/ct0.md) (the 8-pass compile) · [focusing.md](specs/focusing.md) (φ\*) · [rewards.md](specs/rewards.md) (the reward economy) · [truth-scoring.md](specs/truth-scoring.md) (BTS → karma).
 
 ## License
 
