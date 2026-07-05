@@ -10,5 +10,5 @@ pub use focusing::{
     compute_focusing, Context, FocusingGraph, FocusingParams, FocusingResult, Karma, Link,
     SpectralEmbedding, Will,
 };
-pub use impulse::{impulse, Impulse};
+pub use impulse::{impulse, propose, Impulse};
 pub use measures::{cyberank, entropy, syntropy, telemetry, Telemetry};

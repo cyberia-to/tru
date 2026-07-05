@@ -28,8 +28,8 @@ pub mod vocab;
 pub use arithmetic::Fx;
 pub use error::{McError, Result};
 pub use focusing::{
-    compute_focusing, impulse, Context, FocusingGraph, FocusingParams, FocusingResult, Impulse,
-    Karma, Link, Will,
+    compute_focusing, impulse, propose, Context, FocusingGraph, FocusingParams, FocusingResult,
+    Impulse, Karma, Link, Will,
 };
 pub use graph::{Cyberlink, Graph};
 pub use model::Model;

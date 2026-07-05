@@ -121,6 +121,19 @@ pub fn impulse(
     }
 }
 
+/// The **propose** claim — the first, local run of the reward (`rewards.md` §6).
+///
+/// A neuron computes its own standalone directed impulse `Δφ⁺_ν = v({ν}) − v(∅)`
+/// — the focus shift its links produce on the graph it observed — proves it, and
+/// self-mints against it before any settlement. This is `impulse(...).directed`,
+/// named for its role: tru owns the local first run; the epoch-boundary Shapley
+/// division among overlapping contributors is settlement, and lives in
+/// [[foculus]]. Among substitutes this standalone value is a ceiling on the
+/// settled share, so it is a safe claim to gossip immediately.
+pub fn propose(base: &[Link], links: &[Link], ctx: &Context, params: &FocusingParams) -> Fx {
+    impulse(base, links, ctx, params, params.epsilon).directed
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -266,6 +279,26 @@ mod tests {
             imp.directed.raw(),
             Fx::ZERO.raw(),
             "a syntropy-lowering batch must mint nothing"
+        );
+    }
+
+    // The propose claim (§6) is exactly the standalone directed impulse — the
+    // local first run of the reward, before any settlement.
+    #[test]
+    fn propose_is_the_standalone_directed_impulse() {
+        let base = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100)];
+        let mine = vec![link(2, 1, 8000)]; // a sharpening link toward the hub
+        let params = FocusingParams::default();
+        let claim = propose(&base, &mine, &Context::none(), &params);
+        let directed = impulse(&base, &mine, &Context::none(), &params, eps()).directed;
+        assert_eq!(
+            claim.raw(),
+            directed.raw(),
+            "propose = impulse(...).directed"
+        );
+        assert!(
+            claim.to_f64() > 0.0,
+            "a real contribution proposes a positive reward ceiling"
         );
     }
 }
