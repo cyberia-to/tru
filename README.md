@@ -152,6 +152,7 @@ tru owns a precise vocabulary — every term is a page in [`docs/terms/`](docs/t
 | term | is |
 |---|---|
 | [focus](docs/terms/focus.md) | φ\*, the collective attention distribution — the tri-kernel's fixed point |
+| [attention](docs/terms/attention.md) | one neuron's projection into φ\* — and the mechanism the compiled model runs on |
 | [cyberank](docs/terms/cyberank.md) | focus per particle, φ\*(p) — the canonical ranking, summing to 1 |
 | [syntropy](docs/terms/syntropy.md) | the order in the graph, in bits — the quantity tru exists to grow |
 | [convergence](docs/terms/convergence.md) | iteration toward a destination that iteration itself defines |
@@ -160,12 +161,13 @@ tru owns a precise vocabulary — every term is a page in [`docs/terms/`](docs/t
 
 | term | is |
 |---|---|
-| [valence](docs/terms/valence.md) | the ternary epistemic field of a link, v ∈ {−1, 0, +1} |
 | [will](docs/terms/will.md) | committed capacity to act — balance locked for a duration |
 | [conviction](docs/terms/conviction.md) | the capital a neuron stakes on a single link |
-| [axon](docs/terms/axon.md) | the bundle of all links between two particles — itself a particle |
+| [valence](docs/terms/valence.md) | the ternary epistemic field of a link, v ∈ {−1, 0, +1} |
+| [karma](docs/terms/karma.md) | the unbuyable trust multiplier κ(ν) — earned only by being right before the crowd |
 | [serum](docs/terms/serum.md) | Prelec's Bayesian Truth Serum — honesty as the optimal strategy |
 | [honesty](docs/terms/honesty.md) | why neurons act honestly: incentive, not enforcement |
+| [axon](docs/terms/axon.md) | the bundle of all links between two particles — itself a particle |
 
 **Markets & epistemics**
 
