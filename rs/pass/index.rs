@@ -50,7 +50,10 @@ pub struct ParticleIndex {
 
 impl ParticleIndex {
     fn new() -> Self {
-        Self { particles: Vec::new(), index: HashMap::new() }
+        Self {
+            particles: Vec::new(),
+            index: HashMap::new(),
+        }
     }
 
     /// Insert a particle if absent, returning its id.
@@ -104,7 +107,10 @@ impl Adjacency {
 /// Pass 1: build the particle index, the resolved edge list, and the adjacency.
 /// `vocab_seed` is the particle order from any referenced `.vocab` files (§3.1
 /// step 2); pass an empty slice when the graph declares none.
-pub fn build(vocab_seed: &[[u8; 32]], links: &[Cyberlink]) -> (ParticleIndex, Vec<Edge>, Adjacency) {
+pub fn build(
+    vocab_seed: &[[u8; 32]],
+    links: &[Cyberlink],
+) -> (ParticleIndex, Vec<Edge>, Adjacency) {
     let mut v = ParticleIndex::new();
 
     // Step 2 — seed from vocab refs, in declared order.
@@ -174,7 +180,11 @@ mod tests {
     fn axon_is_deterministic_and_oriented() {
         let (p, q) = (hash(1), hash(2));
         assert_eq!(axon(&p, &q), axon(&p, &q), "axon must be a pure function");
-        assert_ne!(axon(&p, &q), axon(&q, &p), "axon is oriented: H(p‖q) ≠ H(q‖p)");
+        assert_ne!(
+            axon(&p, &q),
+            axon(&q, &p),
+            "axon is oriented: H(p‖q) ≠ H(q‖p)"
+        );
     }
 
     #[test]
@@ -213,6 +223,9 @@ mod tests {
         let w12 = row.iter().find(|&&(j, _)| j == i2).map(|&(_, w)| w);
         assert_eq!(w12, Some(150), "affirmations 100+50 accumulate");
         // node 3 and 4 exist as particles but carry no positive inbound edge.
-        assert!(a.out[i1 as usize].iter().all(|&(j, _)| j == i2), "only the affirmed edge survives");
+        assert!(
+            a.out[i1 as usize].iter().all(|&(j, _)| j == i2),
+            "only the affirmed edge survives"
+        );
     }
 }

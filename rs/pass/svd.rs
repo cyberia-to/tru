@@ -73,7 +73,9 @@ pub fn orthonormalize(block: &mut [Vec<Fx>]) {
 fn start_block(n: usize, k: usize) -> Vec<Vec<Fx>> {
     (0..k)
         .map(|c| {
-            let mut v: Vec<Fx> = (0..n).map(|i| Fx::from_int(((i * (2 * c + 3) + c) % 13 + 1) as i64)).collect();
+            let mut v: Vec<Fx> = (0..n)
+                .map(|i| Fx::from_int(((i * (2 * c + 3) + c) % 13 + 1) as i64))
+                .collect();
             abs_max_normalize(&mut v);
             v
         })
@@ -114,10 +116,20 @@ fn sc1(u: &mut [Fx], v: &mut [Fx]) {
 }
 
 /// Top-`k` SVD of a square operator on `n` dims, given `M·x` and `Mᵀ·x`.
-pub fn top_svd(n: usize, apply_m: &dyn Fn(&[Fx]) -> Vec<Fx>, apply_mt: &dyn Fn(&[Fx]) -> Vec<Fx>, k: usize, iters: usize) -> Svd {
+pub fn top_svd(
+    n: usize,
+    apply_m: &dyn Fn(&[Fx]) -> Vec<Fx>,
+    apply_mt: &dyn Fn(&[Fx]) -> Vec<Fx>,
+    k: usize,
+    iters: usize,
+) -> Svd {
     let k = k.min(n);
     if k == 0 {
-        return Svd { u: vec![], v: vec![], sigma: vec![] };
+        return Svd {
+            u: vec![],
+            v: vec![],
+            sigma: vec![],
+        };
     }
     let mtm = |x: &[Fx]| -> Vec<Fx> { apply_mt(&apply_m(x)) };
 
@@ -145,9 +157,13 @@ pub fn top_svd(n: usize, apply_m: &dyn Fn(&[Fx]) -> Vec<Fx>, apply_mt: &dyn Fn(&
             (sigma, u, v)
         })
         .collect();
-    triples.sort_by(|a, b| b.0.cmp(&a.0));
+    triples.sort_by_key(|t| core::cmp::Reverse(t.0));
 
-    let mut svd = Svd { u: Vec::with_capacity(k), v: Vec::with_capacity(k), sigma: Vec::with_capacity(k) };
+    let mut svd = Svd {
+        u: Vec::with_capacity(k),
+        v: Vec::with_capacity(k),
+        sigma: Vec::with_capacity(k),
+    };
     for (s, u, v) in triples {
         svd.sigma.push(s);
         svd.u.push(u);
@@ -159,9 +175,7 @@ pub fn top_svd(n: usize, apply_m: &dyn Fn(&[Fx]) -> Vec<Fx>, apply_mt: &dyn Fn(&
 /// Convenience: SVD of a dense square matrix `p` (row-major `n×n`).
 pub fn dense_svd(p: &[Vec<Fx>], k: usize, iters: usize) -> Svd {
     let n = p.len();
-    let apply_m = |x: &[Fx]| -> Vec<Fx> {
-        (0..n).map(|i| dot(&p[i], x)).collect()
-    };
+    let apply_m = |x: &[Fx]| -> Vec<Fx> { (0..n).map(|i| dot(&p[i], x)).collect() };
     let apply_mt = |x: &[Fx]| -> Vec<Fx> {
         let mut out = vec![Fx::ZERO; n];
         for i in 0..n {
@@ -213,7 +227,14 @@ mod tests {
             vec![Fx::ZERO, Fx::ZERO, Fx::from_int(1)],
         ];
         let svd = dense_svd(&p, 3, 100);
-        assert!(svd.sigma[0] >= svd.sigma[1] && svd.sigma[1] >= svd.sigma[2], "σ must descend");
-        assert!((svd.sigma[0].to_f64() - 5.0).abs() < 0.1, "top σ ≈ 5, got {}", svd.sigma[0].to_f64());
+        assert!(
+            svd.sigma[0] >= svd.sigma[1] && svd.sigma[1] >= svd.sigma[2],
+            "σ must descend"
+        );
+        assert!(
+            (svd.sigma[0].to_f64() - 5.0).abs() < 0.1,
+            "top σ ≈ 5, got {}",
+            svd.sigma[0].to_f64()
+        );
     }
 }

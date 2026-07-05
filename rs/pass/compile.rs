@@ -27,11 +27,21 @@ pub fn compile(graph: &Graph) -> Result<Model> {
     // Weight passes 4–6, then norms (pass 7). Storage order (§10.5): embedding
     // first, then the attention/MLP/norm tensors, in a fixed deterministic order.
     let embedding = embed::embed(&adj, &a.phi, a.d);
-    let attn_tensors = attn::attention(&edges, &dialects, &embedding.data, &a.phi, a.d, a.h, a.l, a.diameter);
+    let attn_tensors = attn::attention(
+        &edges,
+        &dialects,
+        &embedding.data,
+        &a.phi,
+        a.d,
+        a.h,
+        a.l,
+        a.diameter,
+    );
     let mlp_tensors = mlp::mlp(a.d, a.l);
     let norm_tensors = norm::layernorms(a.d, a.l);
 
-    let mut tensors = Vec::with_capacity(1 + attn_tensors.len() + mlp_tensors.len() + norm_tensors.len());
+    let mut tensors =
+        Vec::with_capacity(1 + attn_tensors.len() + mlp_tensors.len() + norm_tensors.len());
     tensors.push(embedding);
     tensors.extend(attn_tensors);
     tensors.extend(mlp_tensors);
@@ -81,7 +91,7 @@ fn card(name: &str, a: &arch::Arch, dialects: &dialect::Dialects) -> String {
 }
 
 fn config_toml(a: &arch::Arch) -> String {
-    let head_dim = if a.h == 0 { a.d } else { a.d / a.h };
+    let head_dim = a.d.checked_div(a.h).unwrap_or(a.d);
     format!(
         "model_type = \"llama\"\n\
          parameters = {params}\n\
@@ -127,7 +137,7 @@ fn program() -> String {
      pub fn forward(input: Field, output: Field, seq: Field, cfg: Config) {\n    \
          transformer_llama.forward(input, output, seq, cfg)\n\
      }\n"
-        .to_string()
+    .to_string()
 }
 
 fn vocab_toml(v: &index::ParticleIndex) -> String {
@@ -142,11 +152,7 @@ fn vocab_toml(v: &index::ParticleIndex) -> String {
 fn eval_toml(a: &arch::Arch) -> String {
     // Structural-compile certificate: architecture is derived and deterministic;
     // the weight-conformance predicates (P_EMBED, P_ATTN) await the SVD passes.
-    let top = a
-        .phi
-        .iter()
-        .map(|x| x.to_f64())
-        .fold(0.0_f64, f64::max);
+    let top = a.phi.iter().map(|x| x.to_f64()).fold(0.0_f64, f64::max);
     format!(
         "[ct0_structural]\n\
          P_DET = 1\n\
@@ -228,6 +234,9 @@ mod tests {
         let g = synth_graph();
         let a = compile(&g).unwrap().to_bytes();
         let b = compile(&g).unwrap().to_bytes();
-        assert_eq!(a, b, "two compiles of the same graph are byte-identical (§10.9)");
+        assert_eq!(
+            a, b,
+            "two compiles of the same graph are byte-identical (§10.9)"
+        );
     }
 }

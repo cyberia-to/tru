@@ -150,8 +150,9 @@ pub fn spectral_vectors(
     // column so modified Gram–Schmidt does not collapse them.
     let mut block: Vec<Vec<Fx>> = (0..k)
         .map(|j| {
-            let mut v: Vec<Fx> =
-                (0..n).map(|i| Fx::from_int(((i * (2 * j + 3) + j) % 13 + 1) as i64)).collect();
+            let mut v: Vec<Fx> = (0..n)
+                .map(|i| Fx::from_int(((i * (2 * j + 3) + j) % 13 + 1) as i64))
+                .collect();
             deflate_mean(&mut v);
             v
         })
@@ -183,7 +184,7 @@ pub fn spectral_vectors(
         })
         .collect();
     // Most-dominant M-eigenvalue first (= smallest Laplacian eigenvalue first).
-    ranked.sort_by(|a, b| b.0.cmp(&a.0));
+    ranked.sort_by_key(|t| core::cmp::Reverse(t.0));
 
     let mut vectors = Vec::with_capacity(k);
     let mut eigenvalues = Vec::with_capacity(k);

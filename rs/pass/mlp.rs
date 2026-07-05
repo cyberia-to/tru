@@ -33,7 +33,12 @@ impl Rng {
         b.extend_from_slice(b"CT-0");
         let mut seed = [0u8; 32];
         seed.copy_from_slice(cyber_hemera::hash(&b).as_bytes());
-        Rng { seed, ctr: 0, buf: [0; 4], have: 0 }
+        Rng {
+            seed,
+            ctr: 0,
+            buf: [0; 4],
+            have: 0,
+        }
     }
 
     fn next_u64(&mut self) -> u64 {
@@ -68,7 +73,12 @@ impl Rng {
 
 fn seeded(name: String, shape: Vec<u64>, count: usize, fan_in: usize, rng: &mut Rng) -> Tensor {
     let data = (0..count).map(|_| rng.he(fan_in)).collect();
-    Tensor { name, shape, encoding: Encoding::U16, data }
+    Tensor {
+        name,
+        shape,
+        encoding: Encoding::U16,
+        data,
+    }
 }
 
 /// Pass 6: the Clifford-MLP tensors for every layer (§8.1).
@@ -124,13 +134,22 @@ mod tests {
         let (d, l) = (16, 3);
         let t = mlp(d, l);
         assert_eq!(t.len(), 5 * l);
-        let proj = t.iter().find(|t| t.name == "model.layers.0.mlp_clifford.proj.weight").unwrap();
+        let proj = t
+            .iter()
+            .find(|t| t.name == "model.layers.0.mlp_clifford.proj.weight")
+            .unwrap();
         assert_eq!(proj.shape, vec![(SHIFT_SET_LEN * 2 * d) as u64, d as u64]);
         assert_eq!(proj.data.len(), SHIFT_SET_LEN * 2 * d * d);
-        let gamma = t.iter().find(|t| t.name == "model.layers.0.mlp_clifford.gamma").unwrap();
+        let gamma = t
+            .iter()
+            .find(|t| t.name == "model.layers.0.mlp_clifford.gamma")
+            .unwrap();
         assert_eq!(gamma.shape, vec![d as u64]);
         assert_eq!(gamma.encoding, Encoding::U32);
-        let ctx = t.iter().find(|t| t.name == "model.layers.2.mlp_clifford.context.weight_2").unwrap();
+        let ctx = t
+            .iter()
+            .find(|t| t.name == "model.layers.2.mlp_clifford.context.weight_2")
+            .unwrap();
         assert_eq!(ctx.shape, vec![d as u64, 3, 3]);
     }
 
@@ -138,14 +157,29 @@ mod tests {
     fn init_is_deterministic() {
         let a = mlp(16, 2);
         let b = mlp(16, 2);
-        assert!(a.iter().zip(&b).all(|(x, y)| x.data.iter().zip(&y.data).all(|(p, q)| p.raw() == q.raw())));
+        assert!(a.iter().zip(&b).all(|(x, y)| x
+            .data
+            .iter()
+            .zip(&y.data)
+            .all(|(p, q)| p.raw() == q.raw())));
     }
 
     #[test]
     fn layers_get_distinct_seeds() {
         let t = mlp(16, 2);
-        let p0 = &t.iter().find(|t| t.name == "model.layers.0.mlp_clifford.proj.weight").unwrap().data;
-        let p1 = &t.iter().find(|t| t.name == "model.layers.1.mlp_clifford.proj.weight").unwrap().data;
-        assert!(p0.iter().zip(p1).any(|(a, b)| a.raw() != b.raw()), "layers must not share weights");
+        let p0 = &t
+            .iter()
+            .find(|t| t.name == "model.layers.0.mlp_clifford.proj.weight")
+            .unwrap()
+            .data;
+        let p1 = &t
+            .iter()
+            .find(|t| t.name == "model.layers.1.mlp_clifford.proj.weight")
+            .unwrap()
+            .data;
+        assert!(
+            p0.iter().zip(p1).any(|(a, b)| a.raw() != b.raw()),
+            "layers must not share weights"
+        );
     }
 }

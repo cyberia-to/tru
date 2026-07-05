@@ -10,38 +10,90 @@
 //!
 //! Run: RUSTC_BOOTSTRAP=1 cargo run -p tru --example superadditivity
 
-use tru::focusing::{compute_focusing, FocusingGraph, FocusingParams, Context, Link};
+use tru::focusing::{compute_focusing, Context, FocusingGraph, FocusingParams, Link};
 
 const N: usize = 34;
 
 /// Zachary's Karate Club, 0-indexed, 78 undirected edges.
 const EDGES: &[(u8, u8)] = &[
-    (0,1),(0,2),(0,3),(0,4),(0,5),(0,6),(0,7),(0,8),(0,10),(0,11),(0,12),(0,13),(0,17),(0,19),(0,21),(0,31),
-    (1,2),(1,3),(1,7),(1,13),(1,17),(1,19),(1,21),(1,30),
-    (2,3),(2,7),(2,8),(2,9),(2,13),(2,27),(2,28),(2,32),
-    (3,7),(3,12),(3,13),
-    (4,6),(4,10),
-    (5,6),(5,10),(5,16),
-    (6,16),
-    (8,30),(8,32),(8,33),
-    (9,33),
-    (13,33),
-    (14,32),(14,33),
-    (15,32),(15,33),
-    (18,32),(18,33),
-    (19,33),
-    (20,32),(20,33),
-    (22,32),(22,33),
-    (23,25),(23,27),(23,29),(23,32),(23,33),
-    (24,25),(24,27),(24,31),
-    (25,31),
-    (26,29),(26,33),
-    (27,33),
-    (28,31),(28,33),
-    (29,32),(29,33),
-    (30,32),(30,33),
-    (31,32),(31,33),
-    (32,33),
+    (0, 1),
+    (0, 2),
+    (0, 3),
+    (0, 4),
+    (0, 5),
+    (0, 6),
+    (0, 7),
+    (0, 8),
+    (0, 10),
+    (0, 11),
+    (0, 12),
+    (0, 13),
+    (0, 17),
+    (0, 19),
+    (0, 21),
+    (0, 31),
+    (1, 2),
+    (1, 3),
+    (1, 7),
+    (1, 13),
+    (1, 17),
+    (1, 19),
+    (1, 21),
+    (1, 30),
+    (2, 3),
+    (2, 7),
+    (2, 8),
+    (2, 9),
+    (2, 13),
+    (2, 27),
+    (2, 28),
+    (2, 32),
+    (3, 7),
+    (3, 12),
+    (3, 13),
+    (4, 6),
+    (4, 10),
+    (5, 6),
+    (5, 10),
+    (5, 16),
+    (6, 16),
+    (8, 30),
+    (8, 32),
+    (8, 33),
+    (9, 33),
+    (13, 33),
+    (14, 32),
+    (14, 33),
+    (15, 32),
+    (15, 33),
+    (18, 32),
+    (18, 33),
+    (19, 33),
+    (20, 32),
+    (20, 33),
+    (22, 32),
+    (22, 33),
+    (23, 25),
+    (23, 27),
+    (23, 29),
+    (23, 32),
+    (23, 33),
+    (24, 25),
+    (24, 27),
+    (24, 31),
+    (25, 31),
+    (26, 29),
+    (26, 33),
+    (27, 33),
+    (28, 31),
+    (28, 33),
+    (29, 32),
+    (29, 33),
+    (30, 32),
+    (30, 33),
+    (31, 32),
+    (31, 33),
+    (32, 33),
 ];
 
 fn hash(b: u8) -> [u8; 32] {
@@ -97,7 +149,13 @@ fn auc(pos: &[f64], neg: &[f64]) -> f64 {
     let mut wins = 0.0;
     for &p in pos {
         for &q in neg {
-            wins += if p > q { 1.0 } else if p == q { 0.5 } else { 0.0 };
+            wins += if p > q {
+                1.0
+            } else if p == q {
+                0.5
+            } else {
+                0.0
+            };
         }
     }
     wins / (pos.len() * neg.len()) as f64
@@ -111,15 +169,22 @@ fn ap(pos: &[f64], neg: &[f64]) -> f64 {
     if total_pos == 0.0 {
         return 0.0;
     }
-    let mut all: Vec<(f64, bool)> =
-        pos.iter().map(|&s| (s, true)).chain(neg.iter().map(|&s| (s, false))).collect();
+    let mut all: Vec<(f64, bool)> = pos
+        .iter()
+        .map(|&s| (s, true))
+        .chain(neg.iter().map(|&s| (s, false)))
+        .collect();
     all.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
     let (mut tp, mut fp, mut prev_recall, mut ap) = (0.0, 0.0, 0.0, 0.0);
     let mut i = 0;
     while i < all.len() {
         let s = all[i].0;
         while i < all.len() && all[i].0 == s {
-            if all[i].1 { tp += 1.0 } else { fp += 1.0 }
+            if all[i].1 {
+                tp += 1.0
+            } else {
+                fp += 1.0
+            }
             i += 1;
         }
         let precision = tp / (tp + fp);
@@ -160,7 +225,11 @@ fn superadd(train: &[(u8, u8)], test: &[(u8, u8)], neg_pairs: &[(u8, u8)]) -> Ro
         .map(|v| {
             let mut nodes: Vec<u8> = nbr[v as usize].clone();
             nodes.push(v);
-            let ee: Vec<(u8, u8)> = train.iter().copied().filter(|&(a, b)| nodes.contains(&a) && nodes.contains(&b)).collect();
+            let ee: Vec<(u8, u8)> = train
+                .iter()
+                .copied()
+                .filter(|&(a, b)| nodes.contains(&a) && nodes.contains(&b))
+                .collect();
             focus_by_node(&ee)
         })
         .collect();
@@ -171,11 +240,15 @@ fn superadd(train: &[(u8, u8)], test: &[(u8, u8)], neg_pairs: &[(u8, u8)]) -> Ro
         (auc(&pos, &neg), ap(&pos, &neg))
     };
     let (col_auc, col_ap) = evaluate(&col);
-    let es: Vec<(f64, f64)> = ego.iter().map(|f| evaluate(f)).collect();
+    let es: Vec<(f64, f64)> = ego.iter().map(&evaluate).collect();
     let mean = |xs: &[f64]| xs.iter().sum::<f64>() / xs.len() as f64;
     let aucs: Vec<f64> = es.iter().map(|x| x.0).collect();
     let aps: Vec<f64> = es.iter().map(|x| x.1).collect();
-    let (best_auc, best_node) = aucs.iter().copied().enumerate().fold((0.0, 0usize), |a, (i, x)| if x > a.0 { (x, i) } else { a });
+    let (best_auc, best_node) = aucs
+        .iter()
+        .copied()
+        .enumerate()
+        .fold((0.0, 0usize), |a, (i, x)| if x > a.0 { (x, i) } else { a });
     Row {
         lambda2,
         j,
@@ -193,6 +266,7 @@ fn superadd(train: &[(u8, u8)], test: &[(u8, u8)], neg_pairs: &[(u8, u8)]) -> Ro
 /// The tree touches every reachable node, so tree + any subset of the rest
 /// keeps the vertex set fixed — the regime where adding an edge is Fiedler-
 /// monotone (λ₂ never decreases).
+#[allow(clippy::type_complexity)] // (tree, rest) edge lists — a clear pair here
 fn spanning(edges: &[(u8, u8)]) -> (Vec<(u8, u8)>, Vec<(u8, u8)>) {
     let mut adj: Vec<Vec<u8>> = vec![Vec::new(); N];
     for &(a, b) in edges {
@@ -215,7 +289,11 @@ fn spanning(edges: &[(u8, u8)]) -> (Vec<(u8, u8)>, Vec<(u8, u8)>) {
             }
         }
     }
-    let rest: Vec<(u8, u8)> = edges.iter().copied().filter(|e| !tree.contains(e)).collect();
+    let rest: Vec<(u8, u8)> = edges
+        .iter()
+        .copied()
+        .filter(|e| !tree.contains(e))
+        .collect();
     (tree, rest)
 }
 
@@ -240,8 +318,20 @@ fn pearson(x: &[f64], y: &[f64]) -> f64 {
 
 fn main() {
     // Deterministic 80/20 split: every 5th edge is held out for test.
-    let test: Vec<(u8, u8)> = EDGES.iter().copied().enumerate().filter(|(i, _)| i % 5 == 0).map(|(_, e)| e).collect();
-    let train: Vec<(u8, u8)> = EDGES.iter().copied().enumerate().filter(|(i, _)| i % 5 != 0).map(|(_, e)| e).collect();
+    let test: Vec<(u8, u8)> = EDGES
+        .iter()
+        .copied()
+        .enumerate()
+        .filter(|(i, _)| i % 5 == 0)
+        .map(|(_, e)| e)
+        .collect();
+    let train: Vec<(u8, u8)> = EDGES
+        .iter()
+        .copied()
+        .enumerate()
+        .filter(|(i, _)| i % 5 != 0)
+        .map(|(_, e)| e)
+        .collect();
 
     // Positives = held-out edges. Negatives = all true non-edges (not in full graph).
     let is_edge = |a: u8, b: u8| {
@@ -260,35 +350,73 @@ fn main() {
     let r = superadd(&train, &test, &neg_pairs);
 
     println!("Karate Club — superadditivity (collective φ* vs ego φ*_ν)");
-    println!("nodes={N}  edges={}  train={}  test={}  negatives={}", EDGES.len(), train.len(), test.len(), neg_pairs.len());
+    println!(
+        "nodes={N}  edges={}  train={}  test={}  negatives={}",
+        EDGES.len(),
+        train.len(),
+        test.len(),
+        neg_pairs.len()
+    );
     println!();
     println!("                       AUC      AP");
-    println!("collective φ*        {:.3}   {:.3}    J(φ*)={:.4}", r.col_auc, r.col_ap, r.j);
+    println!(
+        "collective φ*        {:.3}   {:.3}    J(φ*)={:.4}",
+        r.col_auc, r.col_ap, r.j
+    );
     println!("ego  — mean neuron   {:.3}   {:.3}", r.mean_auc, r.mean_ap);
-    println!("ego  — best neuron   {:.3}   {:.3}    (node {})", r.best_auc, r.best_ap, r.best_node);
+    println!(
+        "ego  — best neuron   {:.3}   {:.3}    (node {})",
+        r.best_auc, r.best_ap, r.best_node
+    );
     println!();
-    println!("σ_mean(AUC) = {:+.3}     σ_best(AUC) = {:+.3}", r.col_auc - r.mean_auc, r.col_auc - r.best_auc);
-    println!("σ_mean(AP)  = {:+.3}     σ_best(AP)  = {:+.3}", r.col_ap - r.mean_ap, r.col_ap - r.best_ap);
+    println!(
+        "σ_mean(AUC) = {:+.3}     σ_best(AUC) = {:+.3}",
+        r.col_auc - r.mean_auc,
+        r.col_auc - r.best_auc
+    );
+    println!(
+        "σ_mean(AP)  = {:+.3}     σ_best(AP)  = {:+.3}",
+        r.col_ap - r.mean_ap,
+        r.col_ap - r.best_ap
+    );
     println!();
     println!("collective beats the average neuron on both metrics; it beats the strongest");
     println!("neuron on AUC (global ranking) but not on AP — superadditivity is metric-dependent.");
-    println!("(measured on the conformant engine: coupled iteration, fixed-point over Goldilocks.)");
+    println!(
+        "(measured on the conformant engine: coupled iteration, fixed-point over Goldilocks.)"
+    );
 
     // Generalized Collective Focus Theorem: with the vertex set fixed (spanning
     // tree over all N nodes), add non-redundant edges and watch λ₂ rise — do
     // syntropy J and superadditivity σ rise with it?
     let (tree, rest) = spanning(&train);
-    let steps = [0usize, rest.len() / 4, rest.len() / 2, 3 * rest.len() / 4, rest.len()];
+    let steps = [
+        0usize,
+        rest.len() / 4,
+        rest.len() / 2,
+        3 * rest.len() / 4,
+        rest.len(),
+    ];
     let (mut l2s, mut js, mut sms, mut sbs) = (vec![], vec![], vec![], vec![]);
     println!();
-    println!("connectivity sweep — spanning tree ({} nodes) + k extra edges:", N);
+    println!(
+        "connectivity sweep — spanning tree ({} nodes) + k extra edges:",
+        N
+    );
     println!("  edges   λ₂       J(φ*)    σ_mean(AUC)  σ_best(AUC)");
     for &k in &steps {
         let mut e = tree.clone();
         e.extend_from_slice(&rest[..k]);
         let s = superadd(&e, &test, &neg_pairs);
         let (sm, sb) = (s.col_auc - s.mean_auc, s.col_auc - s.best_auc);
-        println!("  {:>4}   {:.4}   {:.4}    {:+.3}       {:+.3}", e.len(), s.lambda2, s.j, sm, sb);
+        println!(
+            "  {:>4}   {:.4}   {:.4}    {:+.3}       {:+.3}",
+            e.len(),
+            s.lambda2,
+            s.j,
+            sm,
+            sb
+        );
         l2s.push(s.lambda2);
         js.push(s.j);
         sms.push(sm);
@@ -301,7 +429,11 @@ fn main() {
         pearson(&l2s, &sms),
         pearson(&l2s, &sbs)
     );
-    println!("finding: σ RISES with λ₂ (more connectivity → more collective advantage), and σ_best > 0");
-    println!("at every level. but J FALLS with λ₂ — adding edges spreads focus toward uniform, lowering");
+    println!(
+        "finding: σ RISES with λ₂ (more connectivity → more collective advantage), and σ_best > 0"
+    );
+    println!(
+        "at every level. but J FALLS with λ₂ — adding edges spreads focus toward uniform, lowering"
+    );
     println!("syntropy. so the generalized-CFT σ-λ₂ claim holds; the J-λ₂ claim is refuted (opposite sign).");
 }

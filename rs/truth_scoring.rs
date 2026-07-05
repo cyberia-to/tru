@@ -144,7 +144,10 @@ pub fn accumulate(prior: &Karma, reports: &[Report], eta: Fx) -> Karma {
     let scores = bts_scores(reports);
     let mut next: HashMap<[u8; 32], Fx> = HashMap::new();
     for (r, &s) in reports.iter().zip(&scores) {
-        let base = next.get(&r.neuron).copied().unwrap_or_else(|| prior.get(&r.neuron));
+        let base = next
+            .get(&r.neuron)
+            .copied()
+            .unwrap_or_else(|| prior.get(&r.neuron));
         next.insert(r.neuron, karma_step(base, s, eta));
     }
     Karma::from_pairs(next)
@@ -171,11 +174,19 @@ mod tests {
     #[test]
     fn consensus_copier_scores_near_zero_information() {
         // Everyone believes and predicts the same — no private signal anywhere.
-        let reports =
-            vec![report(1, 0.7, 0.7), report(2, 0.7, 0.7), report(3, 0.7, 0.7), report(4, 0.7, 0.7)];
+        let reports = vec![
+            report(1, 0.7, 0.7),
+            report(2, 0.7, 0.7),
+            report(3, 0.7, 0.7),
+            report(4, 0.7, 0.7),
+        ];
         let s = bts_scores(&reports);
         for (i, &si) in s.iter().enumerate() {
-            assert!(si.to_f64().abs() < 1e-2, "copier {i} should score ≈ 0 (got {})", si.to_f64());
+            assert!(
+                si.to_f64().abs() < 1e-2,
+                "copier {i} should score ≈ 0 (got {})",
+                si.to_f64()
+            );
         }
     }
 
@@ -188,11 +199,16 @@ mod tests {
             report(1, 0.6, 0.6), // crowd context
             report(2, 0.6, 0.6),
             report(3, 0.6, 0.6),
-            report(10, 0.6, 0.6), // accurate meta-prediction
+            report(10, 0.6, 0.6),  // accurate meta-prediction
             report(11, 0.6, 0.05), // same belief, badly wrong prediction
         ];
         let s = bts_scores(&reports);
-        assert!(s[3] > s[4], "accurate predictor ({}) must beat inaccurate ({})", s[3].to_f64(), s[4].to_f64());
+        assert!(
+            s[3] > s[4],
+            "accurate predictor ({}) must beat inaccurate ({})",
+            s[3].to_f64(),
+            s[4].to_f64()
+        );
     }
 
     #[test]
@@ -210,7 +226,10 @@ mod tests {
         let s = bts_scores(&reports);
         let follower = s[0].to_f64();
         let contrarian = s[3].to_f64();
-        assert!(contrarian > follower, "contrarian ({contrarian}) should beat follower ({follower})");
+        assert!(
+            contrarian > follower,
+            "contrarian ({contrarian}) should beat follower ({follower})"
+        );
     }
 
     #[test]
@@ -227,10 +246,21 @@ mod tests {
     #[test]
     fn surprise_clips_to_unit_interval() {
         let smax = Fx::ONE;
-        assert_eq!(surprise(Fx::from_int(-5), smax).raw(), Fx::ZERO.raw(), "noise → ρ = 0");
-        assert_eq!(surprise(Fx::from_int(5), smax).raw(), Fx::ONE.raw(), "very surprising → ρ = 1");
+        assert_eq!(
+            surprise(Fx::from_int(-5), smax).raw(),
+            Fx::ZERO.raw(),
+            "noise → ρ = 0"
+        );
+        assert_eq!(
+            surprise(Fx::from_int(5), smax).raw(),
+            Fx::ONE.raw(),
+            "very surprising → ρ = 1"
+        );
         let mid = surprise(Fx::from_ratio(1, 2), smax);
-        assert!((mid.to_f64() - 0.5).abs() < 1e-6, "ρ scales linearly in-range");
+        assert!(
+            (mid.to_f64() - 0.5).abs() < 1e-6,
+            "ρ scales linearly in-range"
+        );
     }
 
     #[test]

@@ -68,7 +68,14 @@ impl Link {
     /// A stake-only link with a neutral market (`price = 1`) and its own neuron
     /// as author. Recovers the pre-karma/price behaviour exactly.
     pub fn stake(from: [u8; 32], to: [u8; 32], amount: u128) -> Self {
-        Self { neuron: from, from, to, amount, valence: 1, price: Fx::ONE }
+        Self {
+            neuron: from,
+            from,
+            to,
+            amount,
+            valence: 1,
+            price: Fx::ONE,
+        }
     }
 }
 
@@ -141,7 +148,10 @@ impl Context {
 
     /// A context carrying karma but no will.
     pub fn with_karma(karma: Karma) -> Self {
-        Self { karma, will: Will::none() }
+        Self {
+            karma,
+            will: Will::none(),
+        }
     }
 }
 
@@ -218,7 +228,7 @@ impl FocusingGraph {
         // they land in (0,1] (comparable to μ=τ=1) and never overflow the field.
         // Effective weight w = stake·κ(ν)·f(price): κ(ν) ≥ 0 (default 1),
         // f(price) ∈ [0,1], so w ≤ stake ≤ 1 and overflow safety is preserved.
-        let max_amount = kept.iter().map(|l| attention(l)).max().unwrap_or(1).max(1);
+        let max_amount = kept.iter().map(&attention).max().unwrap_or(1).max(1);
         let raw: Vec<([u8; 32], [u8; 32], Fx)> = kept
             .iter()
             .map(|l| {
@@ -238,8 +248,8 @@ impl FocusingGraph {
         let mut node_index: HashMap<[u8; 32], usize> = HashMap::new();
         for &(from, to, _) in &raw {
             for hash in [from, to] {
-                if !node_index.contains_key(&hash) {
-                    node_index.insert(hash, node_ids.len());
+                if let std::collections::hash_map::Entry::Vacant(e) = node_index.entry(hash) {
+                    e.insert(node_ids.len());
                     node_ids.push(hash);
                 }
             }
@@ -343,9 +353,14 @@ impl FocusingGraph {
         );
         let kk = vectors.len();
         // Transpose the k eigenvectors into per-particle coordinate rows.
-        let coords: Vec<Vec<Fx>> =
-            (0..self.n).map(|i| (0..kk).map(|c| vectors[c][i]).collect()).collect();
-        SpectralEmbedding { k: kk, coords, eigenvalues }
+        let coords: Vec<Vec<Fx>> = (0..self.n)
+            .map(|i| (0..kk).map(|c| vectors[c][i]).collect())
+            .collect();
+        SpectralEmbedding {
+            k: kk,
+            coords,
+            eigenvalues,
+        }
     }
 }
 
@@ -400,7 +415,13 @@ pub fn compute_focusing(g: &FocusingGraph, p: &FocusingParams) -> FocusingResult
 /// The coupled iteration run for an explicit step count.
 pub fn iterate(g: &FocusingGraph, p: &FocusingParams, steps: usize) -> FocusingResult {
     if g.n == 0 {
-        return FocusingResult { focus: vec![], syntropy: Fx::ZERO, diffusion: vec![], springs: vec![], heat: vec![] };
+        return FocusingResult {
+            focus: vec![],
+            syntropy: Fx::ZERO,
+            diffusion: vec![],
+            springs: vec![],
+            heat: vec![],
+        };
     }
     let n = g.n;
     let uniform = Fx::from_ratio(1, n as i64);
@@ -423,7 +444,13 @@ pub fn iterate(g: &FocusingGraph, p: &FocusingParams, steps: usize) -> FocusingR
     }
 
     let syntropy = super::measures::syntropy(&phi);
-    FocusingResult { focus: phi, syntropy, diffusion, springs, heat }
+    FocusingResult {
+        focus: phi,
+        syntropy,
+        diffusion,
+        springs,
+        heat,
+    }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────
@@ -443,7 +470,10 @@ mod tests {
     }
 
     fn node_idx(g: &FocusingGraph, b: u8) -> usize {
-        g.node_ids().iter().position(|h| h[0] == b && h[1..] == [0u8; 31][..]).unwrap()
+        g.node_ids()
+            .iter()
+            .position(|h| h[0] == b && h[1..] == [0u8; 31][..])
+            .unwrap()
     }
 
     #[test]
@@ -458,15 +488,39 @@ mod tests {
 
     #[test]
     fn deterministic_bit_identical() {
-        let mk = || vec![link(1, 2, 100), link(2, 3, 50), link(3, 1, 200), link(4, 1, 300)];
-        let a = compute_focusing(&FocusingGraph::build(mk(), &Context::none()), &FocusingParams::default());
-        let b = compute_focusing(&FocusingGraph::build(mk(), &Context::none()), &FocusingParams::default());
-        assert!(a.focus.iter().zip(&b.focus).all(|(x, y)| x.raw() == y.raw()), "φ* not bit-identical across runs");
+        let mk = || {
+            vec![
+                link(1, 2, 100),
+                link(2, 3, 50),
+                link(3, 1, 200),
+                link(4, 1, 300),
+            ]
+        };
+        let a = compute_focusing(
+            &FocusingGraph::build(mk(), &Context::none()),
+            &FocusingParams::default(),
+        );
+        let b = compute_focusing(
+            &FocusingGraph::build(mk(), &Context::none()),
+            &FocusingParams::default(),
+        );
+        assert!(
+            a.focus
+                .iter()
+                .zip(&b.focus)
+                .all(|(x, y)| x.raw() == y.raw()),
+            "φ* not bit-identical across runs"
+        );
     }
 
     #[test]
     fn contraction_below_one() {
-        let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
+        let links = vec![
+            link(1, 2, 100),
+            link(2, 3, 100),
+            link(3, 1, 100),
+            link(4, 1, 100),
+        ];
         let g = FocusingGraph::build(links, &Context::none());
         let p = FocusingParams::default();
         let kappa = contraction(&g, &p);
@@ -478,21 +532,39 @@ mod tests {
 
     #[test]
     fn derived_steps_reach_the_fixed_point() {
-        let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
+        let links = vec![
+            link(1, 2, 100),
+            link(2, 3, 100),
+            link(3, 1, 100),
+            link(4, 1, 100),
+        ];
         let g = FocusingGraph::build(links, &Context::none());
         let p = FocusingParams::default();
         let t = derived_steps(&g, &p);
-        assert!(t > 0 && t < p.iter_cap, "derived T = {t} should be a real step count");
+        assert!(
+            t > 0 && t < p.iter_cap,
+            "derived T = {t} should be a real step count"
+        );
         // Past T(ε) the iterate barely moves — the fixed point is reached.
         let at_t = iterate(&g, &p, t);
         let past_t = iterate(&g, &p, t + 20);
-        let drift: f64 = at_t.focus.iter().zip(&past_t.focus).map(|(a, b)| (a.to_f64() - b.to_f64()).abs()).sum();
+        let drift: f64 = at_t
+            .focus
+            .iter()
+            .zip(&past_t.focus)
+            .map(|(a, b)| (a.to_f64() - b.to_f64()).abs())
+            .sum();
         assert!(drift < 1e-4, "drift past T = {drift}, not converged");
     }
 
     #[test]
     fn heat_conserves_mass_and_smooths() {
-        let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
+        let links = vec![
+            link(1, 2, 100),
+            link(2, 3, 100),
+            link(3, 1, 100),
+            link(4, 1, 100),
+        ];
         let g = FocusingGraph::build(links, &Context::none());
         let n = g.n();
         let i1 = node_idx(&g, 1);
@@ -502,28 +574,50 @@ mod tests {
         let h = heat_step(&v, &g.sym_weights, &g.und_degree, g.lambda_max, Fx::ONE);
         // exp(−τL) conserves mass (L·1 = 0), up to series truncation.
         let mass: f64 = h.iter().map(|x| x.to_f64()).sum();
-        assert!((mass - 1.0).abs() < 1e-2, "heat should conserve mass, got {mass}");
+        assert!(
+            (mass - 1.0).abs() < 1e-2,
+            "heat should conserve mass, got {mass}"
+        );
         // and it diffuses the spike off the peak while staying ~positive.
         assert!(h[i1].to_f64() < 1.0, "heat should spread mass off node 1");
-        assert!(h.iter().all(|x| x.to_f64() > -1e-3), "heat stays approximately positive");
+        assert!(
+            h.iter().all(|x| x.to_f64() > -1e-3),
+            "heat stays approximately positive"
+        );
     }
 
     #[test]
     fn high_in_stake_ranks_higher() {
-        let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 1000)];
+        let links = vec![
+            link(1, 2, 100),
+            link(2, 3, 100),
+            link(3, 1, 100),
+            link(4, 1, 1000),
+        ];
         let g = FocusingGraph::build(links, &Context::none());
         let r = compute_focusing(&g, &FocusingParams::default());
         let (i1, i3) = (node_idx(&g, 1), node_idx(&g, 3));
-        assert!(r.focus[i1] > r.focus[i3], "high-in-stake node 1 should outrank node 3");
+        assert!(
+            r.focus[i1] > r.focus[i3],
+            "high-in-stake node 1 should outrank node 3"
+        );
     }
 
     #[test]
     fn well_linked_node_ranks_higher() {
-        let links = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100), link(4, 1, 100)];
+        let links = vec![
+            link(1, 2, 100),
+            link(2, 3, 100),
+            link(3, 1, 100),
+            link(4, 1, 100),
+        ];
         let g = FocusingGraph::build(links, &Context::none());
         let r = compute_focusing(&g, &FocusingParams::default());
         let (i1, i2) = (node_idx(&g, 1), node_idx(&g, 2));
-        assert!(r.focus[i1] > r.focus[i2], "well-linked node 1 should outrank node 2");
+        assert!(
+            r.focus[i1] > r.focus[i2],
+            "well-linked node 1 should outrank node 2"
+        );
     }
 
     #[test]
@@ -537,19 +631,33 @@ mod tests {
             Link::stake(hash(4), hash(1), big * 3),
         ];
         let small = vec![link(1, 2, 1000), link(2, 3, 500), link(4, 1, 3000)];
-        let rl = compute_focusing(&FocusingGraph::build(large, &Context::none()), &FocusingParams::default());
-        let rs = compute_focusing(&FocusingGraph::build(small, &Context::none()), &FocusingParams::default());
+        let rl = compute_focusing(
+            &FocusingGraph::build(large, &Context::none()),
+            &FocusingParams::default(),
+        );
+        let rs = compute_focusing(
+            &FocusingGraph::build(small, &Context::none()),
+            &FocusingParams::default(),
+        );
         let total: f64 = rl.focus.iter().map(|x| x.to_f64()).sum();
         assert!((total - 1.0).abs() < 1e-6, "large-stake φ* sums to {total}");
         assert!(rl.focus.iter().all(|x| *x > Fx::ZERO));
-        assert!(rl.focus.iter().zip(&rs.focus).all(|(a, b)| a.raw() == b.raw()), "φ* not scale-invariant");
+        assert!(
+            rl.focus
+                .iter()
+                .zip(&rs.focus)
+                .all(|(a, b)| a.raw() == b.raw()),
+            "φ* not scale-invariant"
+        );
     }
 
     #[test]
     fn empty_graph() {
         let g = FocusingGraph::build(vec![], &Context::none());
         assert_eq!(g.n(), 0);
-        assert!(compute_focusing(&g, &FocusingParams::default()).focus.is_empty());
+        assert!(compute_focusing(&g, &FocusingParams::default())
+            .focus
+            .is_empty());
     }
 
     #[test]
@@ -572,8 +680,22 @@ mod tests {
     // diffusion mass — the regime where honesty weighting shows up in the rank.
     fn voter_graph(w_a: (/*neuron*/ [u8; 32], /*price*/ Fx), w_b: ([u8; 32], Fx)) -> Vec<Link> {
         vec![
-            Link { neuron: w_a.0, from: hash(5), to: hash(1), amount: 100, valence: 1, price: w_a.1 },
-            Link { neuron: w_b.0, from: hash(5), to: hash(2), amount: 100, valence: 1, price: w_b.1 },
+            Link {
+                neuron: w_a.0,
+                from: hash(5),
+                to: hash(1),
+                amount: 100,
+                valence: 1,
+                price: w_a.1,
+            },
+            Link {
+                neuron: w_b.0,
+                from: hash(5),
+                to: hash(2),
+                amount: 100,
+                valence: 1,
+                price: w_b.1,
+            },
             link(1, 3, 100), // A → C
             link(2, 3, 100), // B → C
             link(3, 5, 100), // C → V
@@ -589,10 +711,16 @@ mod tests {
         let g0 = FocusingGraph::build(mk(), &Context::none());
         let r0 = compute_focusing(&g0, &FocusingParams::default());
         let gap = (r0.focus[node_idx(&g0, 1)].to_f64() - r0.focus[node_idx(&g0, 2)].to_f64()).abs();
-        assert!(gap < 1e-6, "A and B must be symmetric under no karma (Δ={gap})");
+        assert!(
+            gap < 1e-6,
+            "A and B must be symmetric under no karma (Δ={gap})"
+        );
 
         // κ=3 on A's signer sends more of V's focus to A: A outranks B.
-        let g1 = FocusingGraph::build(mk(), &Context::with_karma(Karma::from_pairs([(sign_a, Fx::from_int(3))])));
+        let g1 = FocusingGraph::build(
+            mk(),
+            &Context::with_karma(Karma::from_pairs([(sign_a, Fx::from_int(3))])),
+        );
         let r1 = compute_focusing(&g1, &FocusingParams::default());
         assert!(
             r1.focus[node_idx(&g1, 1)] > r1.focus[node_idx(&g1, 2)],
@@ -619,7 +747,14 @@ mod tests {
     fn market_doubt_prunes_the_edge() {
         // f(price) = 0 (fully doubted): the edge is structurally absent, so its
         // endpoints never enter the graph.
-        let doubted = Link { neuron: hash(9), from: hash(7), to: hash(8), amount: 100, valence: 1, price: Fx::ZERO };
+        let doubted = Link {
+            neuron: hash(9),
+            from: hash(7),
+            to: hash(8),
+            amount: 100,
+            valence: 1,
+            price: Fx::ZERO,
+        };
         let g = FocusingGraph::build(vec![doubted, link(1, 2, 100)], &Context::none());
         assert_eq!(g.n(), 2, "a fully-doubted edge must create no nodes");
         assert!(
@@ -642,7 +777,10 @@ mod tests {
         let gap = (r0.focus[node_idx(&g0, 1)].to_f64() - r0.focus[node_idx(&g0, 2)].to_f64()).abs();
         assert!(gap < 1e-6, "A and B symmetric under no will (Δ={gap})");
 
-        let ctx = Context { karma: Karma::none(), will: Will::from_pairs([(sign_a, 300)]) };
+        let ctx = Context {
+            karma: Karma::none(),
+            will: Will::from_pairs([(sign_a, 300)]),
+        };
         let g1 = FocusingGraph::build(mk(), &ctx);
         let r1 = compute_focusing(&g1, &FocusingParams::default());
         assert!(
@@ -658,19 +796,42 @@ mod tests {
         let s = hash(9);
         let spokes = || {
             vec![
-                Link { neuron: s, from: hash(5), to: hash(1), amount: 100, valence: 1, price: Fx::ONE },
-                Link { neuron: s, from: hash(5), to: hash(2), amount: 100, valence: 1, price: Fx::ONE },
+                Link {
+                    neuron: s,
+                    from: hash(5),
+                    to: hash(1),
+                    amount: 100,
+                    valence: 1,
+                    price: Fx::ONE,
+                },
+                Link {
+                    neuron: s,
+                    from: hash(5),
+                    to: hash(2),
+                    amount: 100,
+                    valence: 1,
+                    price: Fx::ONE,
+                },
                 link(1, 3, 100),
                 link(2, 3, 100),
                 link(3, 5, 100),
             ]
         };
-        let ctx = Context { karma: Karma::none(), will: Will::from_pairs([(s, 1000)]) };
+        let ctx = Context {
+            karma: Karma::none(),
+            will: Will::from_pairs([(s, 1000)]),
+        };
 
         let g_will = FocusingGraph::build(spokes(), &ctx);
         let r_will = compute_focusing(&g_will, &FocusingParams::default());
-        let (a, b) = (r_will.focus[node_idx(&g_will, 1)], r_will.focus[node_idx(&g_will, 2)]);
-        assert!((a.to_f64() - b.to_f64()).abs() < 1e-6, "equal will split must keep A,B symmetric");
+        let (a, b) = (
+            r_will.focus[node_idx(&g_will, 1)],
+            r_will.focus[node_idx(&g_will, 2)],
+        );
+        assert!(
+            (a.to_f64() - b.to_f64()).abs() < 1e-6,
+            "equal will split must keep A,B symmetric"
+        );
 
         // And the will genuinely acted: V's spokes now carry more of its focus,
         // so the sink C (node 3) draws more than in the will-free graph.
@@ -678,7 +839,10 @@ mod tests {
         let r0 = compute_focusing(&g0, &FocusingParams::default());
         let c_will = r_will.focus[node_idx(&g_will, 3)].to_f64();
         let c_none = r0.focus[node_idx(&g0, 3)].to_f64();
-        assert!((c_will - c_none).abs() > 1e-6, "will should change the distribution, not vanish");
+        assert!(
+            (c_will - c_none).abs() > 1e-6,
+            "will should change the distribution, not vanish"
+        );
     }
 
     // ── spectral embedding (positions for mir) ────────────────────────
@@ -695,7 +859,10 @@ mod tests {
 
     /// Undirected edge → a pair of unit-stake directed links.
     fn undirected(a: u8, b: u8) -> [Link; 2] {
-        [Link::stake(hash(a), hash(b), 100), Link::stake(hash(b), hash(a), 100)]
+        [
+            Link::stake(hash(a), hash(b), 100),
+            Link::stake(hash(b), hash(a), 100),
+        ]
     }
 
     fn barbell() -> FocusingGraph {
@@ -720,7 +887,11 @@ mod tests {
             assert_eq!(sgn(coord(b)), sa, "node {b} must share cluster A's sign");
         }
         for b in [4, 5, 6] {
-            assert_eq!(sgn(coord(b)), -sa, "node {b} must take cluster B's opposite sign");
+            assert_eq!(
+                sgn(coord(b)),
+                -sa,
+                "node {b} must take cluster B's opposite sign"
+            );
         }
     }
 
@@ -735,18 +906,26 @@ mod tests {
             assert!(sum.abs() < 1e-3, "eigenvector {c} not centered (Σ={sum})");
         }
         // The two eigenvectors are mutually orthogonal.
-        let d: f64 = (0..g.n()).map(|i| emb.coords[i][0].to_f64() * emb.coords[i][1].to_f64()).sum();
+        let d: f64 = (0..g.n())
+            .map(|i| emb.coords[i][0].to_f64() * emb.coords[i][1].to_f64())
+            .sum();
         assert!(d.abs() < 1e-2, "eigenvectors not orthogonal (⟨v₀,v₁⟩={d})");
         // Eigenvalues ascending and nonnegative (λ₂ ≤ λ₃).
         assert!(emb.eigenvalues[0].to_f64() >= -1e-6);
-        assert!(emb.eigenvalues[1] >= emb.eigenvalues[0], "eigenvalues must be ascending");
+        assert!(
+            emb.eigenvalues[1] >= emb.eigenvalues[0],
+            "eigenvalues must be ascending"
+        );
     }
 
     #[test]
     fn embedding_k_clamps_to_n_minus_one() {
         let g = barbell(); // 6 nodes
         let emb = g.embedding(100, 50);
-        assert_eq!(emb.k, 5, "cannot extract more than n−1 nontrivial eigenvectors");
+        assert_eq!(
+            emb.k, 5,
+            "cannot extract more than n−1 nontrivial eigenvectors"
+        );
         assert!(emb.coords.iter().all(|row| row.len() == 5));
     }
 }

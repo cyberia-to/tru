@@ -105,9 +105,20 @@ pub fn impulse(
     } else {
         Fx::from_ratio(n1 as i64, n0 as i64).ln()
     };
-    let directed = if delta_j > Fx::ZERO { delta_j } else { Fx::ZERO };
+    let directed = if delta_j > Fx::ZERO {
+        delta_j
+    } else {
+        Fx::ZERO
+    };
 
-    Impulse { delta, delta_j, directed, entropy_drop, discovery, norm_l1 }
+    Impulse {
+        delta,
+        delta_j,
+        directed,
+        entropy_drop,
+        discovery,
+        norm_l1,
+    }
 }
 
 #[cfg(test)]
@@ -133,12 +144,26 @@ mod tests {
     fn a_new_link_shifts_focus_and_is_local() {
         let base = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100)];
         let batch = vec![link(3, 1, 400)]; // reinforce 1's inbound
-        let imp = impulse(&base, &batch, &Context::none(), &FocusingParams::default(), eps());
+        let imp = impulse(
+            &base,
+            &batch,
+            &Context::none(),
+            &FocusingParams::default(),
+            eps(),
+        );
         assert!(!imp.delta.is_empty(), "a reshaping link must move φ*");
         assert!(imp.norm_l1 > Fx::ZERO, "‖Δφ*‖₁ must be positive");
         // directed is the clip of ΔJ.
-        let expect = if imp.delta_j > Fx::ZERO { imp.delta_j } else { Fx::ZERO };
-        assert_eq!(imp.directed.raw(), expect.raw(), "directed must equal [ΔJ]₊");
+        let expect = if imp.delta_j > Fx::ZERO {
+            imp.delta_j
+        } else {
+            Fx::ZERO
+        };
+        assert_eq!(
+            imp.directed.raw(),
+            expect.raw(),
+            "directed must equal [ΔJ]₊"
+        );
     }
 
     // The syntropy identity ΔJ = (H_before − H_after) + ln(n1/n0) holds exactly.
@@ -146,10 +171,19 @@ mod tests {
     fn delta_j_decomposes_into_entropy_drop_plus_discovery() {
         let base = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100)];
         let batch = vec![link(1, 4, 250)]; // introduces particle 4 (discovery)
-        let imp = impulse(&base, &batch, &Context::none(), &FocusingParams::default(), eps());
+        let imp = impulse(
+            &base,
+            &batch,
+            &Context::none(),
+            &FocusingParams::default(),
+            eps(),
+        );
         let lhs = imp.delta_j.to_f64();
         let rhs = imp.entropy_drop.to_f64() + imp.discovery.to_f64();
-        assert!((lhs - rhs).abs() < 1e-3, "ΔJ ({lhs}) ≠ entropy_drop + discovery ({rhs})");
+        assert!(
+            (lhs - rhs).abs() < 1e-3,
+            "ΔJ ({lhs}) ≠ entropy_drop + discovery ({rhs})"
+        );
     }
 
     // A link to a brand-new particle charges the discovery term; one that reuses
@@ -157,23 +191,55 @@ mod tests {
     #[test]
     fn discovery_term_fires_only_on_new_particles() {
         let base = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100)];
-        let disc = impulse(&base, &vec![link(1, 9, 200)], &Context::none(), &FocusingParams::default(), eps());
-        assert!(disc.discovery > Fx::ZERO, "a new particle must charge discovery > 0");
+        let disc = impulse(
+            &base,
+            &[link(1, 9, 200)],
+            &Context::none(),
+            &FocusingParams::default(),
+            eps(),
+        );
+        assert!(
+            disc.discovery > Fx::ZERO,
+            "a new particle must charge discovery > 0"
+        );
 
-        let reuse = impulse(&base, &vec![link(1, 3, 200)], &Context::none(), &FocusingParams::default(), eps());
-        assert!(abs(reuse.discovery) < eps(), "no new particle ⇒ discovery ≈ 0 (got {})", reuse.discovery.to_f64());
+        let reuse = impulse(
+            &base,
+            &[link(1, 3, 200)],
+            &Context::none(),
+            &FocusingParams::default(),
+            eps(),
+        );
+        assert!(
+            abs(reuse.discovery) < eps(),
+            "no new particle ⇒ discovery ≈ 0 (got {})",
+            reuse.discovery.to_f64()
+        );
     }
 
     // A neuron's first links: empty base, φ*_before = 0 everywhere, ΔJ = J_after.
     #[test]
     fn first_links_from_an_empty_base() {
         let batch = vec![link(1, 2, 100), link(2, 3, 100), link(3, 1, 100)];
-        let imp = impulse(&[], &batch, &Context::none(), &FocusingParams::default(), eps());
+        let imp = impulse(
+            &[],
+            &batch,
+            &Context::none(),
+            &FocusingParams::default(),
+            eps(),
+        );
         assert!(!imp.delta.is_empty(), "first links must register a shift");
-        assert_eq!(imp.discovery.raw(), Fx::ZERO.raw(), "empty base has no discovery ratio");
+        assert_eq!(
+            imp.discovery.raw(),
+            Fx::ZERO.raw(),
+            "empty base has no discovery ratio"
+        );
         // every Δφ* entry equals φ*_after (before was zero).
         let mass: f64 = imp.delta.iter().map(|(_, d)| d.to_f64()).sum();
-        assert!((mass - 1.0).abs() < 1e-3, "Δφ* from empty base should sum to 1 (φ*_after), got {mass}");
+        assert!(
+            (mass - 1.0).abs() < 1e-3,
+            "Δφ* from empty base should sum to 1 (φ*_after), got {mass}"
+        );
     }
 
     // Directed impulse never pays for a flattening (syntropy-lowering) batch.
@@ -184,8 +250,22 @@ mod tests {
         // uniform without adding particles — ΔJ < 0, so directed clips to 0.
         let base = vec![link(2, 1, 1000), link(3, 1, 1000), link(1, 2, 10)];
         let batch = vec![link(1, 2, 5000), link(1, 3, 5000)];
-        let imp = impulse(&base, &batch, &Context::none(), &FocusingParams::default(), eps());
-        assert!(imp.delta_j < Fx::ZERO, "this batch should lower syntropy (ΔJ={})", imp.delta_j.to_f64());
-        assert_eq!(imp.directed.raw(), Fx::ZERO.raw(), "a syntropy-lowering batch must mint nothing");
+        let imp = impulse(
+            &base,
+            &batch,
+            &Context::none(),
+            &FocusingParams::default(),
+            eps(),
+        );
+        assert!(
+            imp.delta_j < Fx::ZERO,
+            "this batch should lower syntropy (ΔJ={})",
+            imp.delta_j.to_f64()
+        );
+        assert_eq!(
+            imp.directed.raw(),
+            Fx::ZERO.raw(),
+            "a syntropy-lowering batch must mint nothing"
+        );
     }
 }

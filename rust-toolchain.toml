@@ -1,0 +1,6 @@
+# Pin the toolchain for reproducible builds. tru is edition 2021 and builds on
+# stable; the strata (nebu) dependency is edition 2024, so stable ≥ 1.85 is
+# required — the current stable channel satisfies it.
+[toolchain]
+channel = "stable"
+components = ["clippy", "rustfmt"]

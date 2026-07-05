@@ -52,7 +52,12 @@ fn clamp01(x: Fx) -> Fx {
 
 /// `v★(S) = Δφ⁺(A^eff ∪ ρ·S)`: the surprise-weighted directed impulse of the
 /// coalition `S` (a subset of contributions) applied on top of `base`.
-pub fn value(base: &[Link], coalition: &[&Contribution], ctx: &Context, params: &FocusingParams) -> Fx {
+pub fn value(
+    base: &[Link],
+    coalition: &[&Contribution],
+    ctx: &Context,
+    params: &FocusingParams,
+) -> Fx {
     let mut batch = Vec::new();
     for c in coalition {
         batch.extend(c.weighted());
@@ -91,7 +96,13 @@ pub fn ordering(n: usize, beacon: &[u8; 32], nonce: u64) -> Vec<usize> {
 /// The marginal a contributor adds under one ordering — the sample `m(n)` a
 /// settlement miner computes (§7). Returns the per-contributor marginal
 /// `v★(prefix ∪ {c}) − v★(prefix)` in ordering order.
-pub fn sample_marginals(base: &[Link], contribs: &[Contribution], perm: &[usize], ctx: &Context, params: &FocusingParams) -> Vec<([u8; 32], Fx)> {
+pub fn sample_marginals(
+    base: &[Link],
+    contribs: &[Contribution],
+    perm: &[usize],
+    ctx: &Context,
+    params: &FocusingParams,
+) -> Vec<([u8; 32], Fx)> {
     let mut prefix: Vec<&Contribution> = Vec::new();
     let mut prev = Fx::ZERO; // v★(∅) = 0
     let mut out = Vec::with_capacity(perm.len());
@@ -107,7 +118,14 @@ pub fn sample_marginals(base: &[Link], contribs: &[Contribution], perm: &[usize]
 /// `Shapley(v★)` by Monte-Carlo over `samples` beacon-seeded orderings (§4, §7):
 /// the average marginal each contributor adds. Returns `(neuron, share)` in
 /// contribution order. Conservation (clipping to realized Δφ⁺) is [[tok]]'s step.
-pub fn shapley(base: &[Link], contribs: &[Contribution], ctx: &Context, params: &FocusingParams, samples: u64, beacon: &[u8; 32]) -> Vec<([u8; 32], Fx)> {
+pub fn shapley(
+    base: &[Link],
+    contribs: &[Contribution],
+    ctx: &Context,
+    params: &FocusingParams,
+    samples: u64,
+    beacon: &[u8; 32],
+) -> Vec<([u8; 32], Fx)> {
     let n = contribs.len();
     let mut acc = vec![Fx::ZERO; n];
     if n == 0 || samples == 0 {
@@ -122,7 +140,11 @@ pub fn shapley(base: &[Link], contribs: &[Contribution], ctx: &Context, params: 
         }
     }
     let inv = Fx::ONE.div(Fx::from_int(samples as i64));
-    contribs.iter().enumerate().map(|(i, c)| (c.neuron, acc[i] * inv)).collect()
+    contribs
+        .iter()
+        .enumerate()
+        .map(|(i, c)| (c.neuron, acc[i] * inv))
+        .collect()
 }
 
 #[cfg(test)]
@@ -136,7 +158,11 @@ mod tests {
     }
 
     fn contrib(neuron: u8, links: Vec<Link>, rho: Fx) -> Contribution {
-        Contribution { neuron: hash(neuron), links, surprise: rho }
+        Contribution {
+            neuron: hash(neuron),
+            links,
+            surprise: rho,
+        }
     }
 
     fn beacon() -> [u8; 32] {
@@ -145,7 +171,11 @@ mod tests {
 
     // A base graph the contributions attach to.
     fn base() -> Vec<Link> {
-        vec![Link::stake(hash(1), hash(2), 100), Link::stake(hash(2), hash(3), 100), Link::stake(hash(3), hash(1), 100)]
+        vec![
+            Link::stake(hash(1), hash(2), 100),
+            Link::stake(hash(2), hash(3), 100),
+            Link::stake(hash(3), hash(1), 100),
+        ]
     }
 
     #[test]
@@ -169,8 +199,16 @@ mod tests {
         assert_eq!(p1, p2, "same beacon+nonce → same ordering");
         let mut sorted = p1.clone();
         sorted.sort();
-        assert_eq!(sorted, vec![0, 1, 2, 3, 4, 5], "must be a permutation of 0..n");
-        assert_ne!(ordering(6, &beacon(), 3), ordering(6, &beacon(), 4), "different nonce → different ordering");
+        assert_eq!(
+            sorted,
+            vec![0, 1, 2, 3, 4, 5],
+            "must be a permutation of 0..n"
+        );
+        assert_ne!(
+            ordering(6, &beacon(), 3),
+            ordering(6, &beacon(), 4),
+            "different nonce → different ordering"
+        );
     }
 
     #[test]
@@ -180,9 +218,19 @@ mod tests {
         // credit equally.
         let a = contrib(10, vec![Link::stake(hash(2), hash(1), 8000)], Fx::ONE);
         let b = contrib(11, vec![Link::stake(hash(2), hash(1), 8000)], Fx::ONE);
-        let shares = shapley(&base(), &[a, b], &Context::none(), &FocusingParams::default(), 8, &beacon());
+        let shares = shapley(
+            &base(),
+            &[a, b],
+            &Context::none(),
+            &FocusingParams::default(),
+            8,
+            &beacon(),
+        );
         let (sa, sb) = (shares[0].1.to_f64(), shares[1].1.to_f64());
-        assert!((sa - sb).abs() < 1e-6, "interchangeable contributors must split equally: {sa} vs {sb}");
+        assert!(
+            (sa - sb).abs() < 1e-6,
+            "interchangeable contributors must split equally: {sa} vs {sb}"
+        );
     }
 
     #[test]
@@ -195,15 +243,33 @@ mod tests {
         let all = value(&base(), &[&a, &b], &Context::none(), &params);
         let shares = shapley(&base(), &[a, b], &Context::none(), &params, 12, &beacon());
         let sum: f64 = shares.iter().map(|s| s.1.to_f64()).sum();
-        assert!((sum - all.to_f64()).abs() < 1e-3, "Σ Shapley {sum} ≠ v★(N) {}", all.to_f64());
+        assert!(
+            (sum - all.to_f64()).abs() < 1e-3,
+            "Σ Shapley {sum} ≠ v★(N) {}",
+            all.to_f64()
+        );
     }
 
     #[test]
     fn a_null_copy_earns_near_zero_shapley() {
         let real = contrib(10, vec![Link::stake(hash(2), hash(1), 8000)], Fx::ONE);
         let copy = contrib(11, vec![Link::stake(hash(3), hash(1), 8000)], Fx::ZERO); // ρ=0
-        let shares = shapley(&base(), &[real, copy], &Context::none(), &FocusingParams::default(), 8, &beacon());
-        assert!(shares[1].1.to_f64().abs() < 1e-6, "ρ=0 copy earns ≈ 0 (got {})", shares[1].1.to_f64());
-        assert!(shares[0].1.to_f64() > 0.0, "the real contributor earns the value");
+        let shares = shapley(
+            &base(),
+            &[real, copy],
+            &Context::none(),
+            &FocusingParams::default(),
+            8,
+            &beacon(),
+        );
+        assert!(
+            shares[1].1.to_f64().abs() < 1e-6,
+            "ρ=0 copy earns ≈ 0 (got {})",
+            shares[1].1.to_f64()
+        );
+        assert!(
+            shares[0].1.to_f64() > 0.0,
+            "the real contributor earns the value"
+        );
     }
 }

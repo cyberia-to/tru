@@ -29,7 +29,13 @@ fn main() {
     let dir = PathBuf::from(std::env::args().nth(1).unwrap_or_else(|| "/tmp".into()));
 
     // .graph
-    let edges = [(1u8, 2u8, 100u128), (2, 3, 50), (3, 1, 200), (4, 1, 300), (1, 3, 80)];
+    let edges = [
+        (1u8, 2u8, 100u128),
+        (2, 3, 50),
+        (3, 1, 200),
+        (4, 1, 300),
+        (1, 3, 80),
+    ];
     let mut records = Vec::new();
     for &(f, t, a) in &edges {
         records.extend_from_slice(&record(f, t, a));
@@ -57,10 +63,23 @@ fn main() {
     m.config = "hidden_size = 8\nnum_hidden_layers = 2\nrms_norm_eps = 1000000\n".into();
     m.program = "transformer_llama".into();
     m.tensors = vec![
-        Tensor { name: "model.embed_tokens.weight".into(), shape: vec![4, 8], encoding: Encoding::U16, data: (0..32i64).map(|i| Fx::from_ratio(i - 16, 25)).collect() },
-        Tensor { name: "model.norm.weight".into(), shape: vec![8], encoding: Encoding::U32, data: vec![Fx::ONE; 8] },
+        Tensor {
+            name: "model.embed_tokens.weight".into(),
+            shape: vec![4, 8],
+            encoding: Encoding::U16,
+            data: (0..32i64).map(|i| Fx::from_ratio(i - 16, 25)).collect(),
+        },
+        Tensor {
+            name: "model.norm.weight".into(),
+            shape: vec![8],
+            encoding: Encoding::U32,
+            data: vec![Fx::ONE; 8],
+        },
     ];
     m.write(dir.join("demo.model")).unwrap();
 
-    println!("wrote demo.graph, demo.vocab, demo.model to {}", dir.display());
+    println!(
+        "wrote demo.graph, demo.vocab, demo.model to {}",
+        dir.display()
+    );
 }

@@ -62,11 +62,9 @@ fn banner() -> String {
     format!(
         "{LOGO}\n{tag}\n{params}\n",
         tag = paint("37", "    the convergence engine"),
-        params = dim(
-            "\n    Goldilocks field · p = 2^64 - 2^32 + 1\n    \
+        params = dim("\n    Goldilocks field · p = 2^64 - 2^32 + 1\n    \
              tri-kernel · diffusion + springs + heat\n    \
-             coupled iteration · fixed-point · converges to φ*\n"
-        ),
+             coupled iteration · fixed-point · converges to φ*\n"),
     )
 }
 
@@ -149,7 +147,13 @@ fn main() -> Result<()> {
     match Cli::parse().cmd {
         Cmd::Inspect { path } => inspect(&path),
         Cmd::Focus { path, top } => focus(path, top),
-        Cmd::Impulse { path, from, to, stake, top } => impulse(&path, &from, &to, stake, top),
+        Cmd::Impulse {
+            path,
+            from,
+            to,
+            stake,
+            top,
+        } => impulse(&path, &from, &to, stake, top),
         Cmd::Compile { path, out } => compile(&path, &out),
         Cmd::Vocab { path } => vocab(&path),
         Cmd::Model { path } => model(&path),
@@ -198,11 +202,27 @@ fn inspect(path: &Path) -> Result<()> {
     let fm = frontmatter::parse(fm_str)?;
     let sections = frontmatter::index_sections(&bytes, body, &fm.files)?;
 
-    println!("{}  {}", bold(&fm.cyb.name), dim(&format!("[{}]", fm.cyb.types.join(", "))));
-    println!("{}", dim(&format!("{} bytes · {} sections", bytes.len(), fm.files.len())));
+    println!(
+        "{}  {}",
+        bold(&fm.cyb.name),
+        dim(&format!("[{}]", fm.cyb.types.join(", ")))
+    );
+    println!(
+        "{}",
+        dim(&format!(
+            "{} bytes · {} sections",
+            bytes.len(),
+            fm.files.len()
+        ))
+    );
     for f in &fm.files {
         let sz = sections.get(&f.name).map(|&(s, e)| e - s).unwrap_or(0);
-        println!("  {} {}  {}", cyan(&format!("{:<11}", f.name)), dim(&format!("{:<8}", f.format)), yellow(&format!("{sz} B")));
+        println!(
+            "  {} {}  {}",
+            cyan(&format!("{:<11}", f.name)),
+            dim(&format!("{:<8}", f.format)),
+            yellow(&format!("{sz} B"))
+        );
     }
     Ok(())
 }
@@ -229,11 +249,21 @@ fn focus(path: Option<PathBuf>, top: usize) -> Result<()> {
 
     println!("{} {}", green("focus"), bold(g.name()));
     let sep = dim(" · ");
-    println!("  {}{sep}{}", kv("particles", &yellow(&fg.n().to_string())), kv("cyberlinks", &yellow(&n_links.to_string())));
     println!(
         "  {}{sep}{}",
-        kv("syntropy J", &yellow(&format!("{:.4}", tel.syntropy.to_f64()))),
-        kv("entropy H", &yellow(&format!("{:.4}", tel.entropy.to_f64())))
+        kv("particles", &yellow(&fg.n().to_string())),
+        kv("cyberlinks", &yellow(&n_links.to_string()))
+    );
+    println!(
+        "  {}{sep}{}",
+        kv(
+            "syntropy J",
+            &yellow(&format!("{:.4}", tel.syntropy.to_f64()))
+        ),
+        kv(
+            "entropy H",
+            &yellow(&format!("{:.4}", tel.entropy.to_f64()))
+        )
     );
     println!(
         "  {}{sep}{}{sep}{}",
@@ -246,17 +276,38 @@ fn focus(path: Option<PathBuf>, top: usize) -> Result<()> {
     let emb = fg.embedding(2, 200);
     let has_xy = emb.k >= 2;
 
-    let mut ranked: Vec<(usize, f64)> = result.focus.iter().map(|x| x.to_f64()).enumerate().collect();
+    let mut ranked: Vec<(usize, f64)> = result
+        .focus
+        .iter()
+        .map(|x| x.to_f64())
+        .enumerate()
+        .collect();
     ranked.sort_by(|a, b| b.1.total_cmp(&a.1));
-    let head = if has_xy { "cyberank φ*(p) · position (x,y)" } else { "cyberank φ*(p)" };
-    println!("\n{}", dim(&format!("{head} — top {}", top.min(ranked.len()))));
+    let head = if has_xy {
+        "cyberank φ*(p) · position (x,y)"
+    } else {
+        "cyberank φ*(p)"
+    };
+    println!(
+        "\n{}",
+        dim(&format!("{head} — top {}", top.min(ranked.len())))
+    );
     for (idx, phi) in ranked.iter().take(top) {
         let pos = if has_xy {
-            dim(&format!("  ({:+.4}, {:+.4})", emb.coords[*idx][0].to_f64(), emb.coords[*idx][1].to_f64()))
+            dim(&format!(
+                "  ({:+.4}, {:+.4})",
+                emb.coords[*idx][0].to_f64(),
+                emb.coords[*idx][1].to_f64()
+            ))
         } else {
             String::new()
         };
-        println!("  {}  {}{}", cyan(&hex8(fg.node_id(*idx))), yellow(&format!("{phi:.6}")), pos);
+        println!(
+            "  {}  {}{}",
+            cyan(&hex8(fg.node_id(*idx))),
+            yellow(&format!("{phi:.6}")),
+            pos
+        );
     }
     Ok(())
 }
@@ -279,11 +330,18 @@ fn read_links(g: &Graph) -> Result<Vec<Link>> {
 /// Resolve a hex prefix to a unique particle among `parts`.
 fn resolve_particle(parts: &[[u8; 32]], prefix: &str) -> Result<[u8; 32]> {
     let p = prefix.trim().trim_end_matches('…').to_lowercase();
-    let hits: Vec<[u8; 32]> = parts.iter().filter(|h| hex(*h).starts_with(&p)).copied().collect();
+    let hits: Vec<[u8; 32]> = parts
+        .iter()
+        .filter(|h| hex(*h).starts_with(&p))
+        .copied()
+        .collect();
     match hits.as_slice() {
         [one] => Ok(*one),
         [] => anyhow::bail!("no particle matches prefix '{prefix}'"),
-        many => anyhow::bail!("prefix '{prefix}' is ambiguous — {} particles match", many.len()),
+        many => anyhow::bail!(
+            "prefix '{prefix}' is ambiguous — {} particles match",
+            many.len()
+        ),
     }
 }
 
@@ -313,30 +371,63 @@ fn impulse(path: &Path, from: &str, to: &str, stake: u128, top: usize) -> Result
         price: tru::arithmetic::Fx::ONE,
     }];
     let params = FocusingParams::default();
-    let imp = tru::impulse(&base, &batch, &focusing::Context::none(), &params, params.epsilon);
+    let imp = tru::impulse(
+        &base,
+        &batch,
+        &focusing::Context::none(),
+        &params,
+        params.epsilon,
+    );
 
-    println!("{} {} {} {}", green("impulse"), cyan(&hex8(&from_h)), dim("→"), cyan(&hex8(&to_h)));
+    println!(
+        "{} {} {} {}",
+        green("impulse"),
+        cyan(&hex8(&from_h)),
+        dim("→"),
+        cyan(&hex8(&to_h))
+    );
     let sep = dim(" · ");
     println!("  {}", kv("stake", &yellow(&stake.to_string())));
     println!(
         "  {}{sep}{}",
-        kv("Δφ⁺ reward", &yellow(&format!("{:.6}", imp.directed.to_f64()))),
+        kv(
+            "Δφ⁺ reward",
+            &yellow(&format!("{:.6}", imp.directed.to_f64()))
+        ),
         kv("ΔJ", &yellow(&format!("{:+.6}", imp.delta_j.to_f64())))
     );
     println!(
         "  {}{sep}{}{sep}{}",
-        kv("entropy drop", &yellow(&format!("{:+.6}", imp.entropy_drop.to_f64()))),
-        kv("discovery", &yellow(&format!("{:+.6}", imp.discovery.to_f64()))),
+        kv(
+            "entropy drop",
+            &yellow(&format!("{:+.6}", imp.entropy_drop.to_f64()))
+        ),
+        kv(
+            "discovery",
+            &yellow(&format!("{:+.6}", imp.discovery.to_f64()))
+        ),
         kv("‖Δφ*‖₁", &yellow(&format!("{:.6}", imp.norm_l1.to_f64())))
     );
 
     let mut d = imp.delta.clone();
     d.sort_by(|a, b| b.1.to_f64().abs().total_cmp(&a.1.to_f64().abs()));
-    println!("\n{}", dim(&format!("Δφ*(p) — top {} by |shift|", top.min(d.len()))));
+    println!(
+        "\n{}",
+        dim(&format!("Δφ*(p) — top {} by |shift|", top.min(d.len())))
+    );
     for (pid, dv) in d.iter().take(top) {
         let v = dv.to_f64();
-        let arrow = if v >= 0.0 { green("▲") } else { paint("31", "▼") };
-        println!("  {} {}  {}", cyan(&hex8(pid)), arrow, yellow(&format!("{v:+.6}")));
+        let arrow = if v >= 0.0 {
+            green("▲")
+        } else {
+            paint("31", "▼")
+        };
+        println!(
+            "  {} {}  {}",
+            cyan(&hex8(pid)),
+            arrow,
+            yellow(&format!("{v:+.6}"))
+        );
     }
     Ok(())
 }
@@ -347,7 +438,13 @@ fn compile(path: &Path, out: &Path) -> Result<()> {
     model.write(out)?;
 
     let sep = dim(" · ");
-    println!("{} {} {} {}", green("compile"), bold(g.name()), dim("→"), bold(&model.name));
+    println!(
+        "{} {} {} {}",
+        green("compile"),
+        bold(g.name()),
+        dim("→"),
+        bold(&model.name)
+    );
     // Surface the derived architecture from the config section.
     let field = |key: &str| -> String {
         model
@@ -369,7 +466,11 @@ fn compile(path: &Path, out: &Path) -> Result<()> {
         kv("particles", &yellow(&field("vocab_size"))),
         kv("params", &yellow(&field("parameters"))),
     );
-    println!("  {}{sep}{}", kv("tensors", &yellow(&model.tensors.len().to_string())), kv("particle", &cyan(&hex8(&model.particle()))));
+    println!(
+        "  {}{sep}{}",
+        kv("tensors", &yellow(&model.tensors.len().to_string())),
+        kv("particle", &cyan(&hex8(&model.particle())))
+    );
     println!("  {} {}", dim("wrote"), out.display());
     Ok(())
 }
@@ -378,11 +479,25 @@ fn vocab(path: &Path) -> Result<()> {
     let v = Vocab::read(path)?;
     let inline = v.entries.iter().filter(|e| !e.data.is_empty()).count();
     println!("{} {}", green("vocab"), bold(&v.name));
-    println!("  {}", kv("entries", &format!("{} {}", yellow(&v.entries.len().to_string()), dim(&format!("({inline} with data)")))));
+    println!(
+        "  {}",
+        kv(
+            "entries",
+            &format!(
+                "{} {}",
+                yellow(&v.entries.len().to_string()),
+                dim(&format!("({inline} with data)"))
+            )
+        )
+    );
     println!("  {}", kv("particle", &cyan(&hex(&v.particle()))));
     match v.verify() {
         Ok(()) => println!("  {} {}", dim("self-consistency"), green("OK")),
-        Err(e) => println!("  {} {}", dim("self-consistency"), paint("31", &format!("FAIL: {e}"))),
+        Err(e) => println!(
+            "  {} {}",
+            dim("self-consistency"),
+            paint("31", &format!("FAIL: {e}"))
+        ),
     }
     Ok(())
 }
@@ -415,5 +530,11 @@ fn hex(b: &[u8]) -> String {
 }
 
 fn hex8(b: &[u8; 32]) -> String {
-    format!("{}…", b[..8].iter().map(|x| format!("{x:02x}")).collect::<String>())
+    format!(
+        "{}…",
+        b[..8]
+            .iter()
+            .map(|x| format!("{x:02x}"))
+            .collect::<String>()
+    )
 }

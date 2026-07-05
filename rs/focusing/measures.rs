@@ -97,28 +97,59 @@ mod tests {
     #[test]
     fn syntropy_nonnegative_and_grows_with_concentration() {
         let uniform = vec![Fx::from_ratio(1, 4); 4];
-        let peaked = vec![Fx::from_ratio(7, 10), Fx::from_ratio(1, 10), Fx::from_ratio(1, 10), Fx::from_ratio(1, 10)];
+        let peaked = vec![
+            Fx::from_ratio(7, 10),
+            Fx::from_ratio(1, 10),
+            Fx::from_ratio(1, 10),
+            Fx::from_ratio(1, 10),
+        ];
         let ju = syntropy(&uniform).to_f64();
         let jp = syntropy(&peaked).to_f64();
-        assert!(ju >= -1e-4 && jp >= -1e-4, "syntropy ≥ 0 (J_u={ju}, J_p={jp})");
-        assert!(jp > ju + 0.1, "a peaked distribution has more syntropy ({jp} vs {ju})");
+        assert!(
+            ju >= -1e-4 && jp >= -1e-4,
+            "syntropy ≥ 0 (J_u={ju}, J_p={jp})"
+        );
+        assert!(
+            jp > ju + 0.1,
+            "a peaked distribution has more syntropy ({jp} vs {ju})"
+        );
     }
 
     #[test]
     fn cyberank_reads_focus_by_particle() {
-        let g = FocusingGraph::build(vec![link(1, 2, 100), link(2, 3, 50), link(3, 1, 200)], &Context::none());
+        let g = FocusingGraph::build(
+            vec![link(1, 2, 100), link(2, 3, 50), link(3, 1, 200)],
+            &Context::none(),
+        );
         let r = compute_focusing(&g, &crate::focusing::FocusingParams::default());
         // present particle → its focus; a total-mass check ties it to φ*
-        let sum: f64 = [1u8, 2, 3].iter().map(|&b| cyberank(&g, &r, &hash(b)).to_f64()).sum();
-        assert!((sum - 1.0).abs() < 1e-6, "cyberank over all particles sums to 1, got {sum}");
-        assert_eq!(cyberank(&g, &r, &hash(99)), Fx::ZERO, "absent particle has zero cyberank");
+        let sum: f64 = [1u8, 2, 3]
+            .iter()
+            .map(|&b| cyberank(&g, &r, &hash(b)).to_f64())
+            .sum();
+        assert!(
+            (sum - 1.0).abs() < 1e-6,
+            "cyberank over all particles sums to 1, got {sum}"
+        );
+        assert_eq!(
+            cyberank(&g, &r, &hash(99)),
+            Fx::ZERO,
+            "absent particle has zero cyberank"
+        );
     }
 
     #[test]
     fn result_carries_syntropy() {
-        let g = FocusingGraph::build(vec![link(1, 2, 100), link(2, 3, 50), link(4, 1, 300)], &Context::none());
+        let g = FocusingGraph::build(
+            vec![link(1, 2, 100), link(2, 3, 50), link(4, 1, 300)],
+            &Context::none(),
+        );
         let r = compute_focusing(&g, &crate::focusing::FocusingParams::default());
         assert!(r.syntropy.to_f64() >= -1e-4, "emitted syntropy ≥ 0");
-        assert_eq!(r.syntropy.raw(), syntropy(&r.focus).raw(), "emitted J matches recomputed J");
+        assert_eq!(
+            r.syntropy.raw(),
+            syntropy(&r.focus).raw(),
+            "emitted J matches recomputed J"
+        );
     }
 }

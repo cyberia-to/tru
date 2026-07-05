@@ -72,10 +72,17 @@ pub fn discover(v: &ParticleIndex, edges: &[Edge]) -> Dialects {
 
     // §4.4 — register {p : score ≥ θ·max}, descending score, ties by ascending
     // particle hash. Append ⊥ at the highest index.
-    let mut registered: Vec<(u32, f64)> =
-        candidates.iter().copied().map(|p| (p, score(p))).filter(|&(_, s)| max_score > 0.0 && s >= THETA * max_score).collect();
+    let mut registered: Vec<(u32, f64)> = candidates
+        .iter()
+        .copied()
+        .map(|p| (p, score(p)))
+        .filter(|&(_, s)| max_score > 0.0 && s >= THETA * max_score)
+        .collect();
     registered.sort_by(|a, b| {
-        b.1.partial_cmp(&a.1).unwrap().then_with(|| v.particle(a.0).cmp(&v.particle(b.0)))
+        // scores are finite (non-negative × log₂); fall back to Equal if ever NaN.
+        b.1.partial_cmp(&a.1)
+            .unwrap_or(core::cmp::Ordering::Equal)
+            .then_with(|| v.particle(a.0).cmp(&v.particle(b.0)))
     });
 
     let mut set: Vec<[u8; 32]> = registered.iter().map(|&(p, _)| v.particle(p)).collect();
@@ -83,8 +90,11 @@ pub fn discover(v: &ParticleIndex, edges: &[Edge]) -> Dialects {
     let bottom_idx = set.len() - 1;
 
     // Dialect-source id → its head index in `set` (⊥ excluded here).
-    let head_of: HashMap<u32, usize> =
-        registered.iter().enumerate().map(|(h, &(p, _))| (p, h)).collect();
+    let head_of: HashMap<u32, usize> = registered
+        .iter()
+        .enumerate()
+        .map(|(h, &(p, _))| (p, h))
+        .collect();
 
     // §4.5 — assign each edge to the registered dialect that most strongly
     // labels its axon; ⊥ when none does. Argmax ties break by ascending head.
@@ -116,7 +126,12 @@ pub fn discover(v: &ParticleIndex, edges: &[Edge]) -> Dialects {
         }
     }
 
-    Dialects { set, assign, edge_count, stake }
+    Dialects {
+        set,
+        assign,
+        edge_count,
+        stake,
+    }
 }
 
 #[cfg(test)]
@@ -132,7 +147,15 @@ mod tests {
     }
 
     fn link(from: u8, to: [u8; 32], amount: u128, valence: i8) -> Cyberlink {
-        Cyberlink { neuron: hash(from), from: hash(from), to, token: 0, amount, valence, block: 0 }
+        Cyberlink {
+            neuron: hash(from),
+            from: hash(from),
+            to,
+            token: 0,
+            amount,
+            valence,
+            block: 0,
+        }
     }
 
     #[test]
@@ -140,7 +163,11 @@ mod tests {
         let links = vec![link(1, hash(2), 100, 1)];
         let (v, edges, _a) = build(&[], &links);
         let d = discover(&v, &edges);
-        assert_eq!(*d.set.last().unwrap(), BOTTOM, "⊥ is the highest-index dialect");
+        assert_eq!(
+            *d.set.last().unwrap(),
+            BOTTOM,
+            "⊥ is the highest-index dialect"
+        );
         assert!(d.assign.iter().all(|&h| h < d.set.len()));
     }
 
@@ -151,13 +178,16 @@ mod tests {
         // 2→3 link, then have 1 label it.
         let ax23 = axon(&hash(2), &hash(3));
         let links = vec![
-            link(2, hash(3), 100, 1),  // creates axon(2,3) as a particle
-            link(1, ax23, 5000, 1),    // particle 1 labels axon(2,3) heavily
+            link(2, hash(3), 100, 1), // creates axon(2,3) as a particle
+            link(1, ax23, 5000, 1),   // particle 1 labels axon(2,3) heavily
         ];
         let (v, edges, _a) = build(&[], &links);
         let d = discover(&v, &edges);
         // particle 1 should be a registered dialect (not just ⊥).
-        assert!(d.set.contains(&hash(1)), "the heavy labeller must register as a dialect");
+        assert!(
+            d.set.contains(&hash(1)),
+            "the heavy labeller must register as a dialect"
+        );
         assert!(d.len() >= 2, "at least the labeller + ⊥");
     }
 
@@ -168,6 +198,10 @@ mod tests {
         let (v, edges, _a) = build(&[], &links);
         let d = discover(&v, &edges);
         let total: u64 = d.edge_count.iter().sum();
-        assert_eq!(total as usize, edges.len(), "every edge assigned to exactly one dialect");
+        assert_eq!(
+            total as usize,
+            edges.len(),
+            "every edge assigned to exactly one dialect"
+        );
     }
 }

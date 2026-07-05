@@ -33,7 +33,11 @@ fn particle_of(bytes: &[u8]) -> [u8; 32] {
 
 impl Vocab {
     pub fn new(name: impl Into<String>, card: impl Into<String>) -> Self {
-        Self { name: name.into(), card: card.into(), entries: Vec::new() }
+        Self {
+            name: name.into(),
+            card: card.into(),
+            entries: Vec::new(),
+        }
     }
 
     /// Append `data`, computing its particle. Returns the particle.
@@ -45,7 +49,10 @@ impl Vocab {
 
     /// Register a particle with no inlined data (a length-zero entry).
     pub fn register(&mut self, particle: [u8; 32]) {
-        self.entries.push(VocabEntry { particle, data: Vec::new() });
+        self.entries.push(VocabEntry {
+            particle,
+            data: Vec::new(),
+        });
     }
 
     /// The bytes a particle resolves to, if present with inline data.
@@ -65,7 +72,9 @@ impl Vocab {
     pub fn verify(&self) -> Result<()> {
         for (i, e) in self.entries.iter().enumerate() {
             if !e.data.is_empty() && particle_of(&e.data) != e.particle {
-                return Err(McError::Conformance(format!("vocab entry {i}: hemera(data) ≠ particle")));
+                return Err(McError::Conformance(format!(
+                    "vocab entry {i}: hemera(data) ≠ particle"
+                )));
             }
         }
         Ok(())
@@ -110,41 +119,61 @@ impl Vocab {
         let (fm_str, body_start) = frontmatter::split(bytes)?;
         let fm = frontmatter::parse(fm_str)?;
         if !fm.cyb.types.iter().any(|t| t == "vocab") {
-            return Err(McError::InvalidGraph(format!("container types {:?} does not include \"vocab\"", fm.cyb.types)));
+            return Err(McError::InvalidGraph(format!(
+                "container types {:?} does not include \"vocab\"",
+                fm.cyb.types
+            )));
         }
         let sections = frontmatter::index_sections(bytes, body_start, &fm.files)?;
 
-        let &(cs, ce) = sections.get("card").ok_or(McError::MissingSection("card"))?;
+        let &(cs, ce) = sections
+            .get("card")
+            .ok_or(McError::MissingSection("card"))?;
         let card = std::str::from_utf8(&bytes[cs..ce])
             .map_err(|e| McError::InvalidGraph(format!("card not utf-8: {e}")))?
             .to_string();
 
-        let &(ps, pe) = sections.get("particles").ok_or(McError::MissingSection("particles"))?;
+        let &(ps, pe) = sections
+            .get("particles")
+            .ok_or(McError::MissingSection("particles"))?;
         let entries = parse_particles(&bytes[ps..pe])?;
 
-        Ok(Self { name: fm.cyb.name, card, entries })
+        Ok(Self {
+            name: fm.cyb.name,
+            card,
+            entries,
+        })
     }
 }
 
 fn parse_particles(b: &[u8]) -> Result<Vec<VocabEntry>> {
     if b.len() < 4 {
-        return Err(McError::InvalidGraph("particles section too short for count".into()));
+        return Err(McError::InvalidGraph(
+            "particles section too short for count".into(),
+        ));
     }
     let n = u32::from_le_bytes(b[0..4].try_into().unwrap()) as usize;
     let mut entries = Vec::with_capacity(n);
     let mut c = 4;
     for i in 0..n {
         if c + 40 > b.len() {
-            return Err(McError::InvalidGraph(format!("particles truncated at entry {i}")));
+            return Err(McError::InvalidGraph(format!(
+                "particles truncated at entry {i}"
+            )));
         }
         let mut particle = [0u8; 32];
         particle.copy_from_slice(&b[c..c + 32]);
         let len = u64::from_le_bytes(b[c + 32..c + 40].try_into().unwrap()) as usize;
         c += 40;
         if c + len > b.len() {
-            return Err(McError::InvalidGraph(format!("particles entry {i} data past section end")));
+            return Err(McError::InvalidGraph(format!(
+                "particles entry {i} data past section end"
+            )));
         }
-        entries.push(VocabEntry { particle, data: b[c..c + len].to_vec() });
+        entries.push(VocabEntry {
+            particle,
+            data: b[c..c + len].to_vec(),
+        });
         c += len;
     }
     Ok(entries)
@@ -181,7 +210,10 @@ mod tests {
     fn file_particle_is_content_addressed() {
         let v = sample();
         // stable across serializations
-        assert_eq!(v.particle(), Vocab::from_bytes(&v.to_bytes()).unwrap().particle());
+        assert_eq!(
+            v.particle(),
+            Vocab::from_bytes(&v.to_bytes()).unwrap().particle()
+        );
         // reordering changes the file particle
         let mut r = Vocab::new("test-vocab", "# test\nordering: first-appearance.");
         r.push(b"BOOT".to_vec());
@@ -196,7 +228,10 @@ mod tests {
         v.verify().unwrap();
         // a corrupted entry fails verification
         let mut bad = Vocab::new("x", "y");
-        bad.entries.push(VocabEntry { particle: [7u8; 32], data: b"not the preimage".to_vec() });
+        bad.entries.push(VocabEntry {
+            particle: [7u8; 32],
+            data: b"not the preimage".to_vec(),
+        });
         assert!(bad.verify().is_err());
     }
 

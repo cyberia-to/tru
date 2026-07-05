@@ -36,7 +36,15 @@ impl Cyberlink {
         let amount = u128::from_le_bytes(bytes[100..116].try_into().unwrap());
         let valence = bytes[116] as i8;
         let block = u64::from_le_bytes(bytes[117..125].try_into().unwrap());
-        Self { neuron, from, to, token, amount, valence, block }
+        Self {
+            neuron,
+            from,
+            to,
+            token,
+            amount,
+            valence,
+            block,
+        }
     }
 }
 

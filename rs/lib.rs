@@ -11,6 +11,11 @@
 //! println!("snapshot {}: {} cyberlinks", g.name(), g.cyberlinks()?.count());
 //! ```
 
+// Explicit-index loops read clearer than iterator adapters in the matrix/vector
+// numerics (matvecs, SVD, projections); `focusing::focusing` etc. are an
+// intentional module layout.
+#![allow(clippy::needless_range_loop, clippy::module_inception)]
+
 pub mod arithmetic;
 pub mod error;
 pub mod focusing;
@@ -23,7 +28,10 @@ pub mod vocab;
 
 pub use arithmetic::Fx;
 pub use error::{McError, Result};
-pub use focusing::{compute_focusing, impulse, Context, FocusingGraph, FocusingParams, FocusingResult, Impulse, Karma, Link, Will};
+pub use focusing::{
+    compute_focusing, impulse, Context, FocusingGraph, FocusingParams, FocusingResult, Impulse,
+    Karma, Link, Will,
+};
 pub use graph::{Cyberlink, Graph};
 pub use model::Model;
 pub use rewards::{shapley, value, Contribution};

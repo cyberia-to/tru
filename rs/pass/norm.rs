@@ -44,8 +44,12 @@ mod tests {
     fn emits_two_per_layer_plus_the_final_norm() {
         let t = layernorms(64, 4);
         assert_eq!(t.len(), 2 * 4 + 1);
-        assert!(t.iter().all(|t| t.shape == vec![64] && t.data.iter().all(|&x| x.raw() == Fx::ONE.raw())));
+        assert!(t
+            .iter()
+            .all(|t| t.shape == vec![64] && t.data.iter().all(|&x| x.raw() == Fx::ONE.raw())));
         assert!(t.iter().any(|t| t.name == "model.norm.weight"));
-        assert!(t.iter().any(|t| t.name == "model.layers.3.post_attention_layernorm.weight"));
+        assert!(t
+            .iter()
+            .any(|t| t.name == "model.layers.3.post_attention_layernorm.weight"));
     }
 }

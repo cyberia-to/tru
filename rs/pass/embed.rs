@@ -29,7 +29,11 @@ pub fn embed(adj: &Adjacency, phi: &[Fx], d: usize) -> Tensor {
     let mut data = Vec::with_capacity(n * d);
     for i in 0..n {
         for c in 0..d {
-            let v = if c < rank { svd.u[c][i] * sqrt_sigma[c] } else { Fx::ZERO };
+            let v = if c < rank {
+                svd.u[c][i] * sqrt_sigma[c]
+            } else {
+                Fx::ZERO
+            };
             data.push(v);
         }
     }
@@ -56,7 +60,15 @@ mod tests {
     }
 
     fn edge(from: u8, to: u8, amount: u128) -> Cyberlink {
-        Cyberlink { neuron: hash(from), from: hash(from), to: hash(to), token: 0, amount, valence: 1, block: 0 }
+        Cyberlink {
+            neuron: hash(from),
+            from: hash(from),
+            to: hash(to),
+            token: 0,
+            amount,
+            valence: 1,
+            block: 0,
+        }
     }
 
     /// An undirected ring (both directions, equal stake) → symmetric A → the
@@ -118,7 +130,10 @@ mod tests {
             }
         }
         let rel = (err / mag).sqrt();
-        assert!(rel <= 0.05, "SVD reconstruction of M is {rel}, exceeds 0.05");
+        assert!(
+            rel <= 0.05,
+            "SVD reconstruction of M is {rel}, exceeds 0.05"
+        );
     }
 
     #[test]
@@ -126,6 +141,9 @@ mod tests {
         let (adj, phi) = undirected_ring();
         let a = embed(&adj, &phi, 16);
         let b = embed(&adj, &phi, 16);
-        assert!(a.data.iter().zip(&b.data).all(|(x, y)| x.raw() == y.raw()), "embedding bit-identical");
+        assert!(
+            a.data.iter().zip(&b.data).all(|(x, y)| x.raw() == y.raw()),
+            "embedding bit-identical"
+        );
     }
 }

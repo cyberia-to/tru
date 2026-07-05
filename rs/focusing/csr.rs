@@ -42,7 +42,10 @@ pub struct CsrBuilder {
 
 impl CsrBuilder {
     pub fn new(n: usize) -> Self {
-        Self { n, triplets: Vec::new() }
+        Self {
+            n,
+            triplets: Vec::new(),
+        }
     }
 
     pub fn add(&mut self, row: usize, col: usize, val: Fx) {
@@ -75,6 +78,11 @@ impl CsrBuilder {
             row_ptr[i + 1] += row_ptr[i];
         }
 
-        CsrMatrix { n: self.n, row_ptr, col_idx, values }
+        CsrMatrix {
+            n: self.n,
+            row_ptr,
+            col_idx,
+            values,
+        }
     }
 }

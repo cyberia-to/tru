@@ -1,0 +1,55 @@
+# ---
+# tags: tru, config
+# crystal-type: source
+# crystal-domain: cyber
+# ---
+# tru CI — fmt, clippy, and tests on stable.
+#
+# tru has path dependencies on sibling repos (cyberia-to/strata for nebu,
+# cyberia-to/hemera), so the workflow lays them out as cyber/{tru,strata,hemera}
+# to match `../../strata/nebu/rs` and `../../hemera/rs`. Cross-repo checkout of
+# public repos works with the default token; private siblings need a PAT in
+# `secrets.CYBER_CI_TOKEN` passed to the sibling checkouts.
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout tru (triggering commit)
+        uses: actions/checkout@v4
+        with:
+          path: tru
+      - name: checkout strata (nebu)
+        uses: actions/checkout@v4
+        with:
+          repository: cyberia-to/strata
+          path: strata
+      - name: checkout hemera
+        uses: actions/checkout@v4
+        with:
+          repository: cyberia-to/hemera
+          path: hemera
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tru
+      - name: fmt
+        working-directory: tru
+        run: cargo fmt --check
+      - name: clippy
+        working-directory: tru
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: test
+        working-directory: tru
+        run: cargo test --workspace

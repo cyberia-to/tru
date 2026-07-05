@@ -32,7 +32,11 @@ impl Graph {
         }
 
         let sections = frontmatter::index_sections(&mmap[..], body_start, &frontmatter.files)?;
-        Ok(Self { mmap, frontmatter, sections })
+        Ok(Self {
+            mmap,
+            frontmatter,
+            sections,
+        })
     }
 
     pub fn name(&self) -> &str {
@@ -44,7 +48,10 @@ impl Graph {
     }
 
     pub fn section(&self, name: &str) -> Result<&[u8]> {
-        let &(start, end) = self.sections.get(name).ok_or(McError::MissingSection("section"))?;
+        let &(start, end) = self
+            .sections
+            .get(name)
+            .ok_or(McError::MissingSection("section"))?;
         Ok(&self.mmap[start..end])
     }
 

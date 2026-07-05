@@ -52,14 +52,22 @@ pub fn parse(s: &str) -> Result<Frontmatter> {
 /// Locate every declared `~~~name` section, returning `name → (start, end)`
 /// byte ranges over `bytes`. A section with a `size` is that many bytes of
 /// binary; a section without one runs to the next `~~~` marker or EOF.
-pub fn index_sections(bytes: &[u8], body_start: usize, entries: &[FileEntry]) -> Result<HashMap<String, (usize, usize)>> {
+pub fn index_sections(
+    bytes: &[u8],
+    body_start: usize,
+    entries: &[FileEntry],
+) -> Result<HashMap<String, (usize, usize)>> {
     let mut sections = HashMap::new();
     let mut cursor = body_start;
 
     for entry in entries {
         let header = format!("~~~{}\n", entry.name);
         if cursor + header.len() > bytes.len() || !bytes[cursor..].starts_with(header.as_bytes()) {
-            return Err(McError::InvalidGraph(format!("expected `{}` at byte {}", header.trim_end(), cursor)));
+            return Err(McError::InvalidGraph(format!(
+                "expected `{}` at byte {}",
+                header.trim_end(),
+                cursor
+            )));
         }
         let start = cursor + header.len();
         let end = match entry.size {
@@ -67,7 +75,12 @@ pub fn index_sections(bytes: &[u8], body_start: usize, entries: &[FileEntry]) ->
             None => find_text_end(bytes, start),
         };
         if end > bytes.len() {
-            return Err(McError::InvalidGraph(format!("section `{}` extends past EOF (end={}, file={})", entry.name, end, bytes.len())));
+            return Err(McError::InvalidGraph(format!(
+                "section `{}` extends past EOF (end={}, file={})",
+                entry.name,
+                end,
+                bytes.len()
+            )));
         }
         sections.insert(entry.name.clone(), (start, end));
         cursor = end;

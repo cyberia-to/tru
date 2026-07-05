@@ -87,7 +87,14 @@ pub(crate) struct FxAdj {
 impl FxAdj {
     pub(crate) fn from(adj: &Adjacency) -> Self {
         let n = adj.n;
-        let maxw = adj.out.iter().flatten().map(|&(_, w)| w).max().unwrap_or(1).max(1) as u128;
+        let maxw = adj
+            .out
+            .iter()
+            .flatten()
+            .map(|&(_, w)| w)
+            .max()
+            .unwrap_or(1)
+            .max(1) as u128;
         let mut out = vec![Vec::new(); n];
         let mut inc = vec![Vec::new(); n];
         for (i, row) in adj.out.iter().enumerate() {
@@ -131,7 +138,9 @@ fn pagerank(g: &FxAdj) -> Vec<Fx> {
         return vec![];
     }
     let u = Fx::from_ratio(1, n as i64);
-    let out_strength: Vec<Fx> = (0..n).map(|i| g.out[i].iter().fold(Fx::ZERO, |a, &(_, w)| a + w)).collect();
+    let out_strength: Vec<Fx> = (0..n)
+        .map(|i| g.out[i].iter().fold(Fx::ZERO, |a, &(_, w)| a + w))
+        .collect();
     let mut phi = vec![u; n];
     let eps = Fx::from_ratio(1, 100_000_000);
     for _ in 0..500 {
@@ -227,7 +236,16 @@ fn lambda2_normalized(g: &FxAdj, iters: usize) -> Fx {
             deg[j as usize] = deg[j as usize] + w;
         }
     }
-    let inv_sqrt_d: Vec<Fx> = deg.iter().map(|&d| if d.is_zero() { Fx::ZERO } else { Fx::ONE.div(d.sqrt()) }).collect();
+    let inv_sqrt_d: Vec<Fx> = deg
+        .iter()
+        .map(|&d| {
+            if d.is_zero() {
+                Fx::ZERO
+            } else {
+                Fx::ONE.div(d.sqrt())
+            }
+        })
+        .collect();
 
     // N x: (N x)_i = Σ_j A_sym[i][j] · x_j / (√d_i √d_j).
     let nmat = |x: &[Fx], out: &mut [Fx]| {
@@ -331,7 +349,17 @@ pub fn compute(adj: &Adjacency, h_star: usize, block: u64) -> Arch {
     let h = h_star.max(1);
 
     if n == 0 {
-        return Arch { particles: 0, block, d: 64, h, l: 4, kappa: Fx::ZERO, lambda2: Fx::ZERO, diameter: 0, phi: vec![] };
+        return Arch {
+            particles: 0,
+            block,
+            d: 64,
+            h,
+            l: 4,
+            kappa: Fx::ZERO,
+            lambda2: Fx::ZERO,
+            diameter: 0,
+            phi: vec![],
+        };
     }
 
     let phi = pagerank(&g);
@@ -361,7 +389,17 @@ pub fn compute(adj: &Adjacency, h_star: usize, block: u64) -> Arch {
     let steps = mixing.to_f64().ceil().max(1.0) as usize;
     let l = (diam * steps).clamp(4, 512);
 
-    Arch { particles: n, block, d, h, l, kappa, lambda2, diameter: diam, phi }
+    Arch {
+        particles: n,
+        block,
+        d,
+        h,
+        l,
+        kappa,
+        lambda2,
+        diameter: diam,
+        phi,
+    }
 }
 
 #[cfg(test)]
@@ -377,11 +415,24 @@ mod tests {
     }
 
     fn link(from: u8, to: u8, amount: u128, valence: i8) -> Cyberlink {
-        Cyberlink { neuron: hash(from), from: hash(from), to: hash(to), token: 0, amount, valence, block: 0 }
+        Cyberlink {
+            neuron: hash(from),
+            from: hash(from),
+            to: hash(to),
+            token: 0,
+            amount,
+            valence,
+            block: 0,
+        }
     }
 
     fn ring() -> Adjacency {
-        let links = vec![link(1, 2, 100, 1), link(2, 3, 100, 1), link(3, 1, 100, 1), link(4, 1, 100, 1)];
+        let links = vec![
+            link(1, 2, 100, 1),
+            link(2, 3, 100, 1),
+            link(3, 1, 100, 1),
+            link(4, 1, 100, 1),
+        ];
         let (_v, _e, a) = build(&[], &links);
         a
     }
@@ -401,7 +452,11 @@ mod tests {
         assert!((64..=4096).contains(&arch.d), "d* clamped, got {}", arch.d);
         assert_eq!(arch.d % arch.h, 0, "d* is a multiple of h*");
         assert!((4..=512).contains(&arch.l), "L* clamped, got {}", arch.l);
-        assert!(arch.kappa.to_f64() > 0.0 && arch.kappa.to_f64() < 1.0, "κ a contraction, got {}", arch.kappa.to_f64());
+        assert!(
+            arch.kappa.to_f64() > 0.0 && arch.kappa.to_f64() < 1.0,
+            "κ a contraction, got {}",
+            arch.kappa.to_f64()
+        );
         assert!(arch.diameter >= 1);
         assert_eq!(arch.block, 42);
     }
@@ -414,7 +469,10 @@ mod tests {
         assert_eq!(x.d, y.d);
         assert_eq!(x.l, y.l);
         assert_eq!(x.kappa.raw(), y.kappa.raw());
-        assert!(x.phi.iter().zip(&y.phi).all(|(p, q)| p.raw() == q.raw()), "φ* bit-identical");
+        assert!(
+            x.phi.iter().zip(&y.phi).all(|(p, q)| p.raw() == q.raw()),
+            "φ* bit-identical"
+        );
     }
 
     #[test]

@@ -47,7 +47,9 @@ impl Encoding {
         match s {
             "u16" => Ok(Encoding::U16),
             "u32" => Ok(Encoding::U32),
-            other => Err(McError::InvalidGraph(format!("unknown tensor encoding `{other}`"))),
+            other => Err(McError::InvalidGraph(format!(
+                "unknown tensor encoding `{other}`"
+            ))),
         }
     }
 }
@@ -106,11 +108,21 @@ impl Model {
             for v in &t.data {
                 let s = v.to_i64_scaled(fb);
                 match t.encoding {
-                    Encoding::U16 => w.extend_from_slice(&(s.clamp(i16::MIN as i64, i16::MAX as i64) as i16).to_le_bytes()),
-                    Encoding::U32 => w.extend_from_slice(&(s.clamp(i32::MIN as i64, i32::MAX as i64) as i32).to_le_bytes()),
+                    Encoding::U16 => w.extend_from_slice(
+                        &(s.clamp(i16::MIN as i64, i16::MAX as i64) as i16).to_le_bytes(),
+                    ),
+                    Encoding::U32 => w.extend_from_slice(
+                        &(s.clamp(i32::MIN as i64, i32::MAX as i64) as i32).to_le_bytes(),
+                    ),
                 }
             }
-            metas.push(Meta { name: t.name.clone(), shape: t.shape.clone(), encoding: t.encoding, offset, size: w.len() - offset });
+            metas.push(Meta {
+                name: t.name.clone(),
+                shape: t.shape.clone(),
+                encoding: t.encoding,
+                offset,
+                size: w.len() - offset,
+            });
         }
         (w, metas)
     }
@@ -187,16 +199,25 @@ impl Model {
         let (fm_str, body_start) = frontmatter::split(bytes)?;
         let fm = frontmatter::parse(fm_str)?;
         if !fm.cyb.types.iter().any(|t| t == "model") {
-            return Err(McError::InvalidGraph(format!("container types {:?} does not include \"model\"", fm.cyb.types)));
+            return Err(McError::InvalidGraph(format!(
+                "container types {:?} does not include \"model\"",
+                fm.cyb.types
+            )));
         }
         let sec = frontmatter::index_sections(bytes, body_start, &fm.files)?;
         let text = |name: &str| -> Result<String> {
-            let &(s, e) = sec.get(name).ok_or(McError::MissingSection("model section"))?;
-            Ok(std::str::from_utf8(&bytes[s..e]).map_err(|err| McError::InvalidGraph(format!("{name} not utf-8: {err}")))?.to_string())
+            let &(s, e) = sec
+                .get(name)
+                .ok_or(McError::MissingSection("model section"))?;
+            Ok(std::str::from_utf8(&bytes[s..e])
+                .map_err(|err| McError::InvalidGraph(format!("{name} not utf-8: {err}")))?
+                .to_string())
         };
 
         let tensors_toml = text("tensors")?;
-        let &(ws, we) = sec.get("weights").ok_or(McError::MissingSection("weights"))?;
+        let &(ws, we) = sec
+            .get("weights")
+            .ok_or(McError::MissingSection("weights"))?;
         let weights = &bytes[ws..we];
 
         #[derive(Deserialize)]
@@ -212,7 +233,9 @@ impl Model {
             let enc = Encoding::parse(&t.encoding)?;
             let (o, sz) = (t.offset as usize, t.size as usize);
             if o + sz > weights.len() {
-                return Err(McError::InvalidGraph(format!("tensor `{name}` past weights section")));
+                return Err(McError::InvalidGraph(format!(
+                    "tensor `{name}` past weights section"
+                )));
             }
             let fb = enc.frac_bits();
             let scale = 1i64 << fb;
@@ -220,10 +243,20 @@ impl Model {
                 .chunks_exact(enc.bytes())
                 .map(|c| match enc {
                     Encoding::U16 => Fx::from_ratio(i16::from_le_bytes([c[0], c[1]]) as i64, scale),
-                    Encoding::U32 => Fx::from_ratio(i32::from_le_bytes([c[0], c[1], c[2], c[3]]) as i64, scale),
+                    Encoding::U32 => {
+                        Fx::from_ratio(i32::from_le_bytes([c[0], c[1], c[2], c[3]]) as i64, scale)
+                    }
                 })
                 .collect();
-            tensors.push((t.offset, Tensor { name, shape: t.shape, encoding: enc, data }));
+            tensors.push((
+                t.offset,
+                Tensor {
+                    name,
+                    shape: t.shape,
+                    encoding: enc,
+                    data,
+                },
+            ));
         }
         // Restore write order (weights are laid out by offset) so a reloaded
         // model re-serializes byte-identically.
@@ -254,8 +287,18 @@ mod tests {
         m.vocab = "[tokens]\n0 = \"0x1a\"\n".into();
         m.eval = "[ct0_conformance]\nP_DET = 1000\n".into();
         m.tensors = vec![
-            Tensor { name: "model.embed_tokens.weight".into(), shape: vec![4, 8], encoding: Encoding::U16, data: (0..32).map(|i| Fx::from_ratio(i - 16, 20)).collect() },
-            Tensor { name: "model.norm.weight".into(), shape: vec![8], encoding: Encoding::U32, data: vec![Fx::ONE; 8] },
+            Tensor {
+                name: "model.embed_tokens.weight".into(),
+                shape: vec![4, 8],
+                encoding: Encoding::U16,
+                data: (0..32).map(|i| Fx::from_ratio(i - 16, 20)).collect(),
+            },
+            Tensor {
+                name: "model.norm.weight".into(),
+                shape: vec![8],
+                encoding: Encoding::U32,
+                data: vec![Fx::ONE; 8],
+            },
         ];
         m
     }
@@ -265,15 +308,27 @@ mod tests {
         let m = sample();
         let (_, metas) = m.build_weights();
         for meta in &metas {
-            assert_eq!(meta.offset % PAGE, 0, "tensor `{}` not page-aligned", meta.name);
+            assert_eq!(
+                meta.offset % PAGE,
+                0,
+                "tensor `{}` not page-aligned",
+                meta.name
+            );
         }
     }
 
     #[test]
     fn deterministic_bytes_and_particle() {
         let m = sample();
-        assert_eq!(m.to_bytes(), m.to_bytes(), "P-DET: emission is byte-identical");
-        assert_eq!(m.particle(), Model::from_bytes(&m.to_bytes()).unwrap().particle());
+        assert_eq!(
+            m.to_bytes(),
+            m.to_bytes(),
+            "P-DET: emission is byte-identical"
+        );
+        assert_eq!(
+            m.particle(),
+            Model::from_bytes(&m.to_bytes()).unwrap().particle()
+        );
     }
 
     #[test]
@@ -290,7 +345,11 @@ mod tests {
             assert_eq!(got.encoding, t.encoding);
             let ulp = 1.0 / (1i64 << t.encoding.frac_bits()) as f64;
             for (a, b) in t.data.iter().zip(&got.data) {
-                assert!((a.to_f64() - b.to_f64()).abs() <= ulp, "tensor `{}` value drift > ULP", t.name);
+                assert!(
+                    (a.to_f64() - b.to_f64()).abs() <= ulp,
+                    "tensor `{}` value drift > ULP",
+                    t.name
+                );
             }
         }
     }

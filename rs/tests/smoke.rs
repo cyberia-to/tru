@@ -6,7 +6,14 @@ use std::io::Write;
 use tru::graph::record::RECORD_SIZE;
 use tru::Graph;
 
-fn synth_record(neuron: u8, from: u8, to: u8, amount: u128, valence: i8, block: u64) -> [u8; RECORD_SIZE] {
+fn synth_record(
+    neuron: u8,
+    from: u8,
+    to: u8,
+    amount: u128,
+    valence: i8,
+    block: u64,
+) -> [u8; RECORD_SIZE] {
     let mut r = [0u8; RECORD_SIZE];
     r[0..32].fill(neuron);
     r[32..64].fill(from);

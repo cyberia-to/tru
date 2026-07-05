@@ -14,7 +14,13 @@ use super::csr::CsrMatrix;
 /// `φ' = α·u + (1−α)·(dangling_mass·u + T·φ)`, where `T[q][p] =
 /// A_eff(p,q)/out_strength(p)` is column-stochastic and `u` is the teleport
 /// prior. Answers: where does probability flow?
-pub fn diffusion_step(phi: &[Fx], transition: &CsrMatrix, dangling: &[bool], teleport: &[Fx], alpha: Fx) -> Vec<Fx> {
+pub fn diffusion_step(
+    phi: &[Fx],
+    transition: &CsrMatrix,
+    dangling: &[bool],
+    teleport: &[Fx],
+    alpha: Fx,
+) -> Vec<Fx> {
     let n = phi.len();
     let one_minus_alpha = Fx::ONE - alpha;
     let mut dangling_mass = Fx::ZERO;
@@ -34,11 +40,19 @@ pub fn diffusion_step(phi: &[Fx], transition: &CsrMatrix, dangling: &[bool], tel
 /// `x'[i] = (μ·x₀[i] + (W·φ)[i]) / (μ + d[i])`, with `W = A_sym`, `d` the
 /// weighted degree, `x₀` the uniform reference. Answers: what shape satisfies
 /// the elastic constraints?
-pub fn springs_step(phi: &[Fx], sym_weights: &CsrMatrix, und_degree: &[Fx], mu: Fx, x0: &[Fx]) -> Vec<Fx> {
+pub fn springs_step(
+    phi: &[Fx],
+    sym_weights: &CsrMatrix,
+    und_degree: &[Fx],
+    mu: Fx,
+    x0: &[Fx],
+) -> Vec<Fx> {
     let n = phi.len();
     let mut wphi = vec![Fx::ZERO; n];
     sym_weights.spmv(phi, &mut wphi);
-    (0..n).map(|i| (mu * x0[i] + wphi[i]).div(mu + und_degree[i])).collect()
+    (0..n)
+        .map(|i| (mu * x0[i] + wphi[i]).div(mu + und_degree[i]))
+        .collect()
 }
 
 /// Chebyshev-truncated heat `H_τ = exp(−τL)` on the combinatorial Laplacian
@@ -51,7 +65,13 @@ pub fn springs_step(phi: &[Fx], sym_weights: &CsrMatrix, und_degree: &[Fx], mu: 
 /// converges with small, bounded terms. Everything is fixed-point over the field.
 const HEAT_DEGREE: usize = 8;
 
-pub fn heat_step(phi: &[Fx], sym_weights: &CsrMatrix, und_degree: &[Fx], lambda_max: Fx, tau: Fx) -> Vec<Fx> {
+pub fn heat_step(
+    phi: &[Fx],
+    sym_weights: &CsrMatrix,
+    und_degree: &[Fx],
+    lambda_max: Fx,
+    tau: Fx,
+) -> Vec<Fx> {
     if lambda_max.is_zero() {
         return phi.to_vec();
     }
@@ -96,7 +116,11 @@ fn cheb_coeffs(s: Fx, degree: usize) -> Vec<Fx> {
                 term = term * half2.div(denom);
                 ik = ik + term;
             }
-            let sign = if k % 2 == 0 { Fx::ONE } else { Fx::ZERO - Fx::ONE };
+            let sign = if k % 2 == 0 {
+                Fx::ONE
+            } else {
+                Fx::ZERO - Fx::ONE
+            };
             let scale = if k == 0 { Fx::ONE } else { Fx::from_int(2) };
             scale * sign * e_neg * ik
         })
@@ -105,14 +129,22 @@ fn cheb_coeffs(s: Fx, degree: usize) -> Vec<Fx> {
 
 /// `Σ_k c_k T_k(L̃)·φ` by the Chebyshev three-term recurrence
 /// `T_{k+1} = 2·L̃·T_k − T_{k−1}`, with `L̃·v = (2/λ_max)(D·v − A_sym·v) − v`.
-fn cheb_apply(phi: &[Fx], c: &[Fx], sym_weights: &CsrMatrix, und_degree: &[Fx], lambda_max: Fx) -> Vec<Fx> {
+fn cheb_apply(
+    phi: &[Fx],
+    c: &[Fx],
+    sym_weights: &CsrMatrix,
+    und_degree: &[Fx],
+    lambda_max: Fx,
+) -> Vec<Fx> {
     let n = phi.len();
     let two_over_lmax = Fx::from_int(2).div(lambda_max);
     let two = Fx::from_int(2);
     let ltilde = |v: &[Fx]| -> Vec<Fx> {
         let mut av = vec![Fx::ZERO; n];
         sym_weights.spmv(v, &mut av);
-        (0..n).map(|i| two_over_lmax * (und_degree[i] * v[i] - av[i]) - v[i]).collect()
+        (0..n)
+            .map(|i| two_over_lmax * (und_degree[i] * v[i] - av[i]) - v[i])
+            .collect()
     };
 
     let mut t_prev = phi.to_vec(); // T_0 = φ

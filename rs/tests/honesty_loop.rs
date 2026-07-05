@@ -6,7 +6,9 @@
 //! the neuron's links weigh more in the tri-kernel — so its link targets draw
 //! more collective focus than an equal-stake follower's.
 
-use tru::{accumulate, compute_focusing, Context, FocusingGraph, FocusingParams, Fx, Karma, Link, Report};
+use tru::{
+    accumulate, compute_focusing, Context, FocusingGraph, FocusingParams, Fx, Karma, Link, Report,
+};
 
 fn hash(b: u8) -> [u8; 32] {
     let mut h = [0u8; 32];
@@ -45,8 +47,22 @@ fn reports_earn_karma_that_reweights_focus() {
     //    neuron 1 backs Y, at equal stake. Everything else is symmetric.
     let (v, x, y, c) = (hash(5), hash(10), hash(11), hash(12));
     let links = vec![
-        Link { neuron: hash(4), from: v, to: x, amount: 100, valence: 1, price: Fx::ONE },
-        Link { neuron: hash(1), from: v, to: y, amount: 100, valence: 1, price: Fx::ONE },
+        Link {
+            neuron: hash(4),
+            from: v,
+            to: x,
+            amount: 100,
+            valence: 1,
+            price: Fx::ONE,
+        },
+        Link {
+            neuron: hash(1),
+            from: v,
+            to: y,
+            amount: 100,
+            valence: 1,
+            price: Fx::ONE,
+        },
         Link::stake(x, c, 100),
         Link::stake(y, c, 100),
         Link::stake(c, v, 100),
@@ -57,7 +73,10 @@ fn reports_earn_karma_that_reweights_focus() {
     let f0 = compute_focusing(&g0, &FocusingParams::default());
     let idx0 = |h: &[u8; 32]| g0.node_ids().iter().position(|n| n == h).unwrap();
     let gap = (f0.focus[idx0(&x)].to_f64() - f0.focus[idx0(&y)].to_f64()).abs();
-    assert!(gap < 1e-6, "with neutral karma X and Y are symmetric (Δ={gap})");
+    assert!(
+        gap < 1e-6,
+        "with neutral karma X and Y are symmetric (Δ={gap})"
+    );
 
     // 3. With the earned karma, the honest neuron's target X outranks Y — honesty
     //    computed from reports flows all the way into collective focus.

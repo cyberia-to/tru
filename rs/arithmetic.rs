@@ -59,7 +59,10 @@ impl Fx {
         if den == 0 {
             return Fx::ZERO;
         }
-        Fx(from_signed(round_div((num as i128) << FRAC_BITS, den as i128)))
+        Fx(from_signed(round_div(
+            (num as i128) << FRAC_BITS,
+            den as i128,
+        )))
     }
 
     /// `round(num · 2^FRAC_BITS / den)` for large nonnegative integers — the way
@@ -149,7 +152,11 @@ impl Mul for Fx {
     fn mul(self, rhs: Fx) -> Fx {
         let prod = self.signed() * rhs.signed();
         let bias = 1i128 << (FRAC_BITS - 1);
-        let scaled = if prod >= 0 { (prod + bias) >> FRAC_BITS } else { -(((-prod) + bias) >> FRAC_BITS) };
+        let scaled = if prod >= 0 {
+            (prod + bias) >> FRAC_BITS
+        } else {
+            -(((-prod) + bias) >> FRAC_BITS)
+        };
         Fx(from_signed(scaled))
     }
 }
@@ -159,6 +166,7 @@ impl Fx {
     /// (safe degradation; the tri-kernel normalizes so denominators are
     /// positive). Use [`Fx::checked_div`] to detect division by zero.
     #[inline]
+    #[allow(clippy::should_implement_trait)] // saturating div, not the panicking `Div` op
     pub fn div(self, rhs: Fx) -> Fx {
         self.checked_div(rhs).unwrap_or(Fx::ZERO)
     }
@@ -206,7 +214,11 @@ impl Fx {
         }
         let s = self.signed();
         let half = 1i128 << (shift - 1);
-        (if s >= 0 { (s + half) >> shift } else { -(((-s) + half) >> shift) }) as i64
+        (if s >= 0 {
+            (s + half) >> shift
+        } else {
+            -(((-s) + half) >> shift)
+        }) as i64
     }
 
     /// `e^self` via range reduction `e^x = 2^i · 2^f`, `x·log₂e = i + f`.
@@ -344,7 +356,7 @@ fn isqrt_u128(n: u128) -> u128 {
     if n == 0 {
         return 0;
     }
-    let mut x = 1u128 << ((128 - n.leading_zeros() + 1) / 2);
+    let mut x = 1u128 << (128 - n.leading_zeros()).div_ceil(2);
     loop {
         let y = (x + n / x) / 2;
         if y >= x {
@@ -379,7 +391,10 @@ mod tests {
         // dyadic values are exact: 1/4 + 1/2 = 3/4
         assert_eq!((Fx::from_ratio(1, 4) + Fx::from_ratio(1, 2)).to_f64(), 0.75);
         assert_eq!((-Fx::from_int(3)).to_f64(), -3.0);
-        assert_eq!(Fx::from_ratio(1, 2) - Fx::from_ratio(3, 4), Fx::from_ratio(-1, 4));
+        assert_eq!(
+            Fx::from_ratio(1, 2) - Fx::from_ratio(3, 4),
+            Fx::from_ratio(-1, 4)
+        );
         close(Fx::from_ratio(3, 10) - Fx::from_ratio(1, 2), -0.2);
     }
 
@@ -395,7 +410,10 @@ mod tests {
 
     #[test]
     fn div_recip_sqrt() {
-        assert_eq!((Fx::from_ratio(3, 4).div(Fx::from_ratio(1, 4))).to_f64(), 3.0);
+        assert_eq!(
+            (Fx::from_ratio(3, 4).div(Fx::from_ratio(1, 4))).to_f64(),
+            3.0
+        );
         close(Fx::from_int(1).div(Fx::from_int(3)) * Fx::from_int(3), 1.0);
         assert_eq!(Fx::from_ratio(1, 4).recip().to_f64(), 4.0);
         assert_eq!(Fx::from_ratio(1, 4).sqrt().to_f64(), 0.5);
@@ -407,7 +425,13 @@ mod tests {
 
     #[test]
     fn ordering_respects_sign_and_magnitude() {
-        let mut v = [Fx::from_ratio(1, 2), Fx::from_ratio(-1, 5), Fx::from_int(3), Fx::ZERO, Fx::from_ratio(1, 10)];
+        let mut v = [
+            Fx::from_ratio(1, 2),
+            Fx::from_ratio(-1, 5),
+            Fx::from_int(3),
+            Fx::ZERO,
+            Fx::from_ratio(1, 10),
+        ];
         v.sort();
         let got: Vec<f64> = v.iter().map(|x| x.to_f64()).collect();
         assert!(got.windows(2).all(|w| w[0] <= w[1]), "not sorted: {got:?}");
