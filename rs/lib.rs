@@ -17,7 +17,6 @@
 #![allow(clippy::needless_range_loop, clippy::module_inception)]
 
 pub mod arithmetic;
-pub mod attribution;
 pub mod error;
 pub mod focusing;
 pub mod graph;
@@ -27,7 +26,6 @@ pub mod truth_scoring;
 pub mod vocab;
 
 pub use arithmetic::Fx;
-pub use attribution::{marginals, shapley_exact, value, Contribution};
 pub use error::{McError, Result};
 pub use focusing::{
     compute_focusing, impulse, Context, FocusingGraph, FocusingParams, FocusingResult, Impulse,
