@@ -139,7 +139,7 @@ Reference implementation. All three run end-to-end and are deterministic:
 
 **Boundaries by design.** tru owns *magnitude* — what a contribution is worth and who earned it. The leaderless settlement lottery that computes it across the network lives in `foculus`; conservation and the mint live in `tok`. Scale (a randomized/GPU SVD for million-node graphs) and runtime inference (loading a `.model` into an engine) are the post-0.1 frontiers.
 
-See [`specs/README.md`](specs/README.md) for the per-spec status map.
+See [`specs/`](specs/) for the per-spec status map.
 
 ---
 
@@ -175,8 +175,8 @@ tru owns a precise vocabulary — every term is a page in [`docs/terms/`](docs/t
 |---|---|
 | [market](docs/terms/market.md) · [inhibition](docs/terms/inhibition.md) | the two-dimensional epistemic price, and why markets are load-bearing |
 | [true](docs/terms/true.md) · [false](docs/terms/false.md) · [void](docs/terms/void.md) | the attractor states of a link |
-| [two kinds of knowledge](docs/terms/two%20kinds%20of%20knowledge.md) | the irreducible split the graph holds |
-| [the true-false problem](docs/terms/true-false%20problem.md) | the foundational problem of cyber inference |
+| [two kinds of knowledge](docs/terms/two-kinds-of-knowledge.md) | the irreducible split the graph holds |
+| [the true-false problem](docs/terms/true-false-problem.md) | the foundational problem of cyber inference |
 
 ## Deep dives
 
@@ -191,7 +191,7 @@ The "why" behind the code, in [`docs/explanation/`](docs/explanation/):
 
 ## Specs
 
-The normative build map — every spec, what it produces, and its status: **[specs/README.md](specs/README.md)**.
+The normative build map — every spec, what it produces, and its status: **[specs/](specs/)**.
 
 Highlights: [ct0.md](specs/ct0.md) (the 8-pass compile) · [focusing.md](specs/focusing.md) (φ\*) · [rewards.md](specs/rewards.md) (the reward economy) · [truth-scoring.md](specs/truth-scoring.md) (BTS → karma).
 

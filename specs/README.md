@@ -139,4 +139,4 @@ every build spec is implemented. the full pipeline `.graph → φ* → Δφ⁺ �
 
 **~90 tests green, warning-clean, no stubs.** the whole intelligence layer (focusing → φ*), compile layer (`.graph → .model`), and economics magnitude layer (Δφ⁺ → surprise → Shapley) are conformant code. what remains is not new specs but scale (randomized SVD / GPU for production-size graphs), the small ct0 wirings noted above, and the cross-repo settlement plumbing that belongs in [[foculus]] and [[tok]] by design.
 
-see the [implementation steps table](../README.md#implementation-steps) in the repo readme, and [roadmap/implementation.md](../roadmap/implementation.md) for the milestone plan and cross-repo blockers.
+see the [implementation steps table](../#implementation-steps) in the repo readme, and [roadmap/implementation.md](../roadmap/implementation.md) for the milestone plan and cross-repo blockers.

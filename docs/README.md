@@ -4,7 +4,7 @@ alias: tru docs
 ---
 # tru docs
 
-teaching and explanation for [[tru]] — the convergence VM. the normative contracts live in [specs/](../specs/README.md); this tree explains and references them, it never duplicates them.
+teaching and explanation for [[tru]] — the convergence VM. the normative contracts live in [specs/](../specs/); this tree explains and references them, it never duplicates them.
 
 ## explanation
 

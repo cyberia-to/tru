@@ -8,7 +8,7 @@ alias: tru implementation plan, tru build plan, what to build next
 
 the full build order for every [[tru]] spec — from the one engine that is built (the [[focusing]] stub) to the eight-pass [[CT-0]] compiler and the cross-repo reward settlement. each milestone has an input, an output artifact, and a verifiable predicate. dependency order is strict: a later milestone may assume every earlier one passes.
 
-this plan refines two existing maps: [specs/README.md](../specs/README.md) (layer/status view) and the [implementation steps table](../README.md) (step ids 0a–3). it adds the concrete module layout, the algorithm per spec, and the exact predicate names so an engineer can start at M1 and not stop.
+this plan refines two existing maps: [specs/](../specs/) (layer/status view) and the [implementation steps table](../) (step ids 0a–3). it adds the concrete module layout, the algorithm per spec, and the exact predicate names so an engineer can start at M1 and not stop.
 
 one invariant cuts across every milestone: tru computes in fixed-point over the [[Goldilocks field]], never float ([[arithmetic]]). $\phi^*$ is a consensus object and $\Delta\phi^*$ is what [[zheng]] proves, so float is doubly excluded — non-deterministic and unprovable. M0 builds that arithmetic; M1 ports the `f64` stub onto it; M5 compiles in it. the only float anywhere is an external checkpoint quantized once at the [[model]] import boundary.
 
