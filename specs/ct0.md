@@ -202,9 +202,9 @@ $$\phi^{(k+1)} = \alpha P \phi^{(k)} + (1 - \alpha) u, \quad \phi^{(0)} = u, \qu
 
 with $\alpha = 0.85$. Halt when $\|\phi^{(k+1)} - \phi^{(k)}\|_1 < \varepsilon_\pi$ with $\varepsilon_\pi = 10^{-8}$.
 
-Impulse reuse. If the optional `impulse` extension is present, each signal $s$ carries a sparse focus delta $\Delta\phi^*^{(s)}$ that was proven on chain when the signal was accepted. The base distribution is then
+Impulse reuse. If the optional `impulse` extension is present, each signal $s$ carries a sparse focus delta $\Delta\phi^{*(s)}$ that was proven on chain when the signal was accepted. The base distribution is then
 
-$$\phi^*_{\text{chain}} = \phi^{(0)} + \sum_{s \in \mathcal{S}} \Delta\phi^*^{(s)}$$
+$$\phi^*_{\text{chain}} = \phi^{(0)} + \sum_{s \in \mathcal{S}} \Delta\phi^{*(s)}$$
 
 where $\phi^{(0)}$ is the genesis prior from `config`. Power iteration is unnecessary for the set of signals covered by impulses; it runs only over the residual adjacency (signals without impulse). On a fully proof-carrying snapshot this skips the entire iteration.
 
