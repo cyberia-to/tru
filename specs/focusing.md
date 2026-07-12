@@ -137,4 +137,4 @@ each particle receives a position in k-dimensional spectral space: row i of V_k 
 
 karma is not written by tru's focusing pass. karma is accumulated by [[plumb]] from BTS scores and read from [[bbg]] as input. tru reads karma; [[plumb]] writes it.
 
-see [[collective focus theorem]] for the convergence proofs. see [[ct0.md]] for how φ* feeds into model compilation. see [[tri-kernel]] for why these three operators are the minimal sufficient basis.
+see [[collective focus theorem]] for the convergence proofs. see [[ct0]] for how φ* feeds into model compilation. see [[tri-kernel]] for why these three operators are the minimal sufficient basis.

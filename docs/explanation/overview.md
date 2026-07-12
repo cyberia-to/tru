@@ -52,4 +52,4 @@ tru solves this by making knowledge creation a provably rewarded activity. Every
 
 The system converges toward truth because honesty is the dominant strategy. [[Bayesian Truth Serum]] makes accurate reporting the uniquely score-maximizing response. [[Karma]] compounds honest signaling into lasting influence. [[ICBS]] markets suppress false assertions through economic pressure. The result is a knowledge graph where the collective focus distribution φ* is the closest approximation to shared truth that the network can produce -- and it improves with every honest link.
 
-see [[reference/rewards]] for the reward functions. see [[reference/epistemic-markets]] for the market mechanism. see [[reference/truth-scoring]] for the scoring layer. see [[reference/knowledge-economy]] for the full economic design.
+see [[rewards]] for the reward functions. see [[epistemic-markets]] for the market mechanism. see [[truth-scoring]] for the scoring layer. see [[knowledge-economy]] for the full economic design.

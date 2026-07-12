@@ -37,7 +37,7 @@ valence is the ternary economic layer over a binary topology — the same archit
 | [[mycelium]] | give resources | hold channel | receive / take |
 | [[market]] | buy TRUE | hold | buy FALSE |
 
-the zero state carries information without carrying directional belief: a void-valence link holds the structural channel open — the connection exists, the topic is raised — without forcing an epistemic commitment. for the full accounting frame of $v$ as debit / credit / hold, see [[tru/docs/explanations/valence|valence as accounting]].
+the zero state carries information without carrying directional belief: a void-valence link holds the structural channel open — the connection exists, the topic is raised — without forcing an epistemic commitment. for the full accounting frame of $v$ as debit / credit / hold, see [[valence as accounting|valence as accounting]].
 
 ## effect on focusing
 

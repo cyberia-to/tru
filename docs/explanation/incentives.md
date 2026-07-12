@@ -73,4 +73,4 @@ The rules produce a game where early + accurate = maximum return:
 
 The evolutionary loop that emerges: contribute accurately → Δφ* reward → accumulate [[$CYB]] → stake on more links → accumulate [[karma]] → links carry more adjacency weight → earlier Δφ* attribution → more [[$CYB]] per contribution. The flywheel rewards sustained accuracy, not one-time luck.
 
-see [[reference/rewards]] for the formal reward functions, attribution formulas, and self-minting protocol. see [[docs/markets]] for how epistemic markets complement the incentive layer. see [[docs/honesty]] for why honest signaling is the dominant strategy.
+see [[rewards]] for the formal reward functions, attribution formulas, and self-minting protocol. see [[markets]] for how epistemic markets complement the incentive layer. see [[honesty]] for why honest signaling is the dominant strategy.

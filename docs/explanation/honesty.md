@@ -86,4 +86,4 @@ These four forces -- individual incentive, statistical aggregation, reputation d
 
 The [[cybergraph]]'s information measure, [[syntropy]], tracks this convergence. Syntropy is the aggregate KL divergence from the uniform distribution -- the total structure in the graph measured in bits. Honest links raise syntropy. Dishonest links lower it. A maximally honest graph is a maximally syntropy-generating machine.
 
-see [[reference/truth-scoring]] for the full BTS formula, Prelec's equilibrium proof, and the karma specification. see [[docs/markets]] for how ICBS markets complement honest signaling. see [[docs/incentives]] for the broader reward framework.
+see [[truth-scoring]] for the full BTS formula, Prelec's equilibrium proof, and the karma specification. see [[markets]] for how ICBS markets complement honest signaling. see [[incentives]] for the broader reward framework.

@@ -86,4 +86,4 @@ Inhibition is symmetric with assertion. A neuron that inhibits a link must stake
 
 Capital flows from incorrect beliefs to correct ones. The neurons who consistently bet correctly accumulate wealth. The neurons who consistently bet wrong lose stake. This is the market's contribution to the evolutionary pressure that drives the graph toward truth.
 
-see [[reference/epistemic-markets]] for the full ICBS specification, formulas, and properties table. see [[docs/honesty]] for how BTS interacts with market signals. see [[docs/incentives]] for how market positions fit into the broader reward system.
+see [[epistemic-markets]] for the full ICBS specification, formulas, and properties table. see [[honesty]] for how BTS interacts with market signals. see [[incentives]] for how market positions fit into the broader reward system.
