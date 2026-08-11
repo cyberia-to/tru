@@ -25,7 +25,7 @@ This is the standalone paper. The normative, in-spec formulation of the same res
 
 ## Definitions
 
-[[cybergraph]]: directed graph $G = (V, E, W)$ where state is stored in a Merkle tree. a concrete realization of decentralized knowledge graph with cryptographic and [[consensus]] mechanisms
+[[cybergraph]]: directed graph $G = (V, E, W)$ where state is committed as a [[bbg]] polynomial. a concrete realization of decentralized knowledge graph with cryptographic and [[consensus]] mechanisms
 
 [[particle]]: content-address of a file representing a node in the graph. compact, fixed-length digest (e.g. IPFS hash)
 

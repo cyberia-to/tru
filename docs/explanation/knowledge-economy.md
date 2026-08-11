@@ -92,7 +92,7 @@ The [[cybergraph]] achieves honest markets through [[Bayesian Truth Serum]] (Pre
 
 ## the GFP flywheel
 
-The optimal mining hardware and the optimal proving hardware are the same chip. The [[Goldilocks field processor]] exercises four primitives (fma, ntt, p2r, lut) for both PoUW mining and real workloads ([[stark]] proving, focus computation, neural inference). Mining rewards bootstrap chip development. Chips accelerate proving. Proving serves users. Users pay fees. Fees replace emission. No stranded assets.
+The optimal mining hardware and the optimal proving hardware are the same chip. The [[Goldilocks field processor]] exercises four primitives (fma, ntt, p2r, lut) for both PoUW mining and real workloads ([[zheng]] proving, focus computation, neural inference). Mining rewards bootstrap chip development. Chips accelerate proving. Proving serves users. Users pay fees. Fees replace emission. No stranded assets.
 
 ---
 

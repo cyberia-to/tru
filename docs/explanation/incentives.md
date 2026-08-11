@@ -40,7 +40,7 @@ This is the attention yield curve: early, accurate discovery is maximally reward
 
 Rewards are not computed centrally. Each [[neuron]] proves its own contribution and claims its own reward.
 
-The process: create [[cyberlinks]], compute the local focus shift $\Delta\phi^*$, generate a [[stark]] proof that the computation is correct, bundle everything into a [[cyber/signal]], and submit. Any verifier can check the proof against the block header in O(log n) time. If valid and Δφ* > 0, the neuron mints [[$CYB]].
+The process: create [[cyberlinks]], compute the local focus shift $\Delta\phi^*$, generate a [[zheng]] proof that the computation is correct, bundle everything into a [[cyber/signal]], and submit. Any verifier can check the proof against the block header in O(log n) time. If valid and Δφ* > 0, the neuron mints [[$CYB]].
 
 A neuron on a phone can participate: buy a header, query the neighborhood state, create links, prove Δφ*, mint tokens. No mining pool, no centralized aggregator, no permission.
 

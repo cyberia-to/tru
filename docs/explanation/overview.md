@@ -48,7 +48,7 @@ Implicit knowledge is what [[neurons]] derive from observing the explicit layer.
 
 Knowledge creation is a collective activity with a free-rider problem. Without a mechanism for attribution and reward, rational agents consume knowledge without contributing. The result is a tragedy of the epistemic commons: everyone reads, nobody writes, and the shared picture degrades.
 
-tru solves this by making knowledge creation a provably rewarded activity. Every [[cyberlink]] that shifts the focus distribution -- that adds genuine structure to the graph -- earns its creator [[$CYB]] proportional to the shift. The reward is not assigned by committee or oracle. The neuron proves its own contribution via a [[stark]] proof and self-mints the reward.
+tru solves this by making knowledge creation a provably rewarded activity. Every [[cyberlink]] that shifts the focus distribution -- that adds genuine structure to the graph -- earns its creator [[$CYB]] proportional to the shift. The reward is not assigned by committee or oracle. The neuron proves its own contribution via a [[zheng]] proof and self-mints the reward.
 
 The system converges toward truth because honesty is the dominant strategy. [[Bayesian Truth Serum]] makes accurate reporting the uniquely score-maximizing response. [[Karma]] compounds honest signaling into lasting influence. [[ICBS]] markets suppress false assertions through economic pressure. The result is a knowledge graph where the collective focus distribution φ* is the closest approximation to shared truth that the network can produce -- and it improves with every honest link.
 
