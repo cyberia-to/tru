@@ -16,6 +16,6 @@ name = "tru"
 path = "main.rs"
 
 [dependencies]
-tru = { path = "../rs" }
+tru = { package = "cyber-tru", path = "../rs" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }

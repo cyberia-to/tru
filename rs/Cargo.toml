@@ -1,23 +1,20 @@
-# ---
-# tags: cyber, tru, config
-# crystal-type: source
-# crystal-domain: cyber
-# ---
 [package]
-name = "tru"
+name = "cyber-tru"
+version = "0.1.1"
+edition = "2024"
 description = "tru — convergence VM: focusing (φ*) and CT-0 model compilation"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-repository.workspace = true
+license-file = "LICENSE"
+repository = "https://github.com/cyberia-to/tru"
+keywords = ["convergence", "rank", "phi", "cyber"]
+categories = ["algorithms", "cryptography"]
 
 [lib]
 name = "tru"
 path = "lib.rs"
 
 [dependencies]
-cyb-nebu = { path = "../../strata/nebu/rs" }
-cyber-hemera = { path = "../../hemera/rs" }
+nebu = { package = "strata-nebu", version = "0.1", path = "../../strata/nebu/rs" }
+cyber-hemera = { version = "0.3", path = "../../hemera/rs" }
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
