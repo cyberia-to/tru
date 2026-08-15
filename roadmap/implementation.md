@@ -48,7 +48,7 @@ the substrate the critical path needs. the field arithmetic is the real M0 — t
 
 | task | detail | status |
 |------|--------|--------|
-| field arithmetic | the representation contract ([[arithmetic]]): a thin fixed-point layer at scale $\Sigma = 2^{32}$ over [[nebu]]'s `Goldilocks` (`cyb-nebu`, `../strata/nebu/rs`). tru adds encode/decode, mul-then-rescale (i128 widen → round → reduce mod p), div/recip, integer `sqrt`, order on the balanced residue. no `f64` on any deterministic path. `rs/arithmetic.rs`, type `Fx` | ✅ done — 7 tests green |
+| field arithmetic | the representation contract ([[arithmetic]]): a thin fixed-point layer at scale $\Sigma = 2^{32}$ over [[nebu]]'s `Goldilocks` (`strata-nebu`, `../strata/nebu/rs`). tru adds encode/decode, mul-then-rescale (i128 widen → round → reduce mod p), div/recip, integer `sqrt`, order on the balanced residue. no `f64` on any deterministic path. `rs/arithmetic.rs`, type `Fx` | ✅ done — 7 tests green |
 | wire [[hemera]] | `cyber-hemera` for particle ids / file particles | ✅ done (M2 — used by vocab's `particle()`/`verify()`) |
 | config `.tokens` | token_weight $\rho_\tau$ from `config.tokens` | ↦ M3 (its only consumer is $A^{eff}$) |
 | generalize `.cyb` reader | `frontmatter::index_sections` — format-agnostic; graph reader + vocab share it | ✅ done (M2) |

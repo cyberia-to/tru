@@ -15,7 +15,7 @@ two properties force it, and both are load-bearing:
 
 ## 1. the field
 
-the substrate is the [[Goldilocks field]] $\mathbb{F}_p$ shared across the whole stack — the same field [[hemera]] hashes in, [[nox]] computes in, [[zheng]] proves over, and [[bbg]] commits. an element is one canonical residue in $[0, p)$. tru introduces no arithmetic of its own; it spends the field's. the implementation is [[nebu]] (`cyb-nebu`, the `Goldilocks` type — field add/mul/inv/sqrt, NTT, packed SIMD); tru depends on it rather than reimplementing $\mathbb{F}_p$.
+the substrate is the [[Goldilocks field]] $\mathbb{F}_p$ shared across the whole stack — the same field [[hemera]] hashes in, [[nox]] computes in, [[zheng]] proves over, and [[bbg]] commits. an element is one canonical residue in $[0, p)$. tru introduces no arithmetic of its own; it spends the field's. the implementation is [[nebu]] (`strata-nebu`, the `Goldilocks` type — field add/mul/inv/sqrt, NTT, packed SIMD); tru depends on it rather than reimplementing $\mathbb{F}_p$.
 
 ## 2. fixed-point semantics
 
