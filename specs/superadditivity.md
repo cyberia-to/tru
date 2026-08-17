@@ -2,7 +2,7 @@
 tags: cyber, tru, core, spec
 crystal-type: measure
 crystal-domain: cyber
-alias: superadditivity, collective intelligence, emergence, sigma-mean, sigma-best, collective advantage
+alias: superadditivity, emergence, sigma-mean, sigma-best, collective advantage
 ---
 # superadditivity
 
