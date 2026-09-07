@@ -2,7 +2,7 @@
 tags: cyber, tru, core, spec
 crystal-type: spec
 crystal-domain: cyber
-alias: .vocab, vocab format, cyb vocab spec
+alias: .vocab, vocab format, cyb vocab spec, cyb-vocab
 ---
 
 # .vocab — particle dictionary in [[.cyb|format]]

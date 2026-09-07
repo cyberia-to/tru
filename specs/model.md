@@ -2,7 +2,7 @@
 tags: cyber, tru, core, spec
 crystal-type: spec
 crystal-domain: cyber
-alias: .model, model format, cyb model spec
+alias: .model, model format, cyb model spec, cyb-model
 ---
 
 # .model — neural network in [[.cyb|format]]
