@@ -210,7 +210,14 @@ mod tests {
             records.len()
         );
 
-        let path = std::env::temp_dir().join("tru_ct0_compile_test.graph");
+        // unique path per call: tests run on separate threads and a fixed
+        // name lets them clobber each other's file mid-write (observed as a
+        // flaky "no `~~~` delimiter found").
+        static SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let path = std::env::temp_dir().join(format!(
+            "tru_ct0_compile_test_{}.graph",
+            SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        ));
         let mut f = std::fs::File::create(&path).unwrap();
         f.write_all(frontmatter.as_bytes()).unwrap();
         write!(f, "~~~config\nblock = 7\n").unwrap();
