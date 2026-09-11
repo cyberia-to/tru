@@ -13,7 +13,7 @@
 use crate::arithmetic::Fx;
 use crate::model::{Encoding, Tensor};
 
-use super::arch::{m_svd, FxAdj};
+use super::arch::{FxAdj, m_svd};
 use super::index::Adjacency;
 
 /// Pass 4: the `(|V|, d*)` embedding tensor `model.embed_tokens.weight`, stored
