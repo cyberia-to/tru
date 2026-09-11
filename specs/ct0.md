@@ -302,9 +302,11 @@ $$A^{(s, l)} = (A^{(s)})^{l_{\text{eff}}}, \quad l_{\text{eff}} = 1 + \lfloor l 
 
 computed by repeated sparse-times-dense multiplication; never materialized as dense.
 
-### 7.3 Projection into embedding space
+### 7.3 Projection into embedding space (directed)
 
-$$P^{(s, l)} = E^\top A^{(s, l)} E \in \mathbb{F}_p^{d^* \times d^*}$$
+$$P^{(s, l)} = E^\top (A^{(s, l)})^\top E \in \mathbb{F}_p^{d^* \times d^*}$$
+
+The projection is the DIRECTED layer transition: the score of token $t$ attending $s$ measures $l_{\text{eff}}$-step walks $s \to t$. The undirected $E^\top A^{(s,l)} E$ was measured to self-collapse at init (the query's own position always wins softmax by Cauchy-Schwarz; deeper layers' powers were invisible in the output). The directed form removes the self-transition mass — causal softmax is forced to retrieve from the prefix. See `eval/attn_eval.md` for the evidence.
 
 ### 7.4 SVD per head
 
@@ -316,15 +318,21 @@ $$W_Q^{(l, h_s)} = U^{(s,l)}_{:, 1:d_h} \cdot \sqrt{\Sigma^{(s,l)}_{1:d_h}}$$
 
 $$W_K^{(l, h_s)} = V^{(s,l)}_{:, 1:d_h} \cdot \sqrt{\Sigma^{(s,l)}_{1:d_h}}$$
 
-$$W_V^{(l, h_s)} = E^\top \cdot \text{diag}(\phi^*) \cdot A^{(s)} \cdot E_{:, h_s \cdot d_h : (h_s+1) \cdot d_h}$$
+$$W_V^{(l, h_s)} = I_{d_h}$$
 
-Sign convention SC-1 applied to $U^{(s,l)}, V^{(s,l)}$.
+Sign convention SC-1 applied to $U^{(s,l)}, V^{(s,l)}$. The $U$/$V$ asymmetry is what makes the scores directed; $W_Q = W_K$ (the symmetric factor) reproduces the self-collapse. The value projection is the identity — the value of a position is its own (normalized) hidden state: the attention output injects the retrieved token into the residual stream.
 
 ### 7.5 Output projection
 
-$$W_O^{(l)} = (W_V^{(l, 0)} \,\|\, \cdots \,\|\, W_V^{(l, h^*-1)})^\dagger$$
+$$W_O^{(l)} = c \cdot I_{d^*}$$
 
-(Moore-Penrose pseudoinverse of the concatenated values, giving the optimal aggregation back to $d^*$.)
+The retrieval head: the attention output is the gain-scaled retrieved position, so its full embedding geometry votes in the tied-head logits. (The previous pseudoinverse-of-values form inverted the value map back and made every layer a measured no-op at init.)
+
+$c$ is derived from the pass-4 spectrum (tru#3), not hand-set:
+
+$$c = \mathrm{clamp}\bigl(1 + \log_2(\sigma_1 / \sigma_k),\ 1,\ 64\bigr)$$
+
+where $\sigma_1/\sigma_k$ is the same ratio that sets $d^*$ (§5.2) — it measures how sharply popularity dominates the geometry, and the sharper the prior, the louder the retrieved token must vote in the tied-head logits to outrank it (on the corpus toy the prior margin was ~25x, needing $c \gtrsim 13$). The compile certificate reports the value used (§10.7).
 
 ### 7.6 Output tensors
 
@@ -653,6 +661,8 @@ $$\frac{\|E E^\top - M\|_F}{\|M\|_F} \leq 0.05$$
 For every layer $l$ and dialect $s$:
 
 $$\text{Pearson}(\text{flatten}(W_Q^{(l, h_s)} W_K^{(l, h_s)\top}), \text{flatten}(P^{(s, l)})) \geq 0.7$$
+
+where $P^{(s, l)}$ is the directed projection of §7.3. On a graph whose dialect adjacency is symmetric this degenerates to the symmetric check; on directed graphs the invariant additionally requires the emitted $W_Q \neq W_K$ (asymmetry sanity, tested in `rs/pass/attn.rs`).
 
 ### 11.3 Layer contraction (P-LAYER)
 

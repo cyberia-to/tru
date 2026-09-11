@@ -33,6 +33,9 @@ pub struct Arch {
     pub diameter: usize,
     /// Focus distribution φ* (§5.1), kept for the embedding/attention passes.
     pub phi: Vec<Fx>,
+    /// σ₁/σ_k of the pass-4 spectrum: how sharply popularity dominates. Sets
+    /// the attention output gain (§7.5-rev, tru#3).
+    pub sigma_ratio: Fx,
 }
 
 /// PageRank damping α = 0.85 (§5.1).
@@ -370,11 +373,20 @@ pub fn compute(adj: &Adjacency, h_star: usize, block: u64) -> Arch {
             lambda2: Fx::ZERO,
             diameter: 0,
             phi: vec![],
+            sigma_ratio: Fx::ONE,
         };
     }
 
     let phi = pagerank(&g);
     let sigmas = m_svd(&g, &phi, 1024, 120).sigma;
+    let sigma_ratio = {
+        let last = sigmas.iter().rposition(|&s| s > Fx::ZERO).unwrap_or(0);
+        if sigmas.is_empty() || sigmas[0].is_zero() {
+            Fx::ONE
+        } else {
+            sigmas[0].div(sigmas[last])
+        }
+    };
     let d0 = effective_dim(&sigmas).clamp(64, 4096);
     let d = round_to_multiple(d0, h).clamp(64, 4096);
 
@@ -410,6 +422,7 @@ pub fn compute(adj: &Adjacency, h_star: usize, block: u64) -> Arch {
         lambda2,
         diameter: diam,
         phi,
+        sigma_ratio,
     }
 }
 

@@ -36,6 +36,7 @@ pub fn compile(graph: &Graph) -> Result<Model> {
         a.h,
         a.l,
         a.diameter,
+        attn::out_gain(a.sigma_ratio),
     );
     let mlp_tensors = mlp::mlp(a.d, a.l);
     let norm_tensors = norm::layernorms(a.d, a.l);
@@ -153,17 +154,21 @@ fn eval_toml(a: &arch::Arch) -> String {
     // Structural-compile certificate: architecture is derived and deterministic;
     // the weight-conformance predicates (P_EMBED, P_ATTN) await the SVD passes.
     let top = a.phi.iter().map(|x| x.to_f64()).fold(0.0_f64, f64::max);
+    let gain = attn::out_gain(a.sigma_ratio).to_f64();
     format!(
         "[ct0_structural]\n\
          P_DET = 1\n\
          d = {d}\n\
          h = {h}\n\
-         L = {l}\n\n\
+         L = {l}\n\
+         hop2_mix = 0.5\n\
+         out_gain = {gain:.3}\n\n\
          [focus]\n\
          top_concentration = {top}\n",
         d = a.d,
         h = a.h,
         l = a.l,
+        gain = gain,
         top = (top * 1000.0) as u64,
     )
 }
