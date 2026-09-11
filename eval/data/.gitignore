@@ -1,0 +1,5 @@
+# canonical copy lives in the bostrom snapshot (deimos:/archive/snapshot/pub,
+# ipfs QmUFrsLYUK8USpNMEGBbUyi3nTuq12QcLiVWiyVMMVyyFf, sha256 e442ff7a...).
+# regenerate: scp deimos:/archive/snapshot/pub/cyberlinks_indexed.csv.gz . && zcat | to jsonl
+bostrom_cyberlinks.csv.gz
+bostrom_links.jsonl

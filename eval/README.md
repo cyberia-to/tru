@@ -9,13 +9,15 @@ compiled geometry predict **new links** in a graph that real users built?
   fetched from the node tx index (`fetch_links.py` over
   `tx_search "cyberlink.neuron EXISTS"`, attributes base64-decoded). heights
   recorded per link — temporal split is real.
-- **bostrom** (live mainnet): blocked. the 403 MB state export on
-  `deimos.cybernode.ai/shared/cyber_state_v4upgrade` contains **no graph
-  state** (go-cyber exports particles/links to a server-side file, not genesis);
-  `index.bostrom.cybernode.ai` GraphQL is 502; `tx_search` on
-  `rpc.bostrom.cybernode.ai` and `/cosmos/tx/v1beta1/txs` on the LCD both return
-  empty. to unblock: expose the graph export file over `/shared/` the way the
-  state export is, or bring the indexer back.
+- **bostrom** (halted mainnet, snapshot at height 25,120,712): 2,949,732
+  cyberlinks / 3,143,650 particles, rebuilt bit-exact to the on-chain
+  graph_stats by a full-history block scan (see the bostrom snapshot
+  manifest: `cyberlinks_indexed.csv.gz`, IPFS
+  `QmUFrsLYUK8USpNMEGBbUyi3nTuq12QcLiVWiyVMMVyyFf`, sha256
+  `e442ff7a…e4ae`). too big for git — fetch from
+  `deimos:/archive/snapshot/pub/cyberlinks_indexed.csv.gz` (or any IPFS
+  gateway) and convert to jsonl; see `data/.gitignore`. results:
+  [lp_bostrom.md](lp_bostrom.md).
 
 ## setup
 
@@ -85,6 +87,14 @@ spec §6.1-rev.
    an inductive route to unseen particles (content-hash features, not only
    structural ids) — or the honest claim narrows to "ranks among known
    particles".
+
+## pass 4 at scale — bostrom
+
+see [lp_bostrom.md](lp_bostrom.md) — the pussy findings re-measured on the
+full halted graph. headline: the popularity prior strengthens with scale
+(pa temporal AUC 0.866 -> 0.943), 2-hop mixing replicates (1-step directed
+at chance 0.5004 -> directed2 g=0.25 0.6166), and the tru#3 out-gain rule
+scales: sigma_1/sigma_k = 8885.6 on the shipped mixed matrix -> gain 14.1.
 
 ## pass 5: the attention half
 

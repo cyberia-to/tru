@@ -334,6 +334,8 @@ $$c = \mathrm{clamp}\bigl(1 + \log_2(\sigma_1 / \sigma_k),\ 1,\ 64\bigr)$$
 
 where $\sigma_1/\sigma_k$ is the same ratio that sets $d^*$ (§5.2) — it measures how sharply popularity dominates the geometry, and the sharper the prior, the louder the retrieved token must vote in the tied-head logits to outrank it (on the corpus toy the prior margin was ~25x, needing $c \gtrsim 13$). The compile certificate reports the value used (§10.7).
 
+Measured at scale on the halted bostrom graph (2.9M links / 3.1M particles, temporal LP eval — `eval/lp_bostrom.md`): the prior strengthens with corpus size (pa AUC 0.866 on space-pussy $\to$ 0.943 on bostrom) and the rule scales with it: $\sigma_1/\sigma_k = 8885.6$ on the shipped mixed matrix $\to$ $c = 14.1$, inside the clamp range. The popularity-bucket autopsy shows the spectral signal peaks in the mid-popularity band — retrieval amplification matters exactly where structure, not fame, selects the target.
+
 ### 7.6 Output tensors
 
 Per layer $l$:
