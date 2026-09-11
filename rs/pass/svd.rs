@@ -48,20 +48,26 @@ fn abs_max_normalize(v: &mut [Fx]) {
 }
 
 /// Modified Gram–Schmidt (sqrt-free: projection via `dot(u,v)/dot(u,u)`).
+///
+/// `dot(block[i], block[i])` is loop-invariant — column `i` is final once
+/// step `i` completes (later steps only modify columns `j > i`) — so each
+/// denominator is computed once. On real graphs (n = 65k, k = 256) the
+/// recomputation tripled the orthonormalization cost.
 pub fn orthonormalize(block: &mut [Vec<Fx>]) {
     let k = block.len();
+    let mut denoms = vec![Fx::ZERO; k];
     for j in 0..k {
         for i in 0..j {
-            let denom = dot(&block[i], &block[i]);
-            if denom.is_zero() {
+            if denoms[i].is_zero() {
                 continue;
             }
-            let coeff = dot(&block[i], &block[j]).div(denom);
+            let coeff = dot(&block[i], &block[j]).div(denoms[i]);
             for x in 0..block[j].len() {
                 block[j][x] = block[j][x] - coeff * block[i][x];
             }
         }
         abs_max_normalize(&mut block[j]);
+        denoms[j] = dot(&block[j], &block[j]);
     }
 }
 
@@ -132,7 +138,12 @@ pub fn top_svd(
     // Right singular vectors: eigenvectors of MᵀM by subspace iteration.
     let mut block = start_block(n, k);
     orthonormalize(&mut block);
-    for _ in 0..iters {
+    let _dbg = std::env::var_os("TRU_SVD_DEBUG").is_some();
+    let dbg_t0 = std::time::Instant::now();
+    for it in 0..iters {
+        if _dbg && it % 10 == 0 {
+            eprintln!("[svd] iter {it}/{iters} k={k} n={n} {:?}", dbg_t0.elapsed());
+        }
         for col in block.iter_mut() {
             *col = mtm(col);
         }

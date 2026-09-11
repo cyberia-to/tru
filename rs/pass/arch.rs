@@ -378,7 +378,12 @@ pub fn compute(adj: &Adjacency, h_star: usize, block: u64) -> Arch {
     }
 
     let phi = pagerank(&g);
-    let sigmas = m_svd(&g, &phi, 1024, 120).sigma;
+    // Spectrum probe for d* and sigma_1/sigma_k. Cost is O(iters * k^2 * n) in
+    // fixed point (Gram-Schmidt dominates), so the probe stays narrow: real
+    // cybergraphs have a small effective rank (space-pussy: sigma dies by k=64,
+    // lp_eval.py) and the [64, 4096] d* clamp absorbs the estimate. Pass 4
+    // reruns m_svd at the final k = d* — the only full-quality SVD.
+    let sigmas = m_svd(&g, &phi, 64, 30).sigma;
     let sigma_ratio = {
         let last = sigmas.iter().rposition(|&s| s > Fx::ZERO).unwrap_or(0);
         if sigmas.is_empty() || sigmas[0].is_zero() {
