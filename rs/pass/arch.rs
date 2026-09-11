@@ -51,11 +51,7 @@ fn dot(a: &[Fx], b: &[Fx]) -> Fx {
 }
 
 fn fabs(x: Fx) -> Fx {
-    if x < Fx::ZERO {
-        Fx::ZERO - x
-    } else {
-        x
-    }
+    if x < Fx::ZERO { Fx::ZERO - x } else { x }
 }
 
 fn abs_max_normalize(v: &mut [Fx]) {
@@ -291,11 +287,7 @@ fn lambda2_normalized(g: &FxAdj, iters: usize) -> Fx {
         abs_max_normalize(&mut v);
     }
     let l2 = Fx::ONE - mu;
-    if l2 < Fx::ZERO {
-        Fx::ZERO
-    } else {
-        l2
-    }
+    if l2 < Fx::ZERO { Fx::ZERO } else { l2 }
 }
 
 // ── §5.4 diameter (BFS lower bound) ───────────────────────────────────
@@ -339,11 +331,7 @@ fn round_to_multiple(x: usize, m: usize) -> usize {
         return x;
     }
     let r = x % m;
-    if r == 0 {
-        x
-    } else {
-        x + (m - r)
-    }
+    if r == 0 { x } else { x + (m - r) }
 }
 
 /// Pass 3: derive the architecture from the graph and the head count `h*`.
