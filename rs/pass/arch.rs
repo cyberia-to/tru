@@ -151,7 +151,11 @@ fn pagerank(g: &FxAdj) -> Vec<Fx> {
                 dangling = dangling + phi[i];
             }
         }
-        // (Pφ)_i = Σ_{(j,w)∈inc[i]} w·φ_j / out_strength[j]  + dangling·u
+        // (Pφ)_i = Σ_{(j,w)∈inc[i]} w·φ_j / out_strength[j]  + dangling·φ_i
+        // dangling mass returns preferentially (to the prior), not uniformly:
+        // zero-out-strength particles (axons, unresolved aliases) then hold at
+        // most their teleport floor instead of absorbing dangling/n each round.
+        // see cyberia-to/tru#1.
         let mut next = vec![Fx::ZERO; n];
         for i in 0..n {
             let mut s = Fx::ZERO;
@@ -161,7 +165,7 @@ fn pagerank(g: &FxAdj) -> Vec<Fx> {
                     s = s + w.div(os) * phi[j as usize];
                 }
             }
-            next[i] = alpha() * (s + dangling * u) + (Fx::ONE - alpha()) * u;
+            next[i] = alpha() * (s + dangling * phi[i]) + (Fx::ONE - alpha()) * u;
         }
         // L1 renormalize (guards drift) and test convergence.
         let sum: Fx = next.iter().fold(Fx::ZERO, |a, &x| a + x);
