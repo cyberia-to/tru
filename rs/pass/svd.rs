@@ -29,11 +29,7 @@ pub fn dot(a: &[Fx], b: &[Fx]) -> Fx {
 }
 
 fn fabs(x: Fx) -> Fx {
-    if x < Fx::ZERO {
-        Fx::ZERO - x
-    } else {
-        x
-    }
+    if x < Fx::ZERO { Fx::ZERO - x } else { x }
 }
 
 fn abs_max_normalize(v: &mut [Fx]) {
