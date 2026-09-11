@@ -212,7 +212,9 @@ where $\phi^{(0)}$ is the genesis prior from `config`. Power iteration is unnece
 
 Take the singular value spectrum $\Sigma = (\sigma_1, \ldots, \sigma_r)$ of the $\phi^*$-weighted adjacency
 
-$$M = \text{diag}(\sqrt{\phi^*}) \cdot A \cdot \text{diag}(\sqrt{\phi^*})$$
+$$M = \text{diag}(\sqrt{\phi^*}) \cdot (A + \gamma A^2) \cdot \text{diag}(\sqrt{\phi^*}), \quad \gamma = \tfrac12$$
+
+(the 2-hop-mixed matrix of §6.1 — passes 3, 4, and the §7.5 gain rule all read the same spectrum)
 
 via randomized SVD truncated to rank $r = 1024$ (oversampled). Normalize: $\hat{\sigma}_i = \sigma_i / \sum_j \sigma_j$. Then
 
@@ -259,6 +261,14 @@ diameter   = 10
 ## 6. Pass 4 — Embedding Matrix
 
 ### 6.1 Computation
+
+The embedding matrix is the SVD of the 2-hop-mixed adjacency (tru#2):
+
+$$M = \text{diag}(\sqrt{\phi^*}) \cdot (A + \gamma A^2) \cdot \text{diag}(\sqrt{\phi^*}), \quad \gamma = \tfrac{1}{2}$$
+
+with $A$ the max-normalized effective adjacency and $A^2$ never materialized (applied twice). The 1-step matrix alone gives structurally equivalent tokens parallel embeddings — the fine sibling signal (which moon orbits which planet) lives at graph distance 2. Validated on live space-pussy (temporal split, k=16): directed LP AUC 0.634 → 0.751, novel-AUC 0.544 → 0.689; random split 0.777 → 0.785–0.821. $\gamma = \tfrac12$ is the split-robust compromise (temporal peaks at 0.25, random at 1.0).
+
+Note: the steeper spectrum of the mixed operator (σ₂/σ₁ ~ 0.1 vs ~0.4) exposed loss of orthogonality in fixed-point subspace iteration; the SVD spine reorthogonalizes twice per iteration (§12 reference implements the same).
 
 Continue the randomized SVD of $M$ from §5.2 to extract the top $d^*$ left singular vectors $U_{:, 1:d^*}$ and singular values $\Sigma_{1:d^*}$. Set
 

@@ -107,13 +107,25 @@ mod tests {
         let g = FxAdj::from(&adj);
         let svd = m_svd(&g, &phi, n, 200);
 
-        // Dense M (scaled ÷ max weight, matching arch's FxAdj normalization).
+        // Dense M (scaled ÷ max weight, matching arch's FxAdj normalization),
+        // with the §6.1-rev 2-hop term: M = diag(√φ)·(A + γA²)·diag(√φ).
         let ds: Vec<f64> = phi.iter().map(|x| x.to_f64().sqrt()).collect();
         let maxw = adj.out.iter().flatten().map(|&(_, w)| w).max().unwrap_or(1) as f64;
-        let mut m = vec![vec![0.0; n]; n];
+        let mut a = vec![vec![0.0; n]; n];
         for i in 0..n {
             for &(j, w) in &adj.out[i] {
-                m[i][j as usize] += ds[i] * (w as f64 / maxw) * ds[j as usize];
+                a[i][j as usize] += w as f64 / maxw;
+            }
+        }
+        let gamma = arch::hop2_mix().to_f64();
+        let mut m = vec![vec![0.0; n]; n];
+        for i in 0..n {
+            for j in 0..n {
+                let mut a2 = 0.0;
+                for k in 0..n {
+                    a2 += a[i][k] * a[k][j];
+                }
+                m[i][j] = ds[i] * (a[i][j] + gamma * a2) * ds[j];
             }
         }
 

@@ -183,6 +183,16 @@ fn pagerank(g: &FxAdj) -> Vec<Fx> {
 
 /// Truncated SVD of `M = diag(√φ)·A·diag(√φ)` — the φ*-weighted adjacency
 /// (§5.2). Shared by pass 3 (d* from σ) and pass 4 (embedding from U, σ).
+/// 2-hop mixing weight γ = 1/2 (§6.1-rev, tru#2): the embedding matrix is the
+/// SVD of `diag(√φ)·(A + γA²)·diag(√φ)`, not the 1-step adjacency alone.
+/// Validated on live space-pussy (eval/lp_eval.py, temporal split, k=16):
+/// directed AUC 0.634 -> 0.751, novel-AUC 0.544 -> 0.689; random split
+/// 0.777 -> 0.785–0.821. γ = 1/2 is the split-robust compromise (temporal
+/// peaks at 0.25, random at 1.0).
+pub(crate) fn hop2_mix() -> Fx {
+    Fx::from_ratio(1, 2)
+}
+
 pub(crate) fn m_svd(g: &FxAdj, phi: &[Fx], k: usize, iters: usize) -> super::svd::Svd {
     let n = g.n;
     let ds: Vec<Fx> = phi.iter().map(|&p| p.sqrt()).collect();
@@ -190,13 +200,22 @@ pub(crate) fn m_svd(g: &FxAdj, phi: &[Fx], k: usize, iters: usize) -> super::svd
         let t: Vec<Fx> = (0..n).map(|i| ds[i] * x[i]).collect();
         let mut ax = vec![Fx::ZERO; n];
         g.a(&t, &mut ax);
-        (0..n).map(|i| ds[i] * ax[i]).collect()
+        // 2-hop mass: A²·t (never materialized)
+        let mut a2x = vec![Fx::ZERO; n];
+        g.a(&ax, &mut a2x);
+        (0..n)
+            .map(|i| ds[i] * (ax[i] + hop2_mix() * a2x[i]))
+            .collect()
     };
     let apply_mt = |x: &[Fx]| -> Vec<Fx> {
         let t: Vec<Fx> = (0..n).map(|i| ds[i] * x[i]).collect();
         let mut atx = vec![Fx::ZERO; n];
         g.at(&t, &mut atx);
-        (0..n).map(|i| ds[i] * atx[i]).collect()
+        let mut at2x = vec![Fx::ZERO; n];
+        g.at(&atx, &mut at2x);
+        (0..n)
+            .map(|i| ds[i] * (atx[i] + hop2_mix() * at2x[i]))
+            .collect()
     };
     super::svd::top_svd(n, &apply_m, &apply_mt, k, iters)
 }
