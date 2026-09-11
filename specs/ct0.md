@@ -437,7 +437,9 @@ For every layer $l$:
 
 ### 9.2 Position encoding
 
-RoPE with base $\theta_0 = 10000$, max sequence length 8192. Inverse frequencies are computed at load time from $(\theta_0, d^* / h^*)$; no tensor is stored.
+RoPE with base $\theta_0$, max sequence length 8192. Inverse frequencies are computed at load time from $(\theta_0, d^* / h^*)$; no tensor is stored.
+
+For the compiled (untrained) weights, $\theta_0 = 10000$ measurably suppresses the backward view of attention (mass on the previous token drops 0.59 → 0.25 on 2-back probes; self-similarity is rotation-invariant, backward matching is not — tru#4, eval/attn_eval.md). CT-0 therefore ships $\theta_0 = 10^6$ (near-identity rotation) until fine-tuning recovers position-relative matching; the runtime config carries the value and §11 certificates must check it.
 
 ### 9.3 Output head
 
@@ -524,7 +526,7 @@ intermediate_size = 1200  # 4 × hidden_size
 vocab_size = 3143630
 context_length = 8192
 max_position_embeddings = 8192
-rope_theta = 10000
+rope_theta = 1000000  # tru#4: near-identity rotation for the compiled init (§9.2)
 rms_norm_eps = 1000000   # 1/ε convention; 1e-6
 
 [tokenizer]

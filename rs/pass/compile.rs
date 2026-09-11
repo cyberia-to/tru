@@ -107,7 +107,11 @@ fn config_toml(a: &arch::Arch) -> String {
          vocab_size = {vocab}\n\
          context_length = 8192\n\
          max_position_embeddings = 8192\n\
-         rope_theta = 10000\n\
+         # tru#4: compiled (untrained) weights retrieve the previous token;\n\
+         # RoPE at small theta suppresses that backward view (0.59 -> 0.25\n\
+         # measured). Ship near-identity rotation until fine-tuning recovers\n\
+         # position-relative matching.\n\
+         rope_theta = 1000000\n\
          rms_norm_eps = 1000000\n\n\
          [tokenizer]\n\
          type = \"particle\"\n\
