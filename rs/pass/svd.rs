@@ -140,6 +140,14 @@ pub fn top_svd(
         for col in block.iter_mut() {
             *col = mtm(col);
         }
+        // Fixed-point Gram-Schmidt loses orthogonality when the spectrum is
+        // steep (mixed 1+2-hop operators: sigma2/sigma1 ~ 0.1) — junk
+        // directions then keep large Rayleigh values and the reconstruction
+        // gains spurious components (observed: phantom sigma 1.125 on a
+        // rank-3 matrix, rel err 0.86). Reorthogonalizing twice per iteration
+        // is the standard cheap cure (loss of orthogonality is a one-step
+        // phenomenon; two passes restore it).
+        orthonormalize(&mut block);
         orthonormalize(&mut block);
     }
 
