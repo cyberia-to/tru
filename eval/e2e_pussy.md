@@ -1,7 +1,7 @@
 ---
 title: CT-0 end-to-end on a real graph — space-pussy
 tags: tru, eval, cybergraph
-tru: issues #3 #5 #6 #7
+tru: issues #5 #6 #7
 ---
 
 # CT-0 end-to-end on a real graph — space-pussy
@@ -65,7 +65,7 @@ embedding ROW norms span ~1e-4 (long tail) to O(1) (hubs), so with
 W_V = I any gain >= 1 swamps the residual 10^4x. rmsnorm inside the
 block hides it; the residual add does not.
 
-**design consequence (tru#6): attention ships as a training-ready
+**design consequence (tru#5): attention ships as a training-ready
 substrate, quiet at init** — the MLP's existing pattern (LayerScale
 gamma = 1e-5). keep the structural Q/K (a training prior), keep
 OUT_GAIN for post-training calibration, set the block's init gain to
