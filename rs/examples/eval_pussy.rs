@@ -331,6 +331,26 @@ fn main() {
     }
     println!("scorable queries: {} (prefix lens mixed)", queries.len());
 
+    // dump E + queries for offline arbitration against the scipy mirror
+    {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&(n as u64).to_le_bytes());
+        buf.extend_from_slice(&(d as u64).to_le_bytes());
+        for row in &emb {
+            for &x in row {
+                buf.extend_from_slice(&x.to_le_bytes());
+            }
+        }
+        buf.extend_from_slice(&(queries.len() as u64).to_le_bytes());
+        for (seq, gold) in &queries {
+            buf.extend_from_slice(&(seq.len() as u64).to_le_bytes());
+            for &t in seq {
+                buf.extend_from_slice(&(t as u64).to_le_bytes());
+            }
+            buf.extend_from_slice(&(*gold as u64).to_le_bytes());
+        }
+        std::fs::write("/tmp/e2e_dump.bin", &buf).unwrap();
+    }
     // ---- score ----
     let mut mrr = HashMap::<&str, f64>::new();
     let mut cnt_m = HashMap::<&str, usize>::new();

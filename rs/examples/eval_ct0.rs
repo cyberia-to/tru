@@ -143,7 +143,7 @@ fn svd(m: &[Vec<f64>], k: usize, iters: usize) -> (Vec<Vec<f64>>, Vec<f64>, Vec<
         // Rayleigh quotient can go slightly negative under imperfect
         // convergence — clamp, or NaN poisons every downstream comparison
         // (and `x > NaN` is false, which silently reads as "perfect rank 1")
-        let s = dot(&mv, vc).max(0.0).sqrt();
+        let s = dot(&mv, &mv).max(0.0).sqrt(); // sigma = ||M v||: symmetric-only shortcut under-reads on directed M
         sigma.push(s);
         u.push(if s > 1e-12 {
             mv.iter().map(|x| x / s).collect()

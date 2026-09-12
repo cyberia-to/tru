@@ -164,7 +164,7 @@ fn svd(m: &[Vec<f64>], k: usize, iters: usize) -> (Vec<Vec<f64>>, Vec<f64>, Vec<
     let mut u = Vec::new();
     for vc in &v {
         let mv = matvec(m, vc);
-        let s = dot(&mv, vc).max(0.0).sqrt();
+        let s = dot(&mv, &mv).max(0.0).sqrt(); // sigma = ||M v||: symmetric-only shortcut under-reads on directed M
         sigma.push(s);
         u.push(if s > 1e-12 {
             mv.iter().map(|x| x / s).collect()
@@ -331,13 +331,14 @@ fn build_layer(
     // the score gain (applied to both, so Q·K scales by kg^2 — restoring the
     // softmax dynamic range that normalizing A squeezed out).
     let k = u.len();
-    let mut wq = vec![vec![0.0; k]; d];
-    let mut wk = vec![vec![0.0; k]; d];
+    // glia [out, in] layout: matapply computes x @ W^T, so row = output index.
+    let mut wq = vec![vec![0.0; d]; k];
+    let mut wk = vec![vec![0.0; d]; k];
     for i in 0..d {
         for c in 0..k {
             let sc = s[c].sqrt() * kg;
-            wq[i][c] = u[c][i] * sc;
-            wk[i][c] = vv[c][i] * sc;
+            wq[c][i] = u[c][i] * sc;
+            wk[c][i] = vv[c][i] * sc;
         }
     }
     // W_V = Eᵀ diag(phi) A E  (d, d)

@@ -194,10 +194,16 @@ pub fn attention(
                 } else {
                     Fx::ZERO
                 };
+                // glia layout: weights are [out, in], y = x @ W^T (the
+                // .model rows are output dims). W_Q/W_K hold U sqrt(Sigma) /
+                // V sqrt(Sigma) with out = the singular index — storing
+                // [in][out] transposes the kernel and the runtime computes
+                // sqrt(Sigma) (U^T V) sqrt(Sigma) instead of P (found when
+                // mirror scores collapsed to ~1e-5, eval/e2e_pussy.md).
                 for i in 0..d {
                     if c < svd.u.len() {
-                        q[i][base + c] = svd.u[c][i] * ss;
-                        k[i][base + c] = svd.v[c][i] * ss;
+                        q[base + c][i] = svd.u[c][i] * ss;
+                        k[base + c][i] = svd.v[c][i] * ss;
                     }
                 }
             }
@@ -400,9 +406,11 @@ mod tests {
         let (mut xs, mut ys) = (Vec::new(), Vec::new());
         for i in 0..d {
             for j in 0..d {
+                // glia convention: the score matrix is W_q @ W_k^T with both
+                // stored [out, in]: (i,j) = sum_c q[c][i] * k[c][j].
                 let mut s = 0.0;
                 for c in 0..d {
-                    s += q[i * d + c].to_f64() * k[j * d + c].to_f64();
+                    s += q[c * d + i].to_f64() * k[c * d + j].to_f64();
                 }
                 xs.push(s);
                 ys.push(p[i][j].to_f64());
@@ -457,8 +465,9 @@ mod tests {
             .map(|i| {
                 (0..d)
                     .map(|j| {
+                        // glia [out, in] layout: (i,j) = sum_c q[c][i]*k[c][j]
                         (0..d)
-                            .map(|c| q[i * d + c].to_f64() * k[j * d + c].to_f64())
+                            .map(|c| q[c * d + i].to_f64() * k[c * d + j].to_f64())
                             .sum()
                     })
                     .collect()
