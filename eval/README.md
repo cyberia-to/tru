@@ -96,6 +96,15 @@ full halted graph. headline: the popularity prior strengthens with scale
 at chance 0.5004 -> directed2 g=0.25 0.6166), and the tru#3 out-gain rule
 scales: sigma_1/sigma_k = 8885.6 on the shipped mixed matrix -> gain 14.1.
 
+## fine-tuning ablation
+
+see [ft_ablation.md](ft_ablation.md) — the compiled init vs random, under
+walk-LM and contrastive link-prediction objectives, with seen/unseen
+controls. headline: no training configuration learns unseen-link
+prediction at this scale; the compiled init remains the best unseen-link
+model; the exact spectrum is the better learning substrate (the Fx
+artifact's advantage is init-only).
+
 ## pass 5: the attention half
 
 see [attn_eval.md](attn_eval.md) — llama forward over the compiled per-layer
