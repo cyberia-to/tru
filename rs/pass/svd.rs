@@ -275,6 +275,27 @@ pub fn top_svd_banded(
         let apply_d = &apply_d as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
         let apply_dt = &apply_dt as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
         let mut part = top_svd(n, apply_d, apply_dt, this_band, iters);
+        // numerical-rank guard: exact deflation makes the spectrum
+        // strictly monotone across bands. a band whose head sigma does
+        // not stay below the previous band's tail means the fixed-point
+        // deflation has degraded (error compounding through the
+        // operator) — observed on pussy as a ghost 0.16 leak followed
+        // by an explosion to 13293 on a 0.22-head operator. further
+        // bands would be garbage, so we stop and keep the validated
+        // prefix. the unresolved tail is zero-filled (the caller's
+        // row-normalization then ignores it).
+        if let (Some(&head), Some(&tail)) = (part.sigma.first(), done.sigma.last()) {
+            if !done.sigma.is_empty() && head >= tail {
+                if std::env::var_os("TRU_SVD_DEBUG").is_some() {
+                    eprintln!(
+                        "[svd] band head {head:.6} >= previous tail {tail:.6} — deflation degraded, stopping",
+                        head = head.to_f64(),
+                        tail = tail.to_f64()
+                    );
+                }
+                break;
+            }
+        }
         // block reorthogonalization of the new vectors against the
         // deflated ones (inexact deflation leakage re-enters otherwise)
         for j in 0..part.u.len() {

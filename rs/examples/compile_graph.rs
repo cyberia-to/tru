@@ -96,6 +96,18 @@ fn main() {
     let tc = std::time::Instant::now();
     let model = tru::pass::compile::compile(&g).unwrap_or_else(|e| die(&format!("compile: {e}")));
     println!("compiled in {:?}", tc.elapsed());
+    {
+        let t = &model.tensors[0];
+        let d = t.shape[1] as usize;
+        for i in [0usize, 1, 100] {
+            let mut n2 = 0.0f64;
+            for c in 0..d {
+                let v = t.data[i * d + c].to_f64();
+                n2 += v * v;
+            }
+            println!("row-norm check [{i}]: ||E||^2 = {n2:.4}");
+        }
+    }
 
     model
         .write(&output)

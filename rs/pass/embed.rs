@@ -65,6 +65,41 @@ pub fn embed(adj: &Adjacency, phi: &[Fx], d: usize) -> Tensor {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    #[test]
+    fn emitted_rows_are_unit_norm() {
+        // row normalization is a shipping invariant (eval/e2e_pussy.md):
+        // rmsnorm amplifies near-zero rows 316x per layer otherwise.
+        let mut links = Vec::new();
+        for (a, b) in [(1u8, 2u8), (2, 3), (3, 4), (4, 1), (1, 3), (2, 4), (3, 1), (4, 2)] {
+            links.push(Cyberlink {
+                neuron: [7u8; 32],
+                from: [a; 32],
+                to: [b; 32],
+                token: 1,
+                amount: 1,
+                valence: 1,
+                block: 1,
+            });
+        }
+        let (_v, _e, adj) = super::super::index::build(&[], &links);
+        let a = super::super::arch::compute(&adj, 1, 1);
+        let t = embed(&adj, &a.phi, a.d.min(64));
+        let d = t.shape[1] as usize;
+        for i in 0..t.shape[0] as usize {
+            let mut n2 = Fx::ZERO;
+            for c in 0..d {
+                n2 = n2 + t.data[i * d + c] * t.data[i * d + c];
+            }
+            let n = n2.to_f64();
+            assert!(
+                (n - 1.0).abs() < 5e-2 || n < 1e-9,
+                "row {i} norm^2 {n} not unit"
+            );
+        }
+    }
+
     use super::super::arch;
     use super::super::index::build;
     use super::*;
