@@ -1,6 +1,6 @@
 ---
-tags: cyber, docs
-alias: tri-kernel explained, why three operators
+tags: cyber, tru, docs
+alias: tri-kernel explained, why three operators, tri-kernel architecture
 ---
 # The Tri-Kernel Architecture
 
@@ -70,6 +70,53 @@ Heat is patience. At high temperature, the system explores broadly (annealing). 
 
 ---
 
+## Why the Tri-Kernel Is Intelligence
+
+Two operational definitions of [[intelligence]] apply. Legg-Hutter: the ability to achieve goals across a wide range of environments. Friston: minimizing expected variational free energy -- prediction error plus model complexity. The tri-kernel satisfies both, and each claim is checkable.
+
+Claim A (inference): the fixed point of $\mathcal{R}$ minimizes the free energy functional of [[tri-kernel]] §2.1, so the update $\phi^{(t+1)} \leftarrow \mathcal{R}\phi^{(t)}$ reduces a well-defined energy and converges. That is what doing inference means.
+
+Claim B (compression): diffusion maps and heat kernels compress high-dimensional relations while preserving geometry. The resulting $\phi^*$ concentrates mass -- negentropy rises -- subject to structural constraints, the accurate-yet-parsimonious balance of free-energy minimization.
+
+Claim C (adaptation): the temperature $\tau$ in the heat kernel is simulated annealing. High $\tau$ explores, low $\tau$ commits -- the textbook mechanism of adaptive intelligence.
+
+### Falsification Protocol
+
+Track per epoch:
+
+- cross-entropy on held-out edges (prediction quality)
+- entropy $H(\phi^*)$ and negentropy $J = \log|V| - H$ ([[syntropy]], focus sharpness)
+- convergence and mixing time (stability)
+
+If adding small $\lambda_s, \lambda_h$ monotonically improves these without destabilizing mixing, the system demonstrably performs inference. $J$ and the contraction $\kappa$ are already emitted by [[focusing]] every epoch; held-out cross-entropy is the link-prediction task of [[superadditivity]].
+
+---
+
+## Why the Tri-Kernel Is Collective
+
+Inference alone does not make a collective. The claim that the group outperforms its members has three independent theoretical roots:
+
+| theory | claim | mechanism |
+|--------|-------|-----------|
+| Woolley c-factor | group-level intelligence predicts performance beyond individual IQ | first principal component across diverse tasks |
+| Condorcet jury theorem | aggregation of $p > \tfrac{1}{2}$ signals improves with $n$ | weighted majority over independent signals |
+| Hong-Page diversity | diverse heuristics beat the best homogeneous expert | multiple search modes on complex landscapes |
+
+Each maps onto the tri-kernel. Aggregation: $\phi^*$ is computed from all neurons' [[cyberlinks]] through the Markov, harmonic, and heat operators -- a formal aggregation of many partial signals. Diversity: diffusion explores remote regions, springs encode structural priors, heat rebalances on drift -- three kernels sampling three solution modes. Mixing: non-redundant edges raise algebraic connectivity $\lambda_2$ and conductance, and better mixing means better aggregation.
+
+### Measurement Protocol
+
+Define a task battery $T = \{\text{retrieval},\ \text{link prediction},\ \text{question routing}\}$. Per epoch:
+
+- compute $S_{\text{group}}$ using $\phi^*$ on the full graph
+- compute $S_a$ for each neuron using only its ego-subgraph
+- report $S_{\text{group}} - \max_a S_a$ and $S_{\text{group}} - \operatorname{mean}_a S_a$
+- estimate $c$ as the PC1 variance explained across tasks
+
+Under bounded correlation between neurons, competence above chance, and non-trivial diversity, all three theories predict the collective beats the mean individual and often the best one. tru makes the prediction a number: [[superadditivity]] defines $\sigma_{\text{best}} = Q(\phi^*) - \max_\nu Q(\phi^*_\nu)$ and $\sigma_{\text{mean}}$ over graph-graded tasks (link prediction, retrieval@k) -- the two reports above, formalized. Measured on the conformant engine: $\sigma_{\text{best}} > 0$ at every connectivity level and rising with $\lambda_2$. The same benchmark refuted the naive corollary that syntropy also rises with $\lambda_2$: densification spreads focus and lowers $J$. Connectivity buys collective advantage; concentration buys sharpness; they are different axes.
+
+---
+
 ## Universal Patterns
 
 The three forces are not arbitrary. They appear across every domain where complex adaptive behavior emerges:
@@ -95,7 +142,7 @@ Diffusion and heat describe irreversible spreading -- entropy growth and the arr
 
 Each conserves a different quantity: mass/probability (diffusion), potential/kinetic energy (springs), and thermal energy (heat). Each minimizes a different functional: entropy production, potential energy, free energy. Together they are Pareto-optimal: they explain the majority of natural transport, oscillation, and dissipation with minimal assumptions.
 
-The [[Laplacian]] is the shared mathematical root. The graph Laplacian $L = D - A$ is the discrete form of the Laplace-Beltrami operator $\nabla^2$ on continuous manifolds. Newton's gravitational potential satisfies the Poisson equation $\nabla^2\Phi = 4\phi^* G\rho$ -- [[gravity]] is the springs kernel of the physical universe, with [[mass]] density as the source term. The screened form $(L + \mu I)$ in the tri-kernel corresponds to massive gravity theories where the graviton has effective range. On the [[cybergraph]], [[tokens]] play the role of [[mass]]: they curve graph topology the way [[mass]] curves [[spacetime]].
+The [[Laplacian]] is the shared mathematical root. The graph Laplacian $L = D - A$ is the discrete form of the Laplace-Beltrami operator $\nabla^2$ on continuous manifolds. Newton's gravitational potential satisfies the Poisson equation $\nabla^2\Phi = 4\pi G\rho$ -- [[gravity]] is the springs kernel of the physical universe, with [[mass]] density as the source term. The screened form $(L + \mu I)$ in the tri-kernel corresponds to massive gravity theories where the graviton has effective range. On the [[cybergraph]], [[tokens]] play the role of [[mass]]: they curve graph topology the way [[mass]] curves [[spacetime]].
 
 The Jeans instability illustrates the kernel interplay in cosmology: a gas cloud collapses into a star when gravitational potential (springs) overcomes thermal pressure (heat). This is a phase transition in the tri-kernel sense -- the moment $\lambda_s$ dominates $\lambda_h$.
 
@@ -111,6 +158,17 @@ The [[collective focus theorem]] predicts intelligence emergence through phase t
 | Cognition -> Understanding | $\lambda_s$ activates | structure crystallizing, hierarchies forming |
 | Reasoning -> Meta | $\lambda_h$ regulates | adaptive balance, context-sensitive processing |
 | Consciousness | dynamic blend | system learns its own blend weights |
+
+---
+
+## Why This Architecture Is Necessary
+
+At $10^{15}$ nodes with physical communication delays, any architecture requiring global coordination is impossible. The tri-kernel satisfies the four properties a planetary computation must hold at once:
+
+- bounded locality -- $h = O(\log(1/\varepsilon))$ neighborhood dependence (the locality radius, [[tri-kernel]] §2.2)
+- compute-verify symmetry -- light clients check with constant overhead (§2.3)
+- shard-friendly -- regions update independently
+- interplanetary-compatible -- coherence without constant synchronization
 
 ---
 
@@ -131,15 +189,15 @@ An adversary optimizing against one kernel worsens their position against anothe
 
 ## The Friston Connection
 
-The fixed point $\phi^*$ minimizes a free energy functional:
+The fixed point $\phi^*$ minimizes a free energy functional -- the one [[tri-kernel]] §2.1 states normatively, one term per operator:
 
-$$\mathcal{F}(\phi) = E_{\text{spring}}(\phi) + \lambda E_{\text{diffusion}}(\phi) - T S(\phi)$$
+$$\mathcal{F}(\phi) = \lambda_s\left[\tfrac{1}{2}\phi^\top L\phi + \tfrac{\mu}{2}\|\phi-x_0\|^2\right] + \lambda_h\left[\tfrac{1}{2}\|\phi-H_\tau\phi\|^2\right] + \lambda_d \, D_{\text{KL}}(\phi \,\|\, D\phi)$$
 
-The equilibrium distribution follows a Boltzmann form:
+Elastic structure, heat-smoothed context, diffusion alignment. The blend weights $\lambda$ are its Lagrange multipliers. The equilibrium follows a Boltzmann form:
 
-$$p_i^* \propto \exp\big(-\beta [E_{\text{spring},i} + \lambda E_{\text{diffusion},i}]\big)$$
+$$\phi^*_i \propto \exp\big(-\beta\,[E_{\text{spring},i} + \lambda\,E_{\text{diff},i} + \gamma\,C_i]\big)$$
 
-where $\beta = 1/T$. This is variational free energy minimization in the sense of Friston's free energy principle: the system performs inference by reducing prediction error (structural deviation) subject to complexity constraints (entropy). The tri-kernel is not merely inspired by the free energy principle -- it IS free energy minimization on an authenticated graph.
+This is variational free energy minimization in the sense of Friston's free energy principle: the system performs inference by reducing prediction error (structural deviation) subject to complexity constraints (entropy). The tri-kernel is not merely inspired by the free energy principle -- it IS free energy minimization on an authenticated graph.
 
 No tuning required -- the optimal focus vector is the unique minimum of a convex functional, matching how statistical mechanics derives equilibrium from energy and entropy.
 
@@ -149,9 +207,11 @@ No tuning required -- the optimal focus vector is the unique minimum of a convex
 
 A gas to explore, a lattice to hold, a thermostat to adapt. Each part is classical; the synthesis is the point.
 
+Keep it local. Keep it provable. Keep it reversible.
+
 ---
 
-See [[tri-kernel]] for the formal specification. See [[collective focus theorem]] for the convergence proofs. See [[focus flow computation]] for the full computation pipeline.
+See [[tri-kernel]] for the formal specification. See [[collective focus theorem]] for the convergence proofs. See [[superadditivity]] for the collective claim as a measured number. See [[focus flow computation]] for the full computation pipeline.
 
 References:
 

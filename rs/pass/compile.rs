@@ -3,16 +3,27 @@
 //! Runs the structural passes (1 index, 2 dialect, 3 arch, 7 norm) and packages
 //! the result into a `.model`: the `config`/`vocab`/`card`/`eval` sections carry
 //! the architecture derived from the graph, and the norm tensors are emitted in
-//! full. The SVD-derived weight tensors (embed §6, attn §7, mlp §8) land with
-//! the fixed-point randomized-SVD milestone; the `card` states this plainly, so
-//! the artifact is honest about what it contains.
+//! full. The spectrum (embed §6, attn §7.5 gain) is computed by banded
+//! deflation over the field — full-rank tail, no collapsed columns
+//! (tru: banded SVD); the artifact is honest about what it contains.
 
 use super::{arch, attn, dialect, embed, index, mlp, norm};
+use crate::arithmetic::Fx;
 use crate::error::Result;
 use crate::graph::Graph;
 use crate::model::Model;
 
 const SHIFT_SET_LEN: u64 = 5; // |S| for the Clifford MLP (§8, config default)
+
+/// Init-time attention output scale (tru#5): the structural retrieval
+/// head is net-negative at init on real walks (eval/e2e_pussy.md — the
+/// answer is never in the prefix, and predecessor injection dilutes
+/// E_f). attention ships as a training-ready substrate, quiet at init:
+/// effective gain = out_gain(ratio) * 0.01. The calibrated value stays
+/// in the certificate for post-training use.
+fn quiet_scale() -> Fx {
+    Fx::from_ratio(1, 100)
+}
 
 /// Compile a `.graph` into a `.model`. Deterministic: the same graph yields the
 /// same architecture and the same file (§10.9).
@@ -36,7 +47,7 @@ pub fn compile(graph: &Graph) -> Result<Model> {
         a.h,
         a.l,
         a.diameter,
-        attn::out_gain(a.sigma_ratio),
+        attn::out_gain(a.sigma_ratio) * quiet_scale(),
     );
     let mlp_tensors = mlp::mlp(a.d, a.l);
     let norm_tensors = norm::layernorms(a.d, a.l);
@@ -158,7 +169,7 @@ fn eval_toml(a: &arch::Arch) -> String {
     // Structural-compile certificate: architecture is derived and deterministic;
     // the weight-conformance predicates (P_EMBED, P_ATTN) await the SVD passes.
     let top = a.phi.iter().map(|x| x.to_f64()).fold(0.0_f64, f64::max);
-    let gain = attn::out_gain(a.sigma_ratio).to_f64();
+    let gain = (attn::out_gain(a.sigma_ratio) * quiet_scale()).to_f64();
     format!(
         "[ct0_structural]\n\
          P_DET = 1\n\

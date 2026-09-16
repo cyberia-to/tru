@@ -21,10 +21,16 @@ use super::index::Adjacency;
 pub fn embed(adj: &Adjacency, phi: &[Fx], d: usize) -> Tensor {
     let g = FxAdj::from(adj);
     let n = g.n;
-    let svd = m_svd(&g, phi, d, 120);
+    let svd = m_svd(&g, phi, d, 60);
     let rank = svd.sigma.len();
 
-    // E[i][c] = U[c][i] · √σ_c ; columns past the numerical rank are zero.
+    // E[i][c] = U[c][i] · √σ_c, then ROW-normalized to unit L2. the
+    // banded spectrum (tru: banded deflation) keeps the full-rank tail,
+    // so no column zeroing. unit rows put every particle on one scale
+    // (compiled rows otherwise span ~1e-4..O(1): rmsnorm then amplifies
+    // cold rows 316x per layer, and the tied head sees a 1e4-spread of
+    // logits — measured in eval/e2e_pussy.md). the popularity magnitude
+    // the √σ weighting carried is preserved in the ROW DIRECTION cosines.
     let sqrt_sigma: Vec<Fx> = svd.sigma.iter().map(|&s| s.sqrt()).collect();
     let mut data = Vec::with_capacity(n * d);
     for i in 0..n {
@@ -35,6 +41,17 @@ pub fn embed(adj: &Adjacency, phi: &[Fx], d: usize) -> Tensor {
                 Fx::ZERO
             };
             data.push(v);
+        }
+        let base = i * d;
+        let mut norm2 = Fx::ZERO;
+        for c in 0..d {
+            norm2 = norm2 + data[base + c] * data[base + c];
+        }
+        if norm2 > Fx::ZERO {
+            let inv = Fx::ONE.div(norm2.sqrt());
+            for c in 0..d {
+                data[base + c] = data[base + c] * inv;
+            }
         }
     }
 

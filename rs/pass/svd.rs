@@ -187,6 +187,92 @@ pub fn top_svd(
     svd
 }
 
+/// Banded SVD with exact field deflation — the fixed-point answer to the
+/// tail collapse. A wide block over a near-degenerate tail loses
+/// orthogonality faster than double Gram-Schmidt can restore it (the
+/// pussy operator resolves only ~14 of 64 components before the rest
+/// collapse to exact zero). Instead, compute the spectrum in bands:
+/// each band is a well-separated HEAD problem where subspace iteration
+/// converges cleanly, then deflate the operator by the exact field
+/// rank-1 updates sigma_i * u_i v_i^T (subtraction in a finite field
+/// carries no rounding beyond one ulp, and the correction is applied
+/// inside every matvec). The caller's `k` is covered in ceil(k/band)
+/// bands; per-band vectors are reorthogonalized against the previously
+/// deflated ones so leakage cannot re-enter.
+pub fn top_svd_banded(
+    n: usize,
+    apply_m: &dyn Fn(&[Fx]) -> Vec<Fx>,
+    apply_mt: &dyn Fn(&[Fx]) -> Vec<Fx>,
+    k: usize,
+    band: usize,
+    iters: usize,
+) -> Svd {
+    let k = k.min(n);
+    let band = band.max(1).min(k);
+    let mut done = Svd {
+        u: Vec::with_capacity(k),
+        v: Vec::with_capacity(k),
+        sigma: Vec::with_capacity(k),
+    };
+    let mut remaining = k;
+    while remaining > 0 {
+        let this_band = band.min(remaining);
+        let prev = done.u.len();
+        // deflated actions: subtract the already-extracted triples
+        let apply_d = |x: &[Fx]| -> Vec<Fx> {
+            let mut y = apply_m(x);
+            for i in 0..prev {
+                let c = dot(&done.v[i], x) * done.sigma[i];
+                if !c.is_zero() {
+                    for j in 0..n {
+                        y[j] = y[j] - c * done.u[i][j];
+                    }
+                }
+            }
+            y
+        };
+        let apply_dt = |x: &[Fx]| -> Vec<Fx> {
+            let mut y = apply_mt(x);
+            for i in 0..prev {
+                let c = dot(&done.u[i], x) * done.sigma[i];
+                if !c.is_zero() {
+                    for j in 0..n {
+                        y[j] = y[j] - c * done.v[i][j];
+                    }
+                }
+            }
+            y
+        };
+        let mut part = top_svd(n, &apply_d, &apply_dt, this_band, iters);
+        // block reorthogonalization of the new vectors against the
+        // deflated ones (inexact deflation leakage re-enters otherwise)
+        for j in 0..part.u.len() {
+            for i in 0..prev {
+                let du = dot(&done.u[i], &part.u[j]);
+                let dv = dot(&done.v[i], &part.v[j]);
+                for t in 0..n {
+                    let uj = part.u[j][t] - du * done.u[i][t];
+                    let vj = part.v[j][t] - dv * done.v[i][t];
+                    part.u[j][t] = uj;
+                    part.v[j][t] = vj;
+                }
+            }
+        }
+        done.sigma.extend(part.sigma.iter().copied());
+        done.u.extend(part.u);
+        done.v.extend(part.v);
+        remaining -= this_band;
+    }
+    // restore descending order across band boundaries (bands are
+    // locally sorted; concatenation of sorted bands is nearly sorted)
+    let mut order: Vec<usize> = (0..done.sigma.len()).collect();
+    order.sort_by_key(|&i| core::cmp::Reverse(done.sigma[i]));
+    let sigma = order.iter().map(|&i| done.sigma[i]).collect();
+    let u = order.iter().map(|&i| done.u[i].clone()).collect();
+    let v = order.iter().map(|&i| done.v[i].clone()).collect();
+    Svd { u, v, sigma }
+}
+
 /// Convenience: SVD of a dense square matrix `p` (row-major `n×n`).
 pub fn dense_svd(p: &[Vec<Fx>], k: usize, iters: usize) -> Svd {
     let n = p.len();
@@ -201,6 +287,40 @@ pub fn dense_svd(p: &[Vec<Fx>], k: usize, iters: usize) -> Svd {
         out
     };
     top_svd(n, &apply_m, &apply_mt, k, iters)
+}
+
+#[cfg(test)]
+mod banded_tests {
+    use super::*;
+
+    /// diagonal operator with a steep, near-degenerate spectrum: the
+    /// regime where a wide block collapses (measured on pussy: 14 of
+    /// 64 components survive). banded deflation must recover all of it.
+    #[test]
+    fn banded_recovers_a_degenerate_tail() {
+        let n = 64;
+        let mut sig = vec![Fx::ZERO; n];
+        // spread over 5 orders + near-degenerate pairs and a cluster
+        let truth: Vec<f64> = [
+            100.0, 10.0, 9.5, 1.0, 0.5, 0.48, 0.1, 0.095, 0.01, 0.0099, 0.0098, 0.001,
+            0.0009, 0.0005, 0.0002, 0.0001,
+        ]
+        .to_vec();
+        for (i, &s) in truth.iter().enumerate() {
+            sig[i] = Fx::from_ratio((s * 1e6) as i64, 1_000_000);
+        }
+        let apply = |x: &[Fx]| -> Vec<Fx> { (0..n).map(|i| sig[i] * x[i]).collect() };
+        let svd = top_svd_banded(n, &apply, &apply, 16, 8, 40);
+        for (i, &t) in truth.iter().enumerate() {
+            let got = svd.sigma[i].to_f64();
+            assert!(
+                (got - t).abs() / t < 3e-2,
+                "sigma[{i}]: got {got}, want {t}"
+            );
+        }
+        // the banded call must not collapse: every component alive
+        assert!(svd.sigma.iter().take(16).all(|s| *s > Fx::ZERO));
+    }
 }
 
 #[cfg(test)]

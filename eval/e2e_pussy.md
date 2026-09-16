@@ -29,16 +29,27 @@ over the full particle vocab.
 
 ## results (n=1181)
 
+shipped pipeline, 2026-09-12 revision: banded field SVD (full-rank
+tail), row-normalized E, quiet attention gain (tru#5).
+
 | model | MRR |
 |---|---|
-| embed-floor <E_f, E_j> (shipped Fx E) | **0.6362** |
-| zero-layer (plumbing check) | 0.6362 |
+| embed-floor (row-normed banded-Fx E) | **0.4886** |
+| zero-layer (plumbing check) | 0.4886 |
 | bigram (add-k counts) | 0.5719 |
-| fwd-1layer (shipped attn) | 0.3030 |
-| fwd-full (shipped attn, 36 layers) | 0.3036 |
+| fwd-1layer (loud attn, this eval) | 0.1558 |
+| fwd-full (loud attn, 36 layers) | 0.1558 |
 | unigram (phi*) | 0.0064 |
 
-zero-layer == embed-floor exactly: the plumbing is sound.
+zero-layer == embed-floor exactly: the plumbing is sound. the
+spectral ratio is now sigma1/sigma_k = 1.58e8 — the banded spectrum
+recovers the full 64-component tail (the collapsed 14-component
+version read 218.8). NOTE on the history below: the 0.6362 floor of
+the earlier revision rode on the collapsed-tail artifact (tru#7) —
+the honest full-rank field number is 0.4886, still above the exact
+scipy mirror at the same gauge (0.392 cosine). pussy remains the
+hard small graph; the bostrom ladder is where the floor reaches the
+counts baseline (0.89 at ~1M particles).
 
 ## the attention verdict (measured, multi-mechanism)
 

@@ -216,7 +216,7 @@ $$M = \text{diag}(\sqrt{\phi^*}) \cdot (A + \gamma A^2) \cdot \text{diag}(\sqrt{
 
 (the 2-hop-mixed matrix of §6.1 — passes 3, 4, and the §7.5 gain rule all read the same spectrum)
 
-via randomized SVD truncated to rank $r = 1024$ (oversampled). Normalize: $\hat{\sigma}_i = \sigma_i / \sum_j \sigma_j$. Then
+via banded randomized SVD (§6.1 — computed over the fixed-point field; the spectrum probe runs at rank 64). Normalize: $\hat{\sigma}_i = \sigma_i / \sum_j \sigma_j$. Then
 
 $$d^* = \left\lceil \exp\left(- \sum_i \hat{\sigma}_i \log \hat{\sigma}_i\right) \right\rceil$$
 
@@ -268,13 +268,17 @@ $$M = \text{diag}(\sqrt{\phi^*}) \cdot (A + \gamma A^2) \cdot \text{diag}(\sqrt{
 
 with $A$ the max-normalized effective adjacency and $A^2$ never materialized (applied twice). The 1-step matrix alone gives structurally equivalent tokens parallel embeddings — the fine sibling signal (which moon orbits which planet) lives at graph distance 2. Validated on live space-pussy (temporal split, k=16): directed LP AUC 0.634 → 0.751, novel-AUC 0.544 → 0.689; random split 0.777 → 0.785–0.821. $\gamma = \tfrac12$ is the split-robust compromise (temporal peaks at 0.25, random at 1.0).
 
-Note: the steeper spectrum of the mixed operator (σ₂/σ₁ ~ 0.1 vs ~0.4) exposed loss of orthogonality in fixed-point subspace iteration; the SVD spine reorthogonalizes twice per iteration (§12 reference implements the same).
+Numerical note: a single wide subspace block loses orthogonality on the near-degenerate tail of this spectrum — on space-pussy only ~14 of 64 components survived before the rest collapsed to exact zero. The reference implementation therefore computes the spectrum in **bands**: each band of 8 is a well-separated head problem where subspace iteration converges cleanly (with double reorthogonalization per iteration), and the operator is then deflated by the exact field rank-1 updates $\sigma_i \cdot u_i v_i^\top$ applied inside every matvec. Band vectors are reorthogonalized against the deflated ones. The full-rank tail survives; nothing is zero-filled.
 
-Continue the randomized SVD of $M$ from §5.2 to extract the top $d^*$ left singular vectors $U_{:, 1:d^*}$ and singular values $\Sigma_{1:d^*}$. Set
+Continue to the top $d^*$ left singular vectors $U_{:, 1:d^*}$ and singular values $\Sigma_{1:d^*}$. Set
 
-$$E = U_{:, 1:d^*} \cdot \text{diag}(\sqrt{\Sigma_{1:d^*}}) \in \mathbb{F}_p^{|V| \times d^*}$$
+$$E^{raw} = U_{:, 1:d^*} \cdot \text{diag}(\sqrt{\Sigma_{1:d^*}}) \in \mathbb{F}_p^{|V| \times d^*}$$
 
-(fixed-point field elements; $\sqrt{\cdot}$ is the fixed-point square root of [[arithmetic]] §3.)
+(fixed-point field elements; $\sqrt{\cdot}$ is the fixed-point square root of [[arithmetic]] §3.), then normalize each row to unit length:
+
+$$E_{i,:} \leftarrow E^{raw}_{i,:} \big/ \lVert E^{raw}_{i,:} \rVert_2$$
+
+Row normalization is load-bearing, not cosmetic: raw rows span $\sim 10^{-4}$ (cold particles) to $O(1)$ (hubs), RMSNorm then amplifies the near-zero rows $1/\sqrt{\varepsilon}$ ≈ 316× per layer (a measured $2^{42}$ gradient blow-up under training), and the tied head sees a $10^4$-spread of logits (eval/e2e_pussy.md). The popularity magnitude the $\sqrt{\sigma}$ weighting carried is preserved in the row-direction cosines.
 
 ### 6.2 Determinism
 
@@ -327,6 +331,19 @@ Sign convention SC-1 applied to $U^{(s,l)}, V^{(s,l)}$. The $U$/$V$ asymmetry is
 $$W_O^{(l)} = c \cdot I_{d^*}$$
 
 The retrieval head: the attention output is the gain-scaled retrieved position, so its full embedding geometry votes in the tied-head logits. (The previous pseudoinverse-of-values form inverted the value map back and made every layer a measured no-op at init.)
+
+At compile init the effective gain is quiet (tru#5): the structural
+retrieval head is net-negative at init on real walks — the answer is
+never in the prefix, and injecting gain-scaled predecessor embeddings
+dilutes the source's own geometry (eval/e2e_pussy.md; every alternative
+kernel and gain measured). attention ships as a training-ready
+substrate, so
+
+$$W_O^{(l)} = c_{\mathrm{eff}} \cdot I_{d^*}, \qquad
+c_{\mathrm{eff}} = 0.01 \cdot \mathrm{clamp}\bigl(1 + \log_2(\sigma_1 / \sigma_k),\ 1,\ 64\bigr)$$
+
+The calibrated value $c$ (below) is reported in the compile certificate
+for post-training use — training re-opens the head.
 
 $c$ is derived from the pass-4 spectrum (tru#3), not hand-set:
 

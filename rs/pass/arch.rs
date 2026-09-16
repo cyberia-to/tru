@@ -220,7 +220,7 @@ pub(crate) fn m_svd(g: &FxAdj, phi: &[Fx], k: usize, iters: usize) -> super::svd
             .map(|i| ds[i] * (atx[i] + hop2_mix() * at2x[i]))
             .collect()
     };
-    super::svd::top_svd(n, &apply_m, &apply_mt, k, iters)
+    super::svd::top_svd_banded(n, &apply_m, &apply_mt, k, 8, iters)
 }
 
 /// d* = ceil(exp(−Σ σ̂ ln σ̂)) — the exp-entropy (effective rank) of the
