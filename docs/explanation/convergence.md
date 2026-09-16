@@ -1,6 +1,6 @@
 ---
 tags: cyber, docs
-alias: convergence explained, spectral gap explained, collective focus explained, spectral gap from convergence, observing the spectral gap
+alias: convergence explained, spectral gap explained, collective focus explained, spectral gap from convergence, cyber/research/spectral gap from convergence, observing the spectral gap
 ---
 # Convergence and the Spectral Gap
 
