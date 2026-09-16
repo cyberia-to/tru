@@ -120,8 +120,8 @@ fn sc1(u: &mut [Fx], v: &mut [Fx]) {
 /// Top-`k` SVD of a square operator on `n` dims, given `M·x` and `Mᵀ·x`.
 pub fn top_svd(
     n: usize,
-    apply_m: &dyn Fn(&[Fx]) -> Vec<Fx>,
-    apply_mt: &dyn Fn(&[Fx]) -> Vec<Fx>,
+    apply_m: &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync),
+    apply_mt: &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync),
     k: usize,
     iters: usize,
 ) -> Svd {
@@ -140,12 +140,41 @@ pub fn top_svd(
     orthonormalize(&mut block);
     let _dbg = std::env::var_os("TRU_SVD_DEBUG").is_some();
     let dbg_t0 = std::time::Instant::now();
+    let nthreads = std::thread::available_parallelism()
+        .map(|v| v.get())
+        .unwrap_or(1)
+        .min(k);
     for it in 0..iters {
         if _dbg && it % 10 == 0 {
             eprintln!("[svd] iter {it}/{iters} k={k} n={n} {:?}", dbg_t0.elapsed());
         }
-        for col in block.iter_mut() {
-            *col = mtm(col);
+        // columns are independent through the operator; orthonormalize
+        // (below) stays serial. at multi-million n this is the
+        // compile-time governor (deflation correction included).
+        if nthreads > 1 {
+            // columns are independent through the operator; the
+            // orthonormalize passes (below) stay serial. at
+            // multi-million n this loop is the compile-time governor.
+            let results: Vec<Vec<Vec<Fx>>> = std::thread::scope(|s| {
+                let mut handles = Vec::new();
+                for t in 0..nthreads {
+                    let cols: Vec<usize> = (t..k).step_by(nthreads).collect();
+                    let block = &block;
+                    handles.push(s.spawn(move || {
+                        cols.iter().map(|&c| mtm(&block[c])).collect::<Vec<_>>()
+                    }));
+                }
+                handles.into_iter().map(|h| h.join().unwrap()).collect()
+            });
+            for (t, res) in results.iter().enumerate() {
+                for (r, v) in res.iter().enumerate() {
+                    block[t + r * nthreads].copy_from_slice(v);
+                }
+            }
+        } else {
+            for col in block.iter_mut() {
+                *col = mtm(col);
+            }
         }
         // Fixed-point Gram-Schmidt loses orthogonality when the spectrum is
         // steep (mixed 1+2-hop operators: sigma2/sigma1 ~ 0.1) — junk
@@ -201,8 +230,8 @@ pub fn top_svd(
 /// deflated ones so leakage cannot re-enter.
 pub fn top_svd_banded(
     n: usize,
-    apply_m: &dyn Fn(&[Fx]) -> Vec<Fx>,
-    apply_mt: &dyn Fn(&[Fx]) -> Vec<Fx>,
+    apply_m: &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync),
+    apply_mt: &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync),
     k: usize,
     band: usize,
     iters: usize,
@@ -243,7 +272,9 @@ pub fn top_svd_banded(
             }
             y
         };
-        let mut part = top_svd(n, &apply_d, &apply_dt, this_band, iters);
+        let apply_d = &apply_d as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
+        let apply_dt = &apply_dt as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
+        let mut part = top_svd(n, apply_d, apply_dt, this_band, iters);
         // block reorthogonalization of the new vectors against the
         // deflated ones (inexact deflation leakage re-enters otherwise)
         for j in 0..part.u.len() {
@@ -286,7 +317,9 @@ pub fn dense_svd(p: &[Vec<Fx>], k: usize, iters: usize) -> Svd {
         }
         out
     };
-    top_svd(n, &apply_m, &apply_mt, k, iters)
+    let apply_m = &apply_m as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
+    let apply_mt = &apply_mt as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
+    top_svd(n, apply_m, apply_mt, k, iters)
 }
 
 #[cfg(test)]
@@ -310,7 +343,8 @@ mod banded_tests {
             sig[i] = Fx::from_ratio((s * 1e6) as i64, 1_000_000);
         }
         let apply = |x: &[Fx]| -> Vec<Fx> { (0..n).map(|i| sig[i] * x[i]).collect() };
-        let svd = top_svd_banded(n, &apply, &apply, 16, 8, 40);
+        let apply = &apply as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
+        let svd = top_svd_banded(n, apply, apply, 16, 8, 40);
         for (i, &t) in truth.iter().enumerate() {
             let got = svd.sigma[i].to_f64();
             assert!(

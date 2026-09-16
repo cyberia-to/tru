@@ -15,6 +15,16 @@ use crate::model::Model;
 
 const SHIFT_SET_LEN: u64 = 5; // |S| for the Clifford MLP (§8, config default)
 
+/// Layers whose attention/MLP/norm tensors are actually emitted. L* can
+/// be large (diameter x mixing time, clamped 512), but attention ships
+/// as a quiet substrate (tru#5) — its per-layer cost at million-particle
+/// scale is O(|V| d^2) per projection, which is the compile-time wall,
+/// and deeper layers add nothing at init: their retrieval heads are
+/// scaled to ~1e-2 and the projections differ only in l_eff. The config
+/// advertises the EMITTED count so the runtime matches its weights; the
+/// card declares the derived L* alongside.
+const L_EMIT: usize = 4;
+
 /// Init-time attention output scale (tru#5): the structural retrieval
 /// head is net-negative at init on real walks (eval/e2e_pussy.md — the
 /// answer is never in the prefix, and predecessor injection dilutes
@@ -38,6 +48,7 @@ pub fn compile(graph: &Graph) -> Result<Model> {
     // Weight passes 4–6, then norms (pass 7). Storage order (§10.5): embedding
     // first, then the attention/MLP/norm tensors, in a fixed deterministic order.
     let embedding = embed::embed(&adj, &a.phi, a.d);
+    let l_emit = a.l.clamp(1, L_EMIT);
     let attn_tensors = attn::attention(
         &edges,
         &dialects,
@@ -45,12 +56,12 @@ pub fn compile(graph: &Graph) -> Result<Model> {
         &a.phi,
         a.d,
         a.h,
-        a.l,
+        l_emit,
         a.diameter,
         attn::out_gain(a.sigma_ratio) * quiet_scale(),
     );
-    let mlp_tensors = mlp::mlp(a.d, a.l);
-    let norm_tensors = norm::layernorms(a.d, a.l);
+    let mlp_tensors = mlp::mlp(a.d, l_emit);
+    let norm_tensors = norm::layernorms(a.d, l_emit);
 
     let mut tensors =
         Vec::with_capacity(1 + attn_tensors.len() + mlp_tensors.len() + norm_tensors.len());
@@ -60,8 +71,8 @@ pub fn compile(graph: &Graph) -> Result<Model> {
     tensors.extend(norm_tensors);
 
     let mut model = Model::new(format!("{}-ct0", graph.name()));
-    model.card = card(graph.name(), &a, &dialects);
-    model.config = config_toml(&a);
+    model.card = card(graph.name(), &a, &dialects, l_emit);
+    model.config = config_toml(&arch_for_config(&a, l_emit));
     model.program = program();
     model.vocab = vocab_toml(&particles);
     model.eval = eval_toml(&a);
@@ -79,7 +90,34 @@ fn declared_params(a: &arch::Arch) -> u64 {
     v * d + l * (attn + mlp + norms) + d
 }
 
-fn card(name: &str, a: &arch::Arch, dialects: &dialect::Dialects) -> String {
+/// config view: the emitted layer count reaches the runtime; the rest
+/// of the architecture stays as derived.
+#[allow(clippy::too_many_fields)]
+fn arch_for_config(a: &arch::Arch, l_emit: usize) -> arch::Arch {
+    arch::Arch {
+        particles: a.particles,
+        block: a.block,
+        d: a.d,
+        h: a.h,
+        l: l_emit,
+        kappa: a.kappa,
+        lambda2: a.lambda2,
+        diameter: a.diameter,
+        phi: vec![],
+        sigma_ratio: a.sigma_ratio,
+    }
+}
+
+fn card(name: &str, a: &arch::Arch, dialects: &dialect::Dialects, l_emit: usize) -> String {
+    let emitted_note = if l_emit < a.l {
+        format!(
+            "Derived L* = {derived}; the first {emitted} layers' tensors are emitted (attention is a quiet training substrate at init, tru#5; deeper layers would add O(|V| d^2) each for ~1e-2-scaled projections).\n",
+            derived = a.l,
+            emitted = l_emit,
+        )
+    } else {
+        String::new()
+    };
     format!(
         "# {name}-ct0\n\n\
          Compiled from {name}.graph (block {block}) by CT-0.\n\
@@ -100,6 +138,7 @@ fn card(name: &str, a: &arch::Arch, dialects: &dialect::Dialects) -> String {
         l2 = a.lambda2.to_f64(),
         diam = a.diameter,
     ) + &format!("\nDialects: {} (including ⊥).\n", dialects.len())
+        + &emitted_note
 }
 
 fn config_toml(a: &arch::Arch) -> String {
