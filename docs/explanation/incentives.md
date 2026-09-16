@@ -10,7 +10,7 @@ Why knowledge creation needs a reward system, and how tru makes contributing to 
 
 ## the free-rider problem
 
-Knowledge creation is costly. Discovering a genuine connection between two ideas -- finding that a particular [[particle]] relates to another in a way nobody has noticed -- takes time, expertise, and attention. The benefits of that discovery, once published as a [[cyberlink]], flow to everyone who reads the graph. The discoverer bears the cost; the collective reaps the reward.
+Knowledge creation is costly. Discovering a genuine connection between two ideas -- finding that a particular [[file]] relates to another in a way nobody has noticed -- takes time, expertise, and attention. The benefits of that discovery, once published as a [[cyberlink]], flow to everyone who reads the graph. The discoverer bears the cost; the collective reaps the reward.
 
 Without incentives, rational agents free-ride. They consume the graph's knowledge without contributing their own. The result is an epistemic tragedy of the commons: the graph stagnates, the good links stop appearing, and noise fills the vacuum.
 
@@ -30,7 +30,7 @@ This means creating knowledge IS creating value. There is no separate reward poo
 
 ## the discovery premium
 
-The first neuron to surface a valuable particle captures the largest Δφ*. When nobody has linked a particle, the potential focus shift is enormous. The second neuron to link the same particle earns less -- the marginal gain is smaller. The hundredth neuron earns almost nothing.
+The first neuron to surface a valuable file captures the largest Δφ*. When nobody has linked a file, the potential focus shift is enormous. The second neuron to link the same file earns less -- the marginal gain is smaller. The hundredth neuron earns almost nothing.
 
 This is the attention yield curve: early, accurate discovery is maximally rewarded. Late consensus-following earns little. The mechanism creates a race to discover genuine relevance rather than copy existing links.
 
@@ -52,7 +52,7 @@ Different kinds of knowledge earn differently over time.
 
 A foundational link -- the first connection between two important but previously unlinked concepts -- starts with low Δφ* that grows over time as the graph builds around it. The reward trajectory rises slowly and persists. This is infrastructure work: the neuron who lays the first bridge between two knowledge clusters earns a long-term yield.
 
-A viral link -- a connection to a particle that immediately attracts attention -- earns high Δφ* early but decays fast as focus saturates. Quick returns, short horizon.
+A viral link -- a connection to a file that immediately attracts attention -- earns high Δφ* early but decays fast as focus saturates. Quick returns, short horizon.
 
 A confirming link -- the second or third signal reinforcing an existing connection -- earns lower individual Δφ* but strengthens the [[axon]] weight between clusters. Credit is shared through [[Shapley]] attribution, which divides the joint focus shift fairly among contributors.
 
@@ -64,7 +64,7 @@ A semantic bridge -- a cross-module connection -- earns moderate, persistent rew
 
 The rules produce a game where early + accurate = maximum return:
 
-- early, accurate links to important [[particles]] earn the most (the attention yield curve)
+- early, accurate links to important [[files]] earn the most (the attention yield curve)
 - confirming links strengthen [[axon]] weight -- repeated signals build consensus, not noise
 - [[neurons]] build long-term reputation through accumulated [[karma]]
 - [[focus]] as cost ensures every [[cyberlink]] is a [[costly signal]] -- you must stake real [[$CYB]] to play

@@ -7,7 +7,7 @@ alias: .vocab, vocab format, cyb vocab spec, cyb-vocab
 
 # .vocab — particle dictionary in [[.cyb|format]]
 
-a `.vocab` is the canonical [[particle]] → data dictionary in cyber. each entry is one particle (its hemera hash) paired with the bytes that hash to it. the file is itself a particle: its identity is `hemera(file bytes)`. snapshots and models reference `.vocab` files by particle to share content without copying it.
+a `.vocab` is the canonical [[particle]] → data dictionary in cyber. each entry is one particle (its hemera hash) paired with the bytes that hash to it. the file has its own particle: its identity is `hemera(file bytes)`. snapshots and models reference `.vocab` files by particle to share content without copying it.
 
 ## what .vocab does
 

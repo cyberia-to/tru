@@ -24,7 +24,7 @@ Four quantities, every block, in [[consensus]]:
 The system operates as a feedback cycle:
 
 1. A [[neuron]] observes the current state of the [[cybergraph]]
-2. The neuron creates a [[cyberlink]] -- asserting a connection between two [[particles]], staking on it, setting [[valence]]
+2. The neuron creates a [[cyberlink]] -- asserting a connection between two [[files]], staking on it, setting [[valence]]
 3. The link enters the [[cybergraph]], changing its topology
 4. The [[tri-kernel]] recomputes: [[diffusion]] explores, [[springs]] enforce structure, [[heat kernel]] adapts
 5. [[Cyberank]] produces a new fixed point φ* -- the updated collective focus

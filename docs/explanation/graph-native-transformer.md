@@ -168,7 +168,7 @@ the compilation procedure is the direct forward operation: given the explicit gr
 
 compilation is preferable where the graph exists: no training cost, no catastrophic forgetting, no compression loss — the graph's provenance and stake structure survive into the weights. every weight traces to specific graph edges and their creators.
 
-trained transformers remain necessary for implicit knowledge — associations that are statistically true across text but never explicitly linked. this implicit structure can be surfaced as candidate particles and staked into the explicit graph, closing the loop:
+trained transformers remain necessary for implicit knowledge — associations that are statistically true across text but never explicitly linked. this implicit structure can be surfaced as candidate files and staked into the explicit graph, closing the loop:
 
 $$G \xrightarrow{\text{compile}} T_G \xrightarrow{\text{fine-tune on text}} T_G^* \xrightarrow{\text{extract implicit links}} \Delta G \xrightarrow{\text{stake}} G'$$
 

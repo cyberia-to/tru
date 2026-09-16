@@ -64,7 +64,7 @@ There are two senses of honesty in the [[cybergraph]].
 
 Protocol honesty: the neuron runs the correct software, signs valid transactions, follows the [[consensus]] rules of [[nox]]. This is the [[honest majority assumption]] -- more than half of staked weight does not deviate from the protocol. Enforceable by cryptographic proof: a [[zheng]] proof verifies that the state transition is correct.
 
-Epistemic honesty: the neuron creates [[cyberlinks]] that reflect its actual beliefs -- that the source particle relates to the target particle, that the connection deserves the stake it receives, that the [[valence]] accurately encodes its private prediction. This is what BTS targets. It is not directly verifiable, only the outcome is observable after the fact.
+Epistemic honesty: the neuron creates [[cyberlinks]] that reflect its actual beliefs -- that the source file relates to the target file, that the connection deserves the stake it receives, that the [[valence]] accurately encodes its private prediction. This is what BTS targets. It is not directly verifiable, only the outcome is observable after the fact.
 
 Both are necessary. Protocol honesty guarantees the computation runs correctly. Epistemic honesty guarantees the computation produces knowledge rather than noise.
 
