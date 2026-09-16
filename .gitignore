@@ -1,1 +1,4 @@
 target/
+
+# compiled model weights (1 GB+), never committed
+eval/models/
