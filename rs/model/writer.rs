@@ -4,7 +4,7 @@
 //! `weights` (binary). The text sections are opaque strings the compiler fills
 //! (CT-0 pass 8); the `weights` blob is assembled here from [`Tensor`]s — each
 //! tensor 4096-byte page-aligned for zero-copy mmap, encoded as integers
-//! (no floats on disk). The file is a particle: `hemera(file bytes)`.
+//! (no floats on disk). The file has its own particle: `hemera(file bytes)`.
 
 use std::collections::HashMap;
 use std::path::Path;

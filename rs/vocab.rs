@@ -2,7 +2,7 @@
 //!
 //! A `.vocab` is a `.cyb` container with two sections: `card` (markdown) and
 //! `particles` (binary entries). Each entry pairs a 32-byte [[hemera]] particle
-//! with the bytes that hash to it. The file is itself a particle:
+//! with the bytes that hash to it. The file has its own particle:
 //! `particle(.vocab) = hemera(file bytes)`.
 
 use std::path::Path;
