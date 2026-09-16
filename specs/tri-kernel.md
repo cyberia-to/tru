@@ -254,8 +254,8 @@ Complexity: $O(|N_h| \cdot c)$ per kernel for average degree $c$.
 Monitor per epoch:
 
 - Entropy $H(\phi^*)$, negentropy $J(\phi^*)$
-- Spectral gap estimate
-- $\ell_1$ drift $\|\phi^{(t)} - \phi^{(t-1)}\|$
+- Spectral gap estimate -- the observed contraction $\hat\kappa = \operatorname{median}(d_t / d_{t-1})$ over the last iterations, audited against the a-priori $\kappa$ (see [[convergence explained]], observing the gap)
+- $\ell_1$ drift $d_t = \|\phi^{(t)} - \phi^{(t-1)}\|$
 - Locality radius $h$, nodes touched
 - Compute vs verify wall-time
 

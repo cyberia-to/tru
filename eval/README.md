@@ -17,7 +17,8 @@ compiled geometry predict **new links** in a graph that real users built?
   `e442ff7a…e4ae`). too big for git — fetch from
   `deimos:/archive/snapshot/pub/cyberlinks_indexed.csv.gz` (or any IPFS
   gateway) and convert to jsonl; see `data/.gitignore`. results:
-  [lp_bostrom.md](lp_bostrom.md).
+  [lp_bostrom.md](lp_bostrom.md); spectral gap observed from convergence
+  (March 2026, uniform weights): [spectral-gap-bostrom.md](spectral-gap-bostrom.md).
 
 ## setup
 

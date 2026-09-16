@@ -140,6 +140,44 @@ The spectral gap is the entropy production rate bound: $dH/dt \leq -\lambda \cdo
 
 ---
 
+## Two Gaps, One Symbol
+
+$\lambda_2$ names two different numbers on this page and in the code, and they are not interchangeable.
+
+- The Fiedler value: the smallest nonzero eigenvalue of the weighted Laplacian $L = D - A_{\text{sym}}$. This is the $\lambda_2$ inside the composite $\kappa$ -- the heat term contracts at $e^{-\tau\lambda_2}$. [[focusing]] computes it by power iteration on $\lambda_{\max} I - L$ over $\mathbf{1}^\perp$ (`rs/focusing/spectral.rs`).
+- The diffusion gap: $1 - |\mu_2|$, where $\mu_2$ is the second eigenvalue of the normalized adjacency $D^{-1/2}A_{\text{sym}}D^{-1/2}$ -- equivalently of the transition matrix. This is the gap of the sections above, the one that sets PageRank's contraction $\kappa = \alpha(1-\lambda_2)$ and the layer count $L^*$ of [[ct0]]. Pass 3 computes it by deflated power iteration (`rs/pass/arch.rs`).
+
+Both are computed before the iteration runs. That order is a design invariant, not an implementation detail: the step count $T(\varepsilon) = \lceil \log(1/\varepsilon)/\log(1/\kappa) \rceil$ is fixed from $\kappa$ in advance ([[arithmetic]]), which is what makes $\phi^*$ bit-identical on every machine and the [[zheng]] trace a constant length.
+
+---
+
+## Observing the Gap
+
+The gap also shows up on its own, for free, wherever the iteration runs. Every converging system has a convergence rate, and that rate is the gap.
+
+PageRank always converges ([[Perron-Frobenius theorem]]), at the rate
+
+$$\|\phi^{(t)} - \phi^*\|_1 \leq C \cdot \kappa^t, \qquad \kappa = \alpha(1-\lambda_2).$$
+
+Track the $\ell_1$ distance between successive iterates, $d_t = \|\phi^{(t)} - \phi^{(t-1)}\|_1$. Past the initial transient the ratio of successive differences converges to the contraction:
+
+$$r_t = \frac{d_t}{d_{t-1}} \to \kappa.$$
+
+Take the median of the last few ratios -- robust to early noise, and to the oscillation a complex $\mu_2$ produces on a directed graph -- then invert:
+
+$$\hat\kappa = \operatorname{median}(r_{T-4}, \ldots, r_T), \qquad \hat\lambda_2 = 1 - \frac{\hat\kappa}{\alpha}.$$
+
+The marginal cost is zero. The loop already computes $d_t$ for its convergence check -- `rs/pass/arch.rs` computes exactly this drift every PageRank step -- and keeping five ratios is $O(1)$.
+
+What the observation is for, given the invariant above:
+
+- verification -- an independent check on the a-priori $\lambda_2$, from behavior rather than from the matrix. Shift-invert Lanczos on a Laplacian with one zero eigenvalue per component can fail outright at scale; the observed ratio cannot, because the iteration it reads is the one that runs anyway. On bostrom it caught a two-orders-of-magnitude error in a sampled estimate: [eval/spectral-gap-bostrom.md](../../eval/spectral-gap-bostrom.md).
+- telemetry -- the spectral gap estimate [[tri-kernel]] §6.3 asks focusing to emit each epoch, and a live vital sign of the network: [[foculus]] validators can watch $\hat\kappa$ per block, and a densification policy that targets $\lambda_2$ can read its own effect without an eigensolver.
+
+What it is not: a way to skip computing $\kappa$ up front. The observed value arrives after the run and depends on the data; $T(\varepsilon)$ must be known before it. The eigensolver sets the contract; the observation audits it.
+
+---
+
 ## The Complete Picture
 
 The eigenvalues of the transition matrix satisfy $1 = \lambda_1 \geq |\lambda_2| \geq \ldots \geq |\lambda_n|$. The gap $\lambda = 1 - |\lambda_2|$ controls everything:
