@@ -280,4 +280,34 @@ mod tests {
             karma.get(&hash(1)).to_f64()
         );
     }
+
+    #[test]
+    fn informed_minority_beats_coordinated_majority_at_scale() {
+        // Property 24 (launch.md registry): the serum selects truth over
+        // coordinated consensus — by score, not by vote count. A coordinated
+        // majority reports and predicts the same fixed point (0.8): babbling,
+        // with no private signal to offer. A single informed contrarian with
+        // an accurate meta-prediction (0.15 belief, 0.8 prediction) must keep
+        // outscoring every follower as the majority scales from a handful of
+        // agents to hundreds — the mechanism cannot be outvoted by growing
+        // the cartel.
+        let contrarian_id = 254u8;
+        for &majority_size in &[4usize, 20, 100, 200] {
+            let mut reports: Vec<Report> = (0..majority_size as u8)
+                .map(|i| report(i, 0.8, 0.8))
+                .collect();
+            reports.push(report(contrarian_id, 0.15, 0.8));
+
+            let s = bts_scores(&reports);
+            let contrarian = s[majority_size].to_f64();
+
+            for (i, follower_score) in s[..majority_size].iter().enumerate() {
+                let follower = follower_score.to_f64();
+                assert!(
+                    contrarian > follower,
+                    "majority size {majority_size}, follower {i}: contrarian ({contrarian}) must beat follower ({follower})"
+                );
+            }
+        }
+    }
 }
