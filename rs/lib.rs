@@ -16,8 +16,8 @@
 // intentional module layout.
 #![allow(clippy::needless_range_loop, clippy::module_inception)]
 
-pub mod annuity;
 pub mod arithmetic;
+pub mod annuity;
 pub mod error;
 pub mod focusing;
 pub mod graph;
@@ -26,8 +26,8 @@ pub mod pass;
 pub mod truth_scoring;
 pub mod vocab;
 
-pub use annuity::{accrue, accrue_running, EpochSample};
 pub use arithmetic::Fx;
+pub use annuity::{accrue, accrue_running, EpochSample};
 pub use error::{McError, Result};
 pub use focusing::{
     compute_focusing, impulse, propose, Context, FocusingGraph, FocusingParams, FocusingResult,
