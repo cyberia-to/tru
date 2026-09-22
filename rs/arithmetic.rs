@@ -207,7 +207,12 @@ impl Fx {
     /// Round `value · 2^frac_bits` to an integer — the storage encoding for
     /// `.model` tensors (`frac_bits` = 8 for u16, 16 for u32; must be ≤ FRAC_BITS).
     pub fn to_i64_scaled(self, frac_bits: u32) -> i64 {
-        debug_assert!(frac_bits <= FRAC_BITS);
+        // `debug_assert!` compiles out in release: `frac_bits > FRAC_BITS`
+        // would underflow this u32 subtraction, then `1i128 << (shift - 1)`
+        // silently masks its shift amount instead of panicking, returning a
+        // wrong scaled value instead of failing loudly at the point of the
+        // caller error.
+        assert!(frac_bits <= FRAC_BITS, "frac_bits {frac_bits} exceeds FRAC_BITS {FRAC_BITS}");
         let shift = FRAC_BITS - frac_bits;
         if shift == 0 {
             return self.signed() as i64;
@@ -477,6 +482,12 @@ mod tests {
         let x = Fx::from_ratio(7, 11);
         let dec = Fx::from_ratio(x.to_i64_scaled(8), 256);
         assert!((x.to_f64() - dec.to_f64()).abs() <= 1.0 / 256.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "exceeds FRAC_BITS")]
+    fn to_i64_scaled_rejects_frac_bits_past_frac_bits() {
+        Fx::ONE.to_i64_scaled(FRAC_BITS + 1);
     }
 
     #[test]
