@@ -165,16 +165,19 @@ fn parse_particles(b: &[u8]) -> Result<Vec<VocabEntry>> {
         particle.copy_from_slice(&b[c..c + 32]);
         let len = u64::from_le_bytes(b[c + 32..c + 40].try_into().unwrap()) as usize;
         c += 40;
-        if c + len > b.len() {
+        let end = c.checked_add(len).ok_or_else(|| {
+            McError::InvalidGraph(format!("particles entry {i} length overflows"))
+        })?;
+        if end > b.len() {
             return Err(McError::InvalidGraph(format!(
                 "particles entry {i} data past section end"
             )));
         }
         entries.push(VocabEntry {
             particle,
-            data: b[c..c + len].to_vec(),
+            data: b[c..end].to_vec(),
         });
-        c += len;
+        c = end;
     }
     Ok(entries)
 }
@@ -252,5 +255,20 @@ mod tests {
         let w = Vocab::read(&path).unwrap();
         assert_eq!(w.particle(), v.particle());
         std::fs::remove_file(&path).ok();
+    }
+
+    /// A file-supplied entry length near `usize::MAX` must be rejected, not
+    /// overflow `c + len` — which panics in a debug build and wraps to a
+    /// bogus range in release, same failure shape as `frontmatter::index_sections`'s
+    /// `start + sz as usize` (row 76).
+    #[test]
+    fn parse_particles_rejects_overflowing_entry_length() {
+        let mut b = Vec::new();
+        b.extend_from_slice(&1u32.to_le_bytes()); // n = 1 entry
+        b.extend_from_slice(&[0u8; 32]); // particle
+        b.extend_from_slice(&(u64::MAX - 5).to_le_bytes()); // attacker length
+
+        let result = parse_particles(&b);
+        assert!(result.is_err(), "overflowing length must not decode");
     }
 }
