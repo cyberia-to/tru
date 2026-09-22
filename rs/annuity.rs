@@ -18,12 +18,19 @@ pub struct EpochSample {
     pub delta_phi: Fx,
 }
 
-/// This epoch's contribution to the annuity, `ω(t)·Δφ*_j(t)`. Passive
-/// (`v_ℓ = 0`) stake never calls this — eligibility is a caller-side gate
-/// (§9's two axes), not a property of the integrand.
+/// This epoch's contribution to the annuity, `ω(t)·[Δφ*_j(t)]₊`. The
+/// integrand is read as the directed impulse of §2: growth of the target's
+/// focus pays, a decline pays nothing — never a negative draw, because a
+/// paid epoch is final (§12, no actor reaches back). `ω` is a price × karma
+/// product and nonnegative by construction; a negative input is clipped
+/// rather than trusted. Passive (`v_ℓ = 0`) stake never calls this —
+/// eligibility is a caller-side gate (§9's two axes), not a property of
+/// the integrand.
 #[inline]
 pub fn epoch_yield(sample: EpochSample) -> Fx {
-    sample.omega * sample.delta_phi
+    let omega = sample.omega.max(Fx::ZERO);
+    let growth = sample.delta_phi.max(Fx::ZERO);
+    omega * growth
 }
 
 /// The annuity accrued through epoch `T`, as the running discrete sum
@@ -85,13 +92,24 @@ mod tests {
     }
 
     #[test]
-    fn running_total_is_monotone_when_growth_is_nonnegative() {
-        let samples = [sample(1, 1, 1, 10), sample(1, 1, 2, 10), sample(1, 1, 0, 10)];
+    fn running_total_never_drops() {
+        // A zero-growth epoch is flat; a negative-growth epoch (the target's
+        // focus fell) is flat too — the directed impulse pays descent only,
+        // and a paid epoch is never clawed back (§2, §12).
+        let samples = [
+            sample(1, 1, 1, 10),
+            sample(1, 1, 2, 10),
+            sample(1, 1, 0, 10),
+            sample(1, 1, -5, 10),
+        ];
         let running = accrue_running(&samples);
-        assert_eq!(running.len(), 3);
-        assert!(running[0] <= running[1]);
-        assert!(running[1] <= running[2]); // zero-growth epoch: flat, never drops
-        close(running[2], accrue(&samples).to_f64());
+        assert_eq!(running.len(), 4);
+        for w in running.windows(2) {
+            assert!(w[0] <= w[1], "running total dropped: {:?} -> {:?}", w[0], w[1]);
+        }
+        assert_eq!(running[1], running[3], "zero and negative growth must both be flat");
+        assert_eq!(epoch_yield(sample(1, 1, -5, 10)), Fx::ZERO);
+        close(running[3], accrue(&samples).to_f64());
     }
 
     #[test]
