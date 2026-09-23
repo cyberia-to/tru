@@ -22,11 +22,13 @@ pub mod focusing;
 pub mod graph;
 pub mod model;
 pub mod pass;
+pub mod pid;
 pub mod truth_scoring;
 pub mod vocab;
 
 pub use arithmetic::Fx;
 pub use error::{McError, Result};
+pub use pid::Pid;
 pub use focusing::{
     compute_focusing, impulse, propose, Context, FocusingGraph, FocusingParams, FocusingResult,
     Impulse, Karma, Link, Will,
