@@ -19,3 +19,6 @@ thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 memmap2 = "0.9"
+
+[target.'cfg(all(target_os = "macos", target_arch = "aarch64"))'.dev-dependencies]
+acpu = { path = "../../honeycrisp/acpu" }

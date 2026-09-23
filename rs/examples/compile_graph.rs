@@ -20,17 +20,37 @@ fn cid_id(c: &str) -> [u8; 32] {
 }
 
 fn main() {
-    let mut args = std::env::args().skip(1);
-    let input = args
-        .next()
-        .unwrap_or_else(|| die("usage: compile_graph <links.jsonl> <out.model> [--name NAME]"));
-    let output = args
-        .next()
-        .unwrap_or_else(|| die("usage: compile_graph <links.jsonl> <out.model> [--name NAME]"));
-    let name = args.nth(1).unwrap_or_else(|| "compiled-graph".to_string());
+    let argv: Vec<String> = std::env::args().skip(1).collect();
+    if argv.len() < 2 {
+        die("usage: compile_graph <links.jsonl> <out.model> [--name NAME] [--index PATH]");
+    }
+    let input = &argv[0];
+    let output = &argv[1];
+    let mut name = "compiled-graph".to_string();
+    let mut index_path: Option<String> = None;
+    let mut i = 2;
+    while i < argv.len() {
+        match argv[i].as_str() {
+            "--name" => {
+                i += 1;
+                name = argv.get(i).cloned().unwrap_or(name);
+            }
+            "--index" => {
+                i += 1;
+                index_path = argv.get(i).cloned();
+            }
+            other => die(&format!("unknown flag {other}")),
+        }
+        i += 1;
+    }
 
     let t0 = std::time::Instant::now();
     let mut links: Vec<Cyberlink> = Vec::new();
+    // interning order replayed exactly as pass 1 (from, to, axon per
+    // link) so the suggestion index maps token -> cid without guessing.
+    let mut order: Vec<Option<String>> = Vec::new();
+    let mut seen: std::collections::HashMap<[u8; 32], usize> =
+        std::collections::HashMap::new();
     let text =
         std::fs::read_to_string(&input).unwrap_or_else(|e| die(&format!("read {input}: {e}")));
     for line in text.lines() {
@@ -50,15 +70,27 @@ fn main() {
                 .0
                 .to_string()
         };
+        let fc = cid("f");
+        let tc = cid("t");
+        let fh = cid_id(&fc);
+        let th = cid_id(&tc);
         links.push(Cyberlink {
             neuron: cid_id("neuron-compile"),
-            from: cid_id(&cid("f")),
-            to: cid_id(&cid("t")),
+            from: fh,
+            to: th,
             token: 1,
             amount: 1,
             valence: 1,
             block: h,
         });
+        // replay pass-1 interning: from, to, then axon(p,q) with the
+        // particle ids — matches index::build byte for byte.
+        for (h, cid) in [(fh, Some(fc.clone())), (th, Some(tc)), (tru::pass::index::axon(&fh, &th), None)] {
+            if let std::collections::hash_map::Entry::Vacant(e) = seen.entry(h) {
+                e.insert(order.len());
+                order.push(cid);
+            }
+        }
     }
     println!("loaded {} links ({:?})", links.len(), t0.elapsed());
 
@@ -130,6 +162,31 @@ fn main() {
         grab("num_hidden_layers"),
         t0.elapsed()
     );
+    if let Some(ip) = &index_path {
+        let t = &model.tensors[0];
+        let d = t.shape[1] as usize;
+        let n = t.shape[0] as usize;
+        let mut out = Vec::with_capacity(16 + n * 64 + n * d * 4);
+        out.extend_from_slice(&(n as u64).to_le_bytes());
+        out.extend_from_slice(&(d as u64).to_le_bytes());
+        for cid in &order {
+            let s = cid.as_deref().unwrap_or("");
+            let b = s.as_bytes();
+            let len = b.len().min(59) as u8;
+            out.push(len);
+            let mut slot = [0u8; 59];
+            slot[..len as usize].copy_from_slice(&b[..len as usize]);
+            out.extend_from_slice(&slot);
+        }
+        // f32 dequantized embedding (glia semantics: f = i16 / 256) so
+        // the scorer streams at memory bandwidth instead of converting
+        // per query.
+        for v in &t.data {
+            out.extend_from_slice(&(v.to_f64() as f32).to_le_bytes());
+        }
+        std::fs::write(ip, &out).unwrap_or_else(|e| die(&format!("index: {e}")));
+        println!("index {ip}: {} tokens ({} bytes)", n, out.len());
+    }
     let _ = std::fs::remove_file(&graph_path);
 }
 
