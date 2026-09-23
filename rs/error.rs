@@ -12,7 +12,7 @@ pub enum McError {
     Frontmatter(#[from] toml::de::Error),
 
     #[error("missing required section `{0}`")]
-    MissingSection(&'static str),
+    MissingSection(String),
 
     #[error("conformance check failed: {0}")]
     Conformance(String),

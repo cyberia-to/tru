@@ -128,14 +128,14 @@ impl Vocab {
 
         let &(cs, ce) = sections
             .get("card")
-            .ok_or(McError::MissingSection("card"))?;
+            .ok_or(McError::MissingSection("card".to_string()))?;
         let card = std::str::from_utf8(&bytes[cs..ce])
             .map_err(|e| McError::InvalidGraph(format!("card not utf-8: {e}")))?
             .to_string();
 
         let &(ps, pe) = sections
             .get("particles")
-            .ok_or(McError::MissingSection("particles"))?;
+            .ok_or(McError::MissingSection("particles".to_string()))?;
         let entries = parse_particles(&bytes[ps..pe])?;
 
         Ok(Self {
