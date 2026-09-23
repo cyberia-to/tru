@@ -24,19 +24,44 @@ pub fn embed(adj: &Adjacency, phi: &[Fx], d: usize) -> Tensor {
     let svd = m_svd(&g, phi, d, 60);
     let rank = svd.sigma.len();
 
-    // E[i][c] = U[c][i] · √σ_c, then ROW-normalized to unit L2. the
+    // E[i][c] = role geometry, then ROW-normalized to unit L2. the
     // banded spectrum (tru: banded deflation) keeps the full-rank tail,
     // so no column zeroing. unit rows put every particle on one scale
     // (compiled rows otherwise span ~1e-4..O(1): rmsnorm then amplifies
     // cold rows 316x per layer, and the tied head sees a 1e4-spread of
     // logits — measured in eval/e2e_pussy.md). the popularity magnitude
     // the √σ weighting carried is preserved in the ROW DIRECTION cosines.
+    //
+    // ROLE HYBRID: E carries the U-side (out-geometry) rows, EXCEPT for
+    // particles whose U row is negligible — pure targets, linked-to but
+    // not linking. their entire geometry lives in the V side (in-
+    // structure), which pass 4 computes and would otherwise discard.
+    // measured consequence of discarding it (2026-09-23, bostrom):
+    // 'Vladimir Putin' and 'Russia' — true children of 'president' —
+    // had EXACTLY ZERO rows and were invisible to the tied head. the
+    // substitution is per-row and surgical: source rows keep pure U
+    // geometry (a blanket U/V blend measurably destroys the floor,
+    // eval_pussy_mix); only near-zero U rows take their V row.
     let sqrt_sigma: Vec<Fx> = svd.sigma.iter().map(|&s| s.sqrt()).collect();
     let mut data = Vec::with_capacity(n * d);
     for i in 0..n {
+        // U-row energy vs V-row energy decides the role source
+        let mut u2 = Fx::ZERO;
+        let mut v2 = Fx::ZERO;
+        for c in 0..rank {
+            let a = svd.u[c][i] * sqrt_sigma[c];
+            let b = svd.v[c][i] * sqrt_sigma[c];
+            u2 = u2 + a * a;
+            v2 = v2 + b * b;
+        }
+        let use_v = u2 < Fx::from_ratio(1, 1_000_000) && v2 > u2 * Fx::from_int(4);
         for c in 0..d {
             let v = if c < rank {
-                svd.u[c][i] * sqrt_sigma[c]
+                if use_v {
+                    svd.v[c][i] * sqrt_sigma[c]
+                } else {
+                    svd.u[c][i] * sqrt_sigma[c]
+                }
             } else {
                 Fx::ZERO
             };
@@ -66,6 +91,49 @@ pub fn embed(adj: &Adjacency, phi: &[Fx], d: usize) -> Tensor {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pure_targets_get_v_geometry_rows() {
+        // star: hub <- leaves (leaves never link out). without the role
+        // hybrid the leaves' U rows are zero and they are invisible to
+        // the tied head (measured: 'Vladimir Putin'/'Russia' scored
+        // exactly 0 for 'president'). with it, every leaf row is unit
+        // norm from the V side.
+        let mut links = Vec::new();
+        let hub = [9u8; 32];
+        for k in 0..8u8 {
+            links.push(Cyberlink {
+                neuron: [7u8; 32],
+                from: [k; 32],
+                to: hub,
+                token: 1,
+                amount: 1,
+                valence: 1,
+                block: 1,
+            });
+        }
+        let (_v, _e, adj) = super::super::index::build(&[], &links);
+        let a = super::super::arch::compute(&adj, 1, 1);
+        let t = embed(&adj, &a.phi, a.d.min(64));
+        let d = t.shape[1] as usize;
+        let norm2 = |i: usize| -> f64 {
+            let mut n2 = Fx::ZERO;
+            for c in 0..d {
+                n2 = n2 + t.data[i * d + c] * t.data[i * d + c];
+            }
+            n2.to_f64()
+        };
+        // intern order: from (leaf0), to (hub), then axons interleaved.
+        // leaf0 (a source) and the hub (the pure target) must both carry
+        // unit geometry; axons (link ids, no endpoints) stay zero.
+        assert!((norm2(0) - 1.0).abs() < 5e-2, "leaf row {}", norm2(0));
+        assert!(
+            (norm2(1) - 1.0).abs() < 5e-2,
+            "hub (pure target) row {}: V geometry missing",
+            norm2(1)
+        );
+        assert_eq!(norm2(2), 0.0, "axons have no endpoint geometry");
+    }
 
     #[test]
     fn emitted_rows_are_unit_norm() {
