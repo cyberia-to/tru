@@ -33,4 +33,4 @@ pub use focusing::{
 };
 pub use graph::{Cyberlink, Graph};
 pub use model::Model;
-pub use truth_scoring::{accumulate, bts_scores, surprise, Report};
+pub use truth_scoring::{accumulate, bts_scores, bts_scores_hardened, surprise, Report};
