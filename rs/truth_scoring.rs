@@ -106,6 +106,54 @@ pub fn bts_scores(reports: &[Report]) -> Vec<Fx> {
         .collect()
 }
 
+/// The BTS score for every report, computed against a crowd reference that
+/// excludes decoy reports carrying no staked BTS exposure on the cluster.
+/// `specs/rewards.md` §5: the crowd reference `m̄_−ν` "is taken over distinct
+/// karma-bearing predictors who have themselves staked BTS exposure on the
+/// cluster ... with v_ℓ=0 reports excluded. Otherwise a stake-rich actor
+/// manufactures surprise by seeding unslashable v_ℓ=0 decoy predictions that
+/// depress the reference" (§15, "manufactured surprise"). [`bts_scores`]
+/// takes the reference over every report unconditionally and does not resist
+/// this; this function is the hardened crowd reference §5 requires.
+///
+/// `staked[i]` must align 1:1 with `reports[i]` (true = the report carries
+/// staked exposure, false = a `v_ℓ = 0` decoy). A decoy report is still
+/// scored on the left-hand side like any other — only its contribution to
+/// *other* reports' crowd reference is dropped, matching §5's "distinct
+/// karma-bearing predictors" wording.
+pub fn bts_scores_hardened(reports: &[Report], staked: &[bool]) -> Vec<Fx> {
+    assert_eq!(
+        reports.len(),
+        staked.len(),
+        "staked mask must align 1:1 with reports"
+    );
+    let n = reports.len();
+    if n < 2 {
+        return vec![Fx::ZERO; n];
+    }
+    let beliefs: Vec<Fx> = reports.iter().map(|r| r.belief).collect();
+    let preds: Vec<Fx> = reports.iter().map(|r| r.prediction).collect();
+
+    (0..n)
+        .map(|i| {
+            let others_b: Vec<Fx> = (0..n)
+                .filter(|&k| k != i && staked[k])
+                .map(|k| beliefs[k])
+                .collect();
+            let others_m: Vec<Fx> = (0..n)
+                .filter(|&k| k != i && staked[k])
+                .map(|k| preds[k])
+                .collect();
+            let pbar = geo_mean(&others_b);
+            let mbar = geo_mean(&others_m);
+            let (p, m) = (beliefs[i], preds[i]);
+            let info_gain = kl(p, mbar) - kl(p, pbar);
+            let pred_acc = kl(pbar, m);
+            info_gain - pred_acc
+        })
+        .collect()
+}
+
 /// Accumulate a BTS score into a neuron's [[karma]] `κ`: `κ' = max(0, κ + η·s)`.
 /// Karma is the running record of honest signal — it rises on positive score,
 /// falls on noise, and is floored at zero (the tri-kernel multiplier `κ(ν)` is
@@ -260,6 +308,43 @@ mod tests {
         assert!(
             (mid.to_f64() - 0.5).abs() < 1e-6,
             "ρ scales linearly in-range"
+        );
+    }
+
+    #[test]
+    fn decoy_reports_depress_the_plain_crowd_reference_but_not_the_hardened_one() {
+        // The §15 "manufactured surprise" attack: an informed contrarian (SP
+        // case) scores well against a genuine crowd. A stake-rich actor then
+        // seeds unslashable v_ℓ=0 decoy reports that predict the crowd will
+        // land where the contrarian's own belief sits, closing the gap
+        // between the contrarian's belief and the (attacked) crowd reference
+        // and so depressing its score under the plain, unfiltered scorer.
+        let genuine = vec![
+            report(1, 0.8, 0.8),
+            report(2, 0.8, 0.8),
+            report(3, 0.8, 0.8),
+            report(4, 0.15, 0.8), // informed contrarian
+        ];
+        let baseline = bts_scores(&genuine)[3].to_f64();
+
+        // Same genuine reports plus three decoys predicting 0.15 (the
+        // contrarian's own belief) to shrink its apparent information gain.
+        let mut attacked = genuine;
+        attacked.push(report(90, 0.15, 0.15));
+        attacked.push(report(91, 0.15, 0.15));
+        attacked.push(report(92, 0.15, 0.15));
+        let staked = vec![true, true, true, true, false, false, false];
+
+        let plain_attacked = bts_scores(&attacked)[3].to_f64();
+        assert!(
+            plain_attacked < baseline - 1e-6,
+            "the unfiltered scorer should be manipulable: attacked ({plain_attacked}) should score below baseline ({baseline})"
+        );
+
+        let hardened_attacked = bts_scores_hardened(&attacked, &staked)[3].to_f64();
+        assert!(
+            (hardened_attacked - baseline).abs() < 1e-6,
+            "the hardened scorer must ignore v_ℓ=0 decoys and reproduce the undepressed baseline: hardened ({hardened_attacked}) vs baseline ({baseline})"
         );
     }
 
