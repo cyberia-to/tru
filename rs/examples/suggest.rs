@@ -100,15 +100,7 @@ fn main() {
     };
 
     let e_src = &embed.data[src * d..(src + 1) * d];
-    {
-        let mut acc = 0.0f64;
-        for c in 0..d {
-            let v = e_src[c].to_f64();
-            acc += v * v;
-        }
-        eprintln!("debug: ||E[src]||^2 = {acc:.4} (src {src})");
-    }
-    // cosine scores: rows are unit-norm, dot is the cosine
+    // cosine scores: rows are unit-norm at compile (§6.1), dot is the cosine
     let mut scored: Vec<(f64, usize)> = Vec::with_capacity(n);
     for v in 0..n {
         if v == src {
