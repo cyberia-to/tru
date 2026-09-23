@@ -178,3 +178,78 @@ pub fn normalize_l1(v: &[Fx]) -> Vec<Fx> {
     }
     v.iter().map(|&x| x.div(sum)).collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::super::csr::CsrBuilder;
+
+    fn empty_matrix(n: usize) -> CsrMatrix {
+        CsrBuilder::new(n).build()
+    }
+
+    #[test]
+    fn normalize_l1_sums_to_one() {
+        let v = vec![Fx::from_int(1), Fx::from_int(2), Fx::from_int(3)];
+        let out = normalize_l1(&v);
+        let sum = out.iter().fold(Fx::ZERO, |a, &x| a + x);
+        assert!((sum.to_f64() - 1.0).abs() < 1e-9, "sum={}", sum.to_f64());
+        assert!((out[0].to_f64() - 1.0 / 6.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn normalize_l1_zero_vector_is_unchanged() {
+        let v = vec![Fx::ZERO, Fx::ZERO];
+        let out = normalize_l1(&v);
+        assert_eq!(out, v);
+    }
+
+    #[test]
+    fn diffusion_step_at_full_teleport_ignores_the_graph() {
+        // alpha = 1 zeroes the (1-alpha) term entirely, so the result is the
+        // teleport vector regardless of transition/dangling — a graph-free
+        // identity to pin the alpha=1 edge of the blend.
+        let n = 3;
+        let transition = empty_matrix(n);
+        let dangling = vec![true, false, true];
+        let teleport = vec![Fx::from_ratio(1, 3); n];
+        let phi = vec![Fx::from_ratio(1, 2), Fx::ZERO, Fx::from_ratio(1, 2)];
+        let out = diffusion_step(&phi, &transition, &dangling, &teleport, Fx::ONE);
+        assert_eq!(out, teleport);
+    }
+
+    #[test]
+    fn springs_step_isolated_node_relaxes_to_reference() {
+        // n=1, no edges: W*phi = 0, so x' = (mu*x0)/(mu+0) = x0 exactly,
+        // independent of phi and mu (mu != 0).
+        let sym_weights = empty_matrix(1);
+        let und_degree = vec![Fx::ZERO];
+        let mu = Fx::from_int(7);
+        let x0 = vec![Fx::from_int(5)];
+        let phi = vec![Fx::from_int(99)];
+        let out = springs_step(&phi, &sym_weights, &und_degree, mu, &x0);
+        assert_eq!(out, x0);
+    }
+
+    #[test]
+    fn heat_step_zero_lambda_max_is_a_no_op() {
+        let phi = vec![Fx::from_int(1), Fx::from_int(2)];
+        let sym_weights = empty_matrix(2);
+        let und_degree = vec![Fx::ZERO, Fx::ZERO];
+        let out = heat_step(&phi, &sym_weights, &und_degree, Fx::ZERO, Fx::ONE);
+        assert_eq!(out, phi);
+    }
+
+    #[test]
+    fn heat_step_at_tau_zero_is_the_identity() {
+        // tau=0 => s=0 => Chebyshev coefficients collapse to c_0=1, c_{k>0}=0
+        // (I_0(0)=1, I_{k>0}(0)=0), so H_0 = c_0 * T_0(L~) = phi exactly.
+        let phi = vec![Fx::from_int(3), Fx::from_int(-2), Fx::from_int(1)];
+        let sym_weights = empty_matrix(3);
+        let und_degree = vec![Fx::ZERO, Fx::ZERO, Fx::ZERO];
+        let out = heat_step(&phi, &sym_weights, &und_degree, Fx::ONE, Fx::ZERO);
+        for (a, b) in out.iter().zip(phi.iter()) {
+            assert!((a.to_f64() - b.to_f64()).abs() < 1e-6, "{} vs {}", a.to_f64(), b.to_f64());
+        }
+    }
+}
