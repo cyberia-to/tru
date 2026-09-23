@@ -126,7 +126,24 @@ fn main() {
         tru::graph::Graph::open(&graph_path).unwrap_or_else(|e| die(&format!("open graph: {e}")));
     println!("compiling {} ...", g.name());
     let tc = std::time::Instant::now();
-    let model = tru::pass::compile::compile(&g).unwrap_or_else(|e| die(&format!("compile: {e}")));
+    let mut model = tru::pass::compile::compile(&g).unwrap_or_else(|e| die(&format!("compile: {e}")));
+    // particle token strings are the CIDs (tokenization is whole-word
+    // lookup in the runtime). axons keep their hex form — they are
+    // never prompt words.
+    {
+        let mut v = String::from("[tokens]\n");
+        for (id, cid) in order.iter().enumerate() {
+            match cid {
+                Some(c) => v.push_str(&format!("{id} = \"{c}\"\n")),
+                None => {
+                    let hex = &model.vocab;
+                    let _ = hex;
+                    v.push_str(&format!("{id} = \"0x{id:064x}\"\n"));
+                }
+            }
+        }
+        model.vocab = v;
+    }
     println!("compiled in {:?}", tc.elapsed());
     {
         let t = &model.tensors[0];
