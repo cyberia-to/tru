@@ -178,3 +178,119 @@ pub fn normalize_l1(v: &[Fx]) -> Vec<Fx> {
     }
     v.iter().map(|&x| x.div(sum)).collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fx(n: i64) -> Fx {
+        Fx::from_int(n)
+    }
+
+    /// A single directed edge 0→1, weight 3 — enough to tell "the graph"
+    /// from "the teleport prior" apart in `diffusion_step`.
+    fn one_edge_transition() -> CsrMatrix {
+        let mut b = super::super::csr::CsrBuilder::new(2);
+        b.add(1, 0, fx(3)); // T[to=1][from=0] = 3
+        b.build()
+    }
+
+    #[test]
+    fn diffusion_step_full_teleport_ignores_the_graph() {
+        // α = 1 zeroes the (1−α) term entirely, so the result is exactly the
+        // teleport vector regardless of what the transition matrix says.
+        let t = one_edge_transition();
+        let phi = vec![fx(10), fx(20)];
+        let teleport = vec![Fx::from_ratio(1, 3), Fx::from_ratio(2, 3)];
+        let out = diffusion_step(&phi, &t, &[false, false], &teleport, Fx::ONE);
+        assert_eq!(out, teleport);
+    }
+
+    #[test]
+    fn diffusion_step_no_teleport_is_pure_transition() {
+        // α = 0 with no dangling mass reduces to plain T·φ.
+        let t = one_edge_transition();
+        let phi = vec![fx(10), fx(20)];
+        let teleport = vec![Fx::from_ratio(1, 2), Fx::from_ratio(1, 2)];
+        let out = diffusion_step(&phi, &t, &[false, false], &teleport, Fx::ZERO);
+        let mut expect = vec![Fx::ZERO; 2];
+        t.spmv(&phi, &mut expect);
+        assert_eq!(out, expect);
+    }
+
+    #[test]
+    fn diffusion_step_dangling_mass_is_redistributed_by_teleport() {
+        // Node 0 has no outgoing edges (dangling): its φ-mass must be handed
+        // to every node in teleport proportion, not silently dropped.
+        let t = CsrMatrix {
+            n: 2,
+            row_ptr: vec![0, 0, 0],
+            col_idx: vec![],
+            values: vec![],
+        };
+        let phi = vec![fx(6), fx(0)];
+        let teleport = vec![Fx::from_ratio(1, 4), Fx::from_ratio(3, 4)];
+        let out = diffusion_step(&phi, &t, &[true, false], &teleport, Fx::ZERO);
+        // dangling_mass = 6; out[i] = dangling_mass * teleport[i] + T·φ[i] (T·φ=0 here)
+        assert_eq!(out[0], fx(6) * teleport[0]);
+        assert_eq!(out[1], fx(6) * teleport[1]);
+    }
+
+    #[test]
+    fn springs_step_large_mu_converges_to_the_reference() {
+        // As μ dominates the graph term, screening wins: x' → x0.
+        let mut b = super::super::csr::CsrBuilder::new(2);
+        b.add(0, 1, fx(5));
+        b.add(1, 0, fx(5));
+        let w = b.build();
+        let degree = vec![fx(5), fx(5)];
+        let phi = vec![fx(100), fx(0)]; // far from x0
+        let x0 = vec![Fx::from_ratio(1, 2), Fx::from_ratio(1, 2)];
+        let mu = Fx::from_int(10_000_000);
+        let out = springs_step(&phi, &w, &degree, mu, &x0);
+        for i in 0..2 {
+            assert!(
+                (out[i].to_f64() - x0[i].to_f64()).abs() < 1e-3,
+                "large μ should screen the graph out: got {}",
+                out[i].to_f64()
+            );
+        }
+    }
+
+    #[test]
+    fn springs_step_zero_mu_is_pure_neighbor_average() {
+        // μ = 0 drops the reference term entirely: x'[i] = (W·φ)[i] / d[i].
+        let mut b = super::super::csr::CsrBuilder::new(2);
+        b.add(0, 1, fx(2));
+        b.add(1, 0, fx(2));
+        let w = b.build();
+        let degree = vec![fx(2), fx(2)];
+        let phi = vec![fx(10), fx(4)];
+        let x0 = vec![fx(999), fx(999)]; // must be fully ignored at μ=0
+        let out = springs_step(&phi, &w, &degree, Fx::ZERO, &x0);
+        assert_eq!(out[0], fx(4)); // (0 + 2*4)/2
+        assert_eq!(out[1], fx(10)); // (0 + 2*10)/2
+    }
+
+    #[test]
+    fn heat_step_is_the_identity_when_lambda_max_is_zero() {
+        let w = super::super::csr::CsrBuilder::new(3).build();
+        let degree = vec![Fx::ZERO; 3];
+        let phi = vec![fx(1), fx(2), fx(3)];
+        let out = heat_step(&phi, &w, &degree, Fx::ZERO, Fx::ONE);
+        assert_eq!(out, phi);
+    }
+
+    #[test]
+    fn normalize_l1_sums_to_one() {
+        let out = normalize_l1(&[fx(1), fx(2), fx(3), fx(4)]);
+        let sum: f64 = out.iter().map(|x| x.to_f64()).sum();
+        assert!((sum - 1.0).abs() < 1e-9, "sums to {sum}");
+    }
+
+    #[test]
+    fn normalize_l1_leaves_a_zero_vector_unchanged() {
+        let z = vec![Fx::ZERO; 3];
+        assert_eq!(normalize_l1(&z), z);
+    }
+}
