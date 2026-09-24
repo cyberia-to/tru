@@ -237,3 +237,101 @@ pub fn steps_for(kappa: Fx, epsilon: Fx, cap: usize) -> usize {
     }
     t
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::super::csr::CsrBuilder;
+
+    fn fx(n: i64) -> Fx {
+        Fx::from_int(n)
+    }
+
+    /// The 4-cycle 0-1-2-3-0, unit edge weights both directions: a graph whose
+    /// Laplacian eigenvalues are exactly known (2 − 2cos(2πk/4) for k=0..3),
+    /// i.e. {0, 2, 2, 4} — so `lambda_max` and `lambda_2` have closed-form
+    /// answers to check the power iteration against. `spectral.rs` (this
+    /// file) has no test coverage on origin/master today even though rows 1
+    /// and 2 ("φ* exists, unique, converges with κ < 1", "Σφ*ᵢ = 1") and
+    /// every open reward row (3, 24, 26, 27, 28) all read `kappa`/`steps_for`
+    /// through it.
+    fn cycle4() -> (CsrMatrix, Vec<Fx>) {
+        let mut b = CsrBuilder::new(4);
+        for i in 0..4usize {
+            let j = (i + 1) % 4;
+            b.add(i, j, fx(1));
+            b.add(j, i, fx(1));
+        }
+        (b.build(), vec![fx(2); 4]) // every node has degree 2
+    }
+
+    #[test]
+    fn lambda_max_matches_the_known_cycle4_spectrum() {
+        let (sym, degree) = cycle4();
+        let lm = lambda_max(&sym, &degree, 4, 60);
+        assert!(
+            (lm.to_f64() - 4.0).abs() < 1e-3,
+            "C4's largest Laplacian eigenvalue is 4, got {}",
+            lm.to_f64()
+        );
+    }
+
+    #[test]
+    fn lambda_2_matches_the_known_cycle4_spectrum() {
+        let (sym, degree) = cycle4();
+        let lm = lambda_max(&sym, &degree, 4, 60);
+        let l2 = lambda_2(&sym, &degree, 4, lm, 60);
+        assert!(
+            (l2.to_f64() - 2.0).abs() < 1e-3,
+            "C4's algebraic connectivity is 2, got {}",
+            l2.to_f64()
+        );
+    }
+
+    #[test]
+    fn lambda_2_is_zero_below_two_nodes() {
+        let sym = CsrBuilder::new(1).build();
+        assert_eq!(lambda_2(&sym, &[fx(0)], 1, fx(0), 10).raw(), Fx::ZERO.raw());
+    }
+
+    #[test]
+    fn lambda_max_is_zero_on_the_empty_graph() {
+        let sym = CsrBuilder::new(0).build();
+        assert_eq!(lambda_max(&sym, &[], 0, 10).raw(), Fx::ZERO.raw());
+    }
+
+    #[test]
+    fn kappa_matches_its_closed_form() {
+        let p = FocusingParams::default();
+        let lm = fx(4);
+        let l2 = fx(2);
+        let k = kappa(&p, lm, l2);
+        let heat = (Fx::ZERO - p.tau * l2).exp();
+        let springs = lm.div(lm + p.mu);
+        let expect = p.lambda_d * p.alpha + p.lambda_s * springs + p.lambda_h * heat;
+        assert_eq!(k.raw(), expect.raw());
+    }
+
+    #[test]
+    fn steps_for_is_monotonic_in_epsilon_and_respects_the_cap() {
+        let kappa = Fx::from_ratio(1, 2);
+        let loose = steps_for(kappa, Fx::from_ratio(1, 10), 100);
+        let tight = steps_for(kappa, Fx::from_ratio(1, 10_000), 100);
+        assert!(
+            tight > loose,
+            "a smaller ε must never need fewer steps ({tight} vs {loose})"
+        );
+        // κ^t ≤ ε actually holds at the returned t (unless capped).
+        let mut p = Fx::ONE;
+        for _ in 0..tight {
+            p = p * kappa;
+        }
+        assert!(p.to_f64() <= Fx::from_ratio(1, 10_000).to_f64() + 1e-9);
+    }
+
+    #[test]
+    fn steps_for_returns_the_cap_when_kappa_does_not_contract() {
+        assert_eq!(steps_for(Fx::ONE, Fx::from_ratio(1, 10), 37), 37);
+        assert_eq!(steps_for(fx(2), Fx::from_ratio(1, 10), 37), 37);
+    }
+}
