@@ -66,6 +66,7 @@ the heart of tru. five specs that turn the weighted graph into the focus distrib
 | [truth-scoring.md](truth-scoring.md) | BTS mechanism, karma accumulation, honesty-weighted effective adjacency | κ(ν), A^eff | ✅ `rs/truth_scoring.rs` — BTS score, karma accrual, surprise ρ (6 tests) | 1b |
 | [focusing.md](focusing.md) | epoch computation: effective adjacency → tri-kernel → φ*, cyberank, syntropy | φ*, cyberank, syntropy | ✅ φ*, cyberank, syntropy, entropy, spectral positions, Δφ* (deterministic) | 1c |
 | [impulse.md](impulse.md) | Δφ* — the proven focus shift one signal delivers; locality-bounded sparse vector | Δφ* + proof claim | ✅ `rs/focusing/impulse.rs` — Δφ*, Δφ⁺, ΔJ decomposition (proof σ external) | 1c |
+| [locus.md](locus.md) | the hyperbolic coordinate of a neuron from the follow graph: radius from stake-weighted popularity, angle from spectral positions, anchored gauge, fixed-point distance | locus(ν) = (r, θ) | spec — read by the cybergraph address record, soft3 routing, foculus fan-out; no code yet | 1d |
 | [superadditivity.md](superadditivity.md) | the collective-intelligence measure σ (collective φ* vs ego φ*_ν); generalized CFT — σ, J grow with algebraic connectivity λ₂ | σ_mean, σ_best, J(λ₂) | ✅ benchmark harness `rs/examples/superadditivity.rs` (Karate Club) | val |
 
 ### vocabulary — the terms tru owns
