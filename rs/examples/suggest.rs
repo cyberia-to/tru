@@ -10,7 +10,6 @@
 
 use std::collections::HashMap;
 
-use tru::Fx;
 use tru::model::{Encoding, Model};
 
 fn cid_id(c: &str) -> [u8; 32] {
