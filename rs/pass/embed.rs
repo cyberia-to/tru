@@ -170,7 +170,6 @@ mod tests {
 
     use super::super::arch;
     use super::super::index::build;
-    use super::*;
     use crate::graph::Cyberlink;
 
     fn hash(b: u8) -> [u8; 32] {
