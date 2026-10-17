@@ -41,4 +41,4 @@ pub use focusing::{
 pub use graph::{Cyberlink, Graph};
 pub use icbs::{cost as icbs_cost, price_no as icbs_price_no, price_yes as icbs_price_yes, Reserves as IcbsReserves};
 pub use model::Model;
-pub use truth_scoring::{accumulate, bts_scores, surprise, Report};
+pub use truth_scoring::{accumulate, bts_scores, bts_scores_hardened, surprise, Report};
