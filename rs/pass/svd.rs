@@ -251,12 +251,16 @@ pub fn top_svd_banded(
 /// while the f64 mirror resolves the full spectrum. The field remains
 /// the storage format, the runtime arithmetic, and the exact head of
 /// the compile.
+/// An f64 mirror of the operator (or its transpose), applied to a vector.
+pub type MirrorOp<'a> = &'a (dyn Fn(&[f64]) -> Vec<f64> + Sync);
+
+#[allow(clippy::too_many_arguments)] // two field operators, two mirrors, three sizes
 pub fn top_svd_banded_hybrid(
     n: usize,
     apply_m: &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync),
     apply_mt: &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync),
-    apply_m_f64: Option<&(dyn Fn(&[f64]) -> Vec<f64> + Sync)>,
-    apply_mt_f64: Option<&(dyn Fn(&[f64]) -> Vec<f64> + Sync)>,
+    apply_m_f64: Option<MirrorOp<'_>>,
+    apply_mt_f64: Option<MirrorOp<'_>>,
     k: usize,
     band: usize,
     iters: usize,
