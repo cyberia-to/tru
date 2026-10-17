@@ -18,6 +18,7 @@
 
 pub mod allocation;
 pub mod arithmetic;
+pub mod annuity;
 pub mod error;
 pub mod focusing;
 pub mod graph;
@@ -29,6 +30,7 @@ pub mod vocab;
 
 pub use allocation::{security_floor, split as allocation_split};
 pub use arithmetic::Fx;
+pub use annuity::{accrue, accrue_running, EpochSample};
 pub use error::{McError, Result};
 pub use focusing::{
     compute_focusing, impulse, propose, Context, FocusingGraph, FocusingParams, FocusingResult,
