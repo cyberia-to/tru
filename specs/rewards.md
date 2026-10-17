@@ -360,7 +360,7 @@ The phase-1 root chains (pussy, bostrom) run this law in consensus from genesis,
 |---|---|---|
 | epoch | 240 blocks (2 h at 30 s); the boundary is a block, $b_E$ is its block id | §6, §7 |
 | settlement | at the block 120 deep past the boundary, recomputed by every full node; no lottery, no proof on the critical path | §6, §7, §15 |
-| $\Delta\phi^+$ attribution | integrated gradient by one adjoint solve at the midpoint of the epoch's path, $a_\ell = \Delta s_\ell\,\sigma_\ell\,\partial J/\partial A_{pq}$ at $A_{\text{mid}}$ — the Aumann–Shapley form of §4 with one gradient evaluation | §2, §4 |
+| $\Delta\phi^+$ attribution | integrated gradient by one adjoint solve at the midpoint of the epoch's path, $a_\ell = \Delta s_\ell\,\sigma_\ell\,\partial J/\partial A_{pq}$ at $A_{\text{mid}}$ — the Aumann–Shapley form of §4 with one gradient evaluation | §2, §4; operators, transposes and scales: [[epoch]] |
 | $A^{\text{eff}}$ | $\max(0,\ G_{pq} + S^+_{pq} - S^-_{pq})$: stake of $v \in \{0,+1\}$ adds, $v=-1$ subtracts, clipped per axon; $G$ = passive genesis weight | §3, §9 |
 | karma $\kappa$, price $f$, will | 1, 1, 0 — no reports, no market, no will at launch | §3, §5 |
 | surprise $\rho$ | 1 for every active position; BTS reports arrive by a later rule set | §5 |
