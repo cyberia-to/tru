@@ -23,7 +23,7 @@ linear algebra needs rationals — $\phi^*$ is a probability vector, the embeddi
 
 the distinction that resolves the apparent paradox: tru does fixed-point rational arithmetic in which every value is stored as an $\mathbb{F}_p$ element — not abstract finite-field algebra. there is no "SVD over $\mathbb{F}_p$" — singular values and ordering are undefined in a bare finite field. magnitude and order are the order of the fixed-point representatives, which is total, canonical, and deterministic. the numerics are real-valued in meaning; the field is the storage and proof substrate.
 
-signedness uses the balanced range: residues above $p/2$ read as negative, so $-a \equiv p - a$. negative stake (a $v=-1$ link) is clipped to zero before matrix construction ([[ct0]] §3.4), so adjacency stays in the nonnegative cone; signed values appear only in derived quantities (bivector grades, embeddings).
+signedness uses the balanced range: residues above $p/2$ read as negative, so $-a \equiv p - a$. negative stake (a $v=-1$ link) is clipped to zero before matrix construction ([[ct0]] §3.4), so adjacency stays in the nonnegative cone; signed values appear only in derived quantities (bivector grades, embeddings). on the phase-1 root chain the clip is per axon: $v=-1$ stake subtracts from the axon's net weight and the net is clipped at zero ([[rewards]] §16, soft3 `specs/chain-economy.md` §4.2).
 
 ## 3. operations
 
