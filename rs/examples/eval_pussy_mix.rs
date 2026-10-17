@@ -131,7 +131,6 @@ struct Layer {
     wq: Vec<Vec<f64>>,
     wk: Vec<Vec<f64>>,
     wo: Vec<Vec<f64>>,
-    gain: f64,
 }
 
 /// P = E' S E where S[t,s] = walks s->t (dir=backward: shipped) or walks
@@ -201,7 +200,6 @@ fn build_layer(e: &[Vec<f64>], rows: &[Vec<(u32, f64)>], dir_fwd: bool, gain: f6
             }
             id
         },
-        gain,
     }
 }
 

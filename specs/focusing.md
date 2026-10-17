@@ -132,6 +132,7 @@ each particle receives a position in k-dimensional spectral space: row i of V_k 
 | φ* | tri-kernel fixed point, Σ φ*(i) = 1 | [[foculus]], self-minting proofs, CT-0 compilation |
 | cyberank(p) | φ*(p) — focus per particle | [[glia]] routing, [[cyb]] ranking, [[cybernode]] queries |
 | spectral positions | top-k eigenvectors of (L + μI) | [[mir]] world geometry |
+| locus(ν) | (r, θ) on the hyperbolic disk: r from stake-weighted follow popularity, θ from spectral positions of the follow graph — [[locus]] | [[cybergraph]] address record, [[soft3]] routing, [[foculus]] fan-out |
 | syntropy J | Σ_j φ*(j) · log(|V| · φ*(j)) | network health, norm pass in CT-0 |
 | Δφ*(ν, batch) | φ*_after − φ*_before for neuron ν's link batch | self-minting proof input to [[zheng]] |
 
