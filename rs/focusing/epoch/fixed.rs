@@ -121,6 +121,26 @@ pub fn mul_wide_shr(a: i128, b: i128, s: u32) -> i128 {
     if neg { -(rlo as i128) } else { rlo as i128 }
 }
 
+/// `⌊a·b / 2^s⌋` with a 256-bit intermediate (floor, toward −∞),
+/// saturating at the i128 range. `0 < s < 128`. The rounding of the path
+/// gradient's weighted sum ([[epoch]] §4).
+pub fn mul_wide_floor(a: i128, b: i128, s: u32) -> i128 {
+    let t = mul_wide_shr(a, b, s);
+    let neg = (a < 0) != (b < 0) && a != 0 && b != 0;
+    if !neg || t == i128::MIN {
+        return t;
+    }
+    // exact iff the low s bits of |a|·|b| are zero
+    let (ua, ub) = (a.unsigned_abs(), b.unsigned_abs());
+    let low = if s >= 64 {
+        // low s bits zero iff the lowest set bits of ua and ub sum to ≥ s
+        ua.trailing_zeros() + ub.trailing_zeros() < s
+    } else {
+        ua.wrapping_mul(ub) & ((1u128 << s) - 1) != 0
+    };
+    if low { t - 1 } else { t }
+}
+
 // ── natural logarithm, integer only ──────────────────────────────────────
 
 /// `2·atanh(z)` at scale 2^62 for `z = num/den ≤ 1/3`, by its odd power
@@ -246,6 +266,14 @@ mod tests {
         assert_eq!(mul_wide_shr(i128::MAX, i128::MAX, 0), i128::MAX);
         assert_eq!(mul_wide_shr(i128::MIN + 1, i128::MAX, 0), i128::MIN);
         assert_eq!(mul_shift_div(-7, 4, 2), -56);
+        assert_eq!(mul_wide_floor(-3, 1, 1), -2);
+        assert_eq!(mul_wide_floor(-4, 1, 1), -2);
+        assert_eq!(mul_wide_floor(3, 1, 1), 1);
+        assert_eq!(mul_wide_floor(-(1 << 100), 3, 32), -(3 << 68));
+        assert_eq!(
+            mul_wide_floor(-((1 << 100) + 1), 1 << 31, 32),
+            -(1 << 99) - 1
+        );
         assert_eq!(mul_shift_div(1 << 100, 20, 1 << 40), 1 << 80);
     }
 

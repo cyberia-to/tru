@@ -50,7 +50,8 @@ fn peak_mb<T>(f: impl FnOnce() -> T) -> (T, usize) {
 
 use tru::focusing::epoch::integrated::score_of;
 use tru::focusing::epoch::{
-    EpochGraph, EpochParams, Position, gradient, midpoint, net_axons, phi, solve, solve_steps,
+    EpochGraph, EpochParams, Ground, Position, gradient, net_axons, path_gradient, phi, solve,
+    solve_steps,
 };
 use tru::focusing::focusing::{contraction, derived_steps, iterate};
 use tru::{Context, FocusingGraph, FocusingParams, Link};
@@ -204,7 +205,7 @@ fn epoch(l: &Links, dist: &str, threads: usize) {
     };
     let axons = net_axons(&[], &positions(l, dist));
     let t0 = Instant::now();
-    let g = EpochGraph::build(&axons);
+    let g = EpochGraph::build_with(&axons, p.ground);
     let build = t0.elapsed();
     println!(
         "epoch build: axons={} n={} directed nnz={} sym nnz={} build={build:.2?} graph≈{} MB; κ={:.4} steps={} K={}",
@@ -302,10 +303,9 @@ fn settle(l: &Links, dist: &str, threads: usize, new_links: usize) {
     let s1 = phi(&a_cur, &p);
     let t1 = t.elapsed();
     let t = Instant::now();
-    let mid = midpoint(&a_prev, &a_cur);
-    let gr = gradient(&mid, &p);
-    let t23 = t.elapsed();
-    // Per-position attribution a(c) = Δs·σ·g on its axon (chain-side rule).
+    let pg = path_gradient(&a_prev, &a_cur, &p);
+    let tg = t.elapsed();
+    // Per-position attribution a(c) = Δs·σ·ḡ on its axon (chain-side rule).
     let t = Instant::now();
     let mut changed = 0usize;
     let mut positive = 0usize;
@@ -316,9 +316,10 @@ fn settle(l: &Links, dist: &str, threads: usize, new_links: usize) {
         }
         changed += 1;
         let sigma = if c.valence < 0 { -1 } else { 1 };
-        let gk = mid
+        let gk = pg
+            .axons
             .binary_search_by(|m| (m.from, m.to).cmp(&(c.from, c.to)))
-            .map_or(0, |k| gr.by_axon[k]);
+            .map_or(0, |k| pg.by_axon[k]);
         let a = score_of(sigma * (c.stake as i128 - before as i128), gk);
         if a > 0 && c.valence != 0 {
             positive += 1;
@@ -326,32 +327,77 @@ fn settle(l: &Links, dist: &str, threads: usize, new_links: usize) {
     }
     let ta = t.elapsed();
     println!(
-        "settle ({} new positions): solve 1 φ*(A_cur) {t1:.2?}; solves 2+3 gradient(A_mid) {t23:.2?}; attribution of {changed} changed positions {ta:.2?} ({positive} earn); total {:.2?}",
+        "settle ({} new positions, ground γ_i={:.4}, k={}): solve 1 φ*(A_cur) {t1:.2?}; path gradient ({} × [forward + adjoint]) {tg:.2?}; attribution of {changed} changed positions {ta:.2?} ({positive} earn); total {:.2?}",
         new_links,
-        t1 + t23 + ta
+        p.ground.inbound as f64 / (1u64 << 32) as f64,
+        p.quadrature,
+        p.quadrature,
+        t1 + tg + ta
     );
     println!(
-        "settle: J(cur)={:.9} J(mid)={:.9}; gradient axons={}",
+        "settle: J(cur)={:.9}; path-gradient axons={}",
         s1.syntropy as f64 / ONE,
-        gr.syntropy as f64 / ONE,
-        gr.by_axon.len()
+        pg.by_axon.len()
     );
-    // Gradient convergence: 48 vs 96 steps, over the changed axons.
-    let p2 = EpochParams {
-        steps: 2 * p.steps,
-        ..p.clone()
-    };
-    let g2 = gradient(&mid, &p2);
-    let (mut num, mut den) = (0f64, 0f64);
-    for (k, &x) in gr.by_axon.iter().enumerate() {
-        let y = g2.by_axon[k] as f64;
-        num += (x as f64 - y).abs();
-        den += y.abs();
+    if std::env::var_os("TRU_CONV").is_some() {
+        let p2 = EpochParams {
+            steps: 2 * p.steps,
+            ..p.clone()
+        };
+        let g2 = path_gradient(&a_prev, &a_cur, &p2);
+        let (mut num, mut den) = (0f64, 0f64);
+        for (k, &x) in pg.by_axon.iter().enumerate() {
+            let y = g2.by_axon[k] as f64;
+            num += (x as f64 - y).abs();
+            den += y.abs();
+        }
+        println!(
+            "settle: path-gradient relative ℓ1 change 48→96 steps = {:.3e}",
+            num / den
+        );
     }
-    println!(
-        "settle: gradient relative ℓ1 change 48→96 steps over all axons = {:.3e}",
-        num / den
-    );
+}
+
+/// How far the ground weight moves φ*: ℓ1 and top-1000 overlap against
+/// the plain dangling rule.
+fn distortion(l: &Links, dist: &str, threads: usize) {
+    let axons = net_axons(&[], &positions(l, dist));
+    let base = EpochParams {
+        threads,
+        ground: Ground::NONE,
+        ..EpochParams::default()
+    };
+    let a = phi(&axons, &base);
+    let top = |f: &[u64]| {
+        let mut ix: Vec<usize> = (0..f.len()).collect();
+        ix.sort_by_key(|&i| std::cmp::Reverse(f[i]));
+        ix.truncate(1000);
+        ix.sort();
+        ix
+    };
+    let ta = top(&a.phi);
+    for gi in [1u64 << 29, 3 << 28, 1 << 30, 1 << 31] {
+        let p = EpochParams {
+            threads,
+            ground: Ground {
+                degree: 0,
+                inbound: gi,
+            },
+            ..EpochParams::default()
+        };
+        let b = phi(&axons, &p);
+        let tb = top(&b.phi);
+        let common = ta.iter().filter(|x| tb.binary_search(x).is_ok()).count();
+        let reference = solve_steps(&EpochGraph::build_with(&axons, p.ground), &p, 4 * p.steps);
+        println!(
+            "ground γ_i={:.4}: ℓ1(φ*, φ*_γ=0)={:.4} J={:.6} (γ=0: {:.6}) top-1000 overlap {common}; ℓ1 to 192-step reference after 48 steps {:.2e}",
+            gi as f64 / (1u64 << 32) as f64,
+            l1(&a.phi, &b.phi),
+            b.syntropy as f64 / ONE,
+            a.syntropy as f64 / ONE,
+            l1(&b.phi, &reference.phi)
+        );
+    }
 }
 
 fn main() {
@@ -409,6 +455,25 @@ fn main() {
                 (axons.len() * std::mem::size_of::<tru::focusing::epoch::Axon>()) >> 20
             );
         }
+        "path-only" => {
+            let p = EpochParams {
+                threads: n.unwrap_or(1),
+                ..EpochParams::default()
+            };
+            let cur = net_axons(&[], &positions(&l, &args[3]));
+            let prev: Vec<_> = cur[..cur.len() - 10_000].to_vec();
+            drop(l);
+            let t = Instant::now();
+            let (g, mb) = peak_mb(|| path_gradient(&prev, &cur, &p));
+            println!(
+                "path-only: k={} {:.2?}, axons={}, call heap peak {mb} MB (inputs 2 × {} MB)",
+                p.quadrature,
+                t.elapsed(),
+                g.by_axon.len(),
+                (cur.len() * std::mem::size_of::<tru::focusing::epoch::Axon>()) >> 20
+            );
+        }
+        "distortion" => distortion(&l, &args[3], n.unwrap_or(1)),
         "settle" => settle(
             &l,
             &args[3],

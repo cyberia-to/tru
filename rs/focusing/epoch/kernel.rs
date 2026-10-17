@@ -5,7 +5,7 @@
 //! normalisation):
 //!
 //! ```text
-//! D(φ) = α·π·Σφ + (1−α)·(P φ + π·Σ_{dangling} φ)          P = A·diag(1/out)
+//! D(φ) = α·π·Σφ + (1−α)·(P φ + π·Σ_p s_p φ_p)            P = A·diag(1/N), N = out + w0, s = w0/N
 //! S(φ) = (μ·π·Σφ + W φ) / (1+μ)                           W = A_sym·diag(1/deg)
 //! H(φ) = e^{−τ} Σ_{k=0}^{K} τ^k/k! · W^k φ                (Horner, K SpMV)
 //! φ'   = norm(λ_d·D + λ_s·S + λ_h·H)
@@ -138,6 +138,24 @@ where
     })
 }
 
+/// The teleported mass `Σ_p s_p φ_p` (ground share plus dangling rows).
+pub(crate) fn teleported(g: &EpochGraph, phi: &[u64]) -> u128 {
+    let s: u128 = g
+        .tele_share
+        .iter()
+        .zip(phi)
+        .map(|(&t, &x)| t as u128 * x as u128)
+        .sum();
+    shr_u(s, P_BITS)
+}
+
+/// `f_i = (Pᵀλ)_i + s_i·c_t` — the value of particle i's out-row under λ:
+/// its out-axons' λ and, for the teleported share, the prior's `c_t = πᵀλ`.
+#[inline(always)]
+pub(crate) fn row_value(g: &EpochGraph, i: usize, lam: &[i64], ct: i128) -> i64 {
+    dir_adj_row(g, i, lam) + shr_i(g.tele_share[i] as i128 * ct, P_BITS) as i64
+}
+
 /// `(W x)_i` at the scale of `x` — forward random-walk row `i`.
 #[inline(always)]
 fn sym_fwd_row(g: &EpochGraph, i: usize, x: &[u64]) -> u64 {
@@ -217,7 +235,7 @@ pub(crate) fn forward_step(
 ) -> u128 {
     let k = c.tau_k.len();
     let mass: u128 = phi.iter().map(|&x| x as u128).sum();
-    let dm: u128 = g.dangling.iter().map(|&i| phi[i as usize] as u128).sum();
+    let dm = teleported(g, phi);
     let c_d = shr_u(c.alpha as u128 * mass + c.oma as u128 * dm, Q_BITS);
     let c_s = shr_u(c.mu1 as u128 * mass, Q_BITS);
 
@@ -314,7 +332,6 @@ pub(crate) fn adjoint_step(
     }
     let c_t = ct as i64;
     let tele_d = shr_i(c.alpha as i128 * ct, Q_BITS) as i64; // α·c_t
-    let tele_dd = shr_i((c.alpha + c.oma) as i128 * ct, Q_BITS) as i64; // (α + (1−α))·c_t at dangling rows
     let tele_s = qmul_i(c_t, c.mu1);
     let (lr, ga, s0) = (&*lam, &w.ga, &w.s0);
     par_fill(b, &mut w.next, |i, slot| {
@@ -323,8 +340,7 @@ pub(crate) fn adjoint_step(
         } else {
             lr[i] + qmul_i(sym_adj_row(g, i, ga), c.tau_k[0])
         };
-        let d =
-            qmul_i(dir_adj_row(g, i, lr), c.oma) + if g.is_dangling[i] { tele_dd } else { tele_d };
+        let d = qmul_i(row_value(g, i, lr, ct), c.oma) + tele_d;
         let s = tele_s + qmul_i(s0[i], c.mu2);
         *slot = shr_i(
             c.lam_d as i128 * d as i128

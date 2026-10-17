@@ -198,3 +198,109 @@ i128, or `J >> 8` (2⁵², ±2,048 nats) as an i64.
   the measured sub-application count and per-pass cost).
 - cross-architecture determinism is checked by CI (ubuntu x86-64 runs the
   blessed vectors); the deimos/jupiter 24 h gate is the chain's.
+
+## 6. amendment 2026-10-17 — the ground weight and the attribution nodes
+
+Coordinator order: fix the dangling switch in φ*, then choose the ground and
+the quadrature by measurement. Acceptance: median attribution error against
+exact Shapley ≤ 5 % in every class of change including first/last out-axon,
+≤ 1 % for weight changes ≤ 30 %; settlement on bostrom ≤ 300 s on one thread;
+`PHI_STEPS` still reaching ℓ1 ≤ 10⁻⁷; the determinism suite unchanged.
+
+Rule: every out-row carries a teleporting ground weight
+`w0_p = ⌊(γ_d·d_p + γ_i·in_p)/2^32⌋`, normalised by `N_p = out_p + w0_p`
+(spec [epoch.md](../specs/epoch.md) §2, §4; the adjoint and the gradient
+carry the matching terms, checked against central finite differences within
+0.2 % at γ_d = 1/8, γ_i = 1/4). With γ = 0 the engine reproduces §3's numbers
+exactly.
+
+### 6.1 the sweep (`epoch_shapley`, 5 players, 400 cases per scale; error = Σ|est − Shapley| / Σ|Shapley|)
+
+At ≈ 30 % changes, 200 cases, median: ground on degree (γ_d) vs in-strength
+(γ_i):
+
+| ground | dangling switch: midpoint / GL-2 / GL-4 | new particle: midpoint / GL-4 | smooth: midpoint / GL-4 |
+|---|---|---|---|
+| none | 34.4 / 29.9 / 30.8 % | 6.5 / 1.4 % | 3.5 / 0.50 % |
+| γ_d 5 % | 20.2 / 7.7 / 5.7 % | 6.4 / 1.3 % | 2.9 / 0.47 % |
+| γ_d 10 % | 17.3 / 5.3 / 3.2 % | 6.2 / 1.2 % | 2.7 / 0.42 % |
+| γ_d 25 % | 11.1 / 2.9 / 1.9 % | 6.1 / 1.1 % | 2.0 / 0.29 % |
+| γ_d 50 % | 6.0 / 1.5 / 1.4 % | 6.1 / 0.9 % | 1.5 / 0.25 % |
+| γ_i 5 % | 19.0 / 8.4 / 5.5 % | 6.2 / 1.4 % | 3.0 / 0.47 % |
+| γ_i 10 % | 17.0 / 5.8 / 3.4 % | 6.2 / 1.2 % | 2.6 / 0.39 % |
+| γ_i 25 % | 10.6 / 2.8 / 2.1 % | 6.0 / 1.0 % | 1.9 / 0.29 % |
+| γ_i 50 % | 6.2 / 1.7 / 1.2 % | 6.1 / 1.0 % | 1.5 / 0.25 % |
+| γ_i 100 % | 4.5 / 1.1 / 1.1 % | 6.0 / 0.9 % | 1.1 / 0.21 % |
+
+γ_i (in-strength) does as well as γ_d at the same γ and moves less focus (a
+particle without in-weight is untouched; at in = out, γ_i teleports γ/(1+γ)
+against γ_d's 2γ/(1+2γ)). The midpoint stays at ≈ 6 % on new particles at
+every ground — a new particle's `φ ln φ` grows from zero — so one node cannot
+meet the acceptance.
+
+γ_i at 400 cases, all classes, median (p90) in %:
+
+| γ_i | change | class | midpoint | GL-2 | GL-3 | GL-4 |
+|---|---|---|---|---|---|---|
+| 1/10 | ≈ 5 % | first/last out-axon | 10.5 (71) | 4.1 (28) | 2.6 (17) | 1.7 (12) |
+| 1/10 | ≈ 30 % | first/last out-axon | 11.5 (51) | 5.0 (20) | 3.3 (15) | 2.7 (14) |
+| 1/10 | ≈ 100 % | first/last out-axon | 17.1 (42) | 7.1 (22) | 5.2 (23) | 4.7 (18) |
+| 1/4 | ≈ 5 % | first/last out-axon | 7.6 (37) | 1.9 (8.8) | 0.87 (6.6) | **0.65** (5.8) |
+| 1/4 | ≈ 30 % | first/last out-axon | 7.6 (31) | 2.7 (9.9) | 1.6 (6.8) | **1.49** (6.1) |
+| 1/4 | ≈ 100 % | first/last out-axon | 11.8 (33) | 3.7 (12) | 3.2 (11) | **3.03** (9.5) |
+| 1/4 | ≈ 5 % | new particle | 4.4 (14) | 1.2 (3.9) | 0.68 (2.4) | **0.49** (2.4) |
+| 1/4 | ≈ 30 % | new particle | 6.0 (12) | 2.2 (4.2) | 1.3 (2.8) | **1.00** (2.7) |
+| 1/4 | ≈ 100 % | new particle | 9.9 (19) | 3.5 (6.8) | 2.2 (4.9) | **1.77** (4.5) |
+| 1/4 | ≈ 5 % | no structural change | 2.3 (16) | 0.14 (2.4) | 0.11 (1.8) | **0.10** (1.8) |
+| 1/4 | ≈ 30 % | no structural change | 2.2 (14) | 0.38 (3.3) | 0.35 (3.2) | **0.35** (3.2) |
+| 1/4 | ≈ 100 % | no structural change | 3.9 (16) | 1.3 (7.0) | 1.3 (6.6) | **1.26** (6.9) |
+| 1/4 | ≤ 5 %, weights only | — | 0.00 | 0.00 | 0.00 | **0.00** |
+| 1/4 | ≤ 30 %, weights only | — | 0.18 (0.50) | 0.04 | 0.04 | **0.04** (0.16) |
+| 1/4 | ≤ 100 %, weights only | — | 2.3 (7.3) | 0.61 | 0.57 | **0.60** (2.2) |
+
+(γ_i = 15 % and 20 % fall between; full logs reproduce with
+`epoch_shapley <cases> 5 <scale> 0 <γ_i %>`, `TRU_MODIFY_ONLY=1` for the
+weights-only rows.)
+
+Choice: **γ_i = 1/4, four nodes.** It is the widest margin measured in every
+row (worst median 3.03 %, the first/last out-axon at ≈ 100 % changes), a
+dyadic constant, and four nodes cost 75 s of one core on bostrom (§6.3), a
+quarter of the 300 s bar. Two nodes at 1/4 pass too, with less margin (3.7 %);
+γ_i = 1/10 passes only at four nodes, 0.3 points under the bar.
+
+The test `path_gradient_tracks_exact_shapley` pins the protocol rule on
+constructed first/last-out-axon cases: median 0.30 % / 0.30 % (0.07 % on
+±30 % weight changes), against 21.7 % for the same cases without the ground.
+`focus_is_continuous_at_a_first_out_axon`: an ε-weight first out-axon moves φ*
+by O(ε) with the ground, by more than 10⁻² without it.
+
+### 6.2 what the ground does to φ*
+
+ℓ1 between φ* with and without the ground, and the overlap of the 1,000
+highest-focus particles:
+
+| graph | γ_i 1/8 | 3/16 | **1/4** | 1/2 |
+|---|---|---|---|---|
+| pussy, power-law | 0.166 (904) | 0.191 (889) | **0.210 (877)** | 0.257 (852) |
+| bostrom, power-law | 0.180 (847) | 0.191 (841) | **0.199 (838)** | 0.217 (826) |
+| bostrom, uniform | 0.141 (809) | 0.157 (794) | **0.169 (784)** | 0.201 (774) |
+
+Most of the shift is already there at 1/8: it is the cost of having a ground
+at all (in-heavy particles stop hoarding focus), and rises slowly with γ.
+J falls from 3.831 to 3.734 nats on bostrom (power-law).
+
+### 6.3 bostrom, re-measured (`EpochParams::default()`: ground 1/4, 4 nodes)
+
+| | before (§2) | with the ground |
+|---|---|---|
+| φ*, 48 steps, 1 thread | 6.2–6.9 s | 6.0–6.3 s |
+| φ*, 12 threads | 0.87–1.04 s | 0.83–1.08 s |
+| ℓ1 to the 192-step reference after 48 steps | 7.5 × 10⁻⁸ | 0.9–1.3 × 10⁻¹⁰ (rounding floor) |
+| settlement (φ*(A_cur) + path gradient + 40,307 positions), 1 thread | 25–34 s (1 node) | 75 s (4 nodes) |
+| same, 12 threads | 6.8–7.0 s | 17.2–19.5 s |
+| path-gradient change 48 → 96 steps | 8.6 × 10⁻⁸ | 2.4 × 10⁻¹⁰ |
+| call heap peak: φ / gradient / 4-node path gradient | 645 / 960 / — MB | 677 / 1,019 / 1,323 MB |
+
+Bit-identical across 1/4/12 threads and with the input reversed; the debug
+and release builds agree on the re-blessed vectors (φ digest
+`e0ff7999…8fc8` under hemera 0.4).

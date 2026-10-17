@@ -13,7 +13,7 @@
 //! ```
 
 use tru::focusing::epoch::integrated::{AxonScore, integrated_gradient, midpoint_attribution};
-use tru::focusing::epoch::{Axon, AxonKey, EpochParams, canonical, phi, syntropy};
+use tru::focusing::epoch::{Axon, AxonKey, EpochParams, Ground, canonical, phi, syntropy};
 
 fn mix(mut z: u64) -> u64 {
     z = z.wrapping_add(0x9E37_79B9_7F4A_7C15);
@@ -167,12 +167,20 @@ fn main() {
     let cases: u64 = a.get(1).and_then(|s| s.parse().ok()).unwrap_or(100);
     let players: usize = a.get(2).and_then(|s| s.parse().ok()).unwrap_or(5);
     let scale: u64 = a.get(3).and_then(|s| s.parse().ok()).unwrap_or(30);
+    // ground coefficients in percent: [gd%] [gi%]
+    let gd: u64 = a.get(4).and_then(|s| s.parse().ok()).unwrap_or(0);
+    let gi: u64 = a.get(5).and_then(|s| s.parse().ok()).unwrap_or(0);
     let p = EpochParams {
         steps: 256,
+        ground: Ground {
+            degree: (gd << 32) / 100,
+            inbound: (gi << 32) / 100,
+        },
         ..EpochParams::default()
     };
+    println!("ground γ_d={gd}% γ_i={gi}%");
     // [smooth, new particle, dangling switch] × [midpoint, GL-2, GL-4]
-    let mut e: [[Vec<f64>; 3]; 3] = Default::default();
+    let mut e: [[Vec<f64>; 4]; 3] = Default::default();
     for seed in 0..cases {
         let (prev, cur) = case(seed, players, scale);
         let sh = shapley(&prev, &cur, &p);
@@ -181,11 +189,12 @@ fn main() {
         }
         let c = structural(&prev, &cur);
         e[c][0].push(err(&midpoint_attribution(&prev, &cur, &p), &sh));
-        e[c][1].push(err(&integrated_gradient(&prev, &cur, 2, &p), &sh));
-        e[c][2].push(err(&integrated_gradient(&prev, &cur, 4, &p), &sh));
+        for k in 2..=4 {
+            e[c][k - 1].push(err(&integrated_gradient(&prev, &cur, k, &p), &sh));
+        }
     }
     for (c, kind) in ["smooth", "new-particle", "dangling"].iter().enumerate() {
-        for (name, v) in ["midpoint (chain)", "GL-2", "GL-4"]
+        for (name, v) in ["midpoint", "GL-2", "GL-3", "GL-4"]
             .iter()
             .zip(e[c].iter_mut())
         {
