@@ -26,6 +26,8 @@ at the level of a single [[neuron]], syntropy is the [[Bayesian Truth Serum|BTS]
 
 syntropy is the task-free measure of collective order. its task-grounded sibling is [[superadditivity]] $\sigma$ — the advantage of the collective $\phi^*$ over any individual neuron's ego focus on link-prediction and retrieval. $J$ asks whether the focus is structured; $\sigma$ asks whether that structure beats every part. they are distinct axes: benchmark ([[superadditivity]]) shows $\sigma$ rises with algebraic connectivity $\lambda_2$ while $J$ *falls* with it — densifying a graph spreads focus toward uniform, so connectivity buys collective advantage but costs syntropy.
 
+the part of syntropy growth the mint pays for — weighted by how much the crowd did not expect it — is [[surprising syntropy]].
+
 see [[focus]] for the distribution syntropy measures · [[superadditivity]] for the collective-intelligence measurement · [[Bayesian Truth Serum]] for the per-neuron version · [[rewards]] for how syntropy growth becomes [[$CYB]] · [[tri-kernel]] for the convergence that produces $\phi^*$.
 
 discover all [[concepts]]
