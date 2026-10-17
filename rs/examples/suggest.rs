@@ -164,9 +164,7 @@ fn fast_path(index_path: &str, cid: &str, k: usize) {
     let t0 = std::time::Instant::now();
     let file = std::fs::File::open(index_path).unwrap_or_else(|e| die(&format!("open: {e}")));
     let map = unsafe { memmap2::Mmap::map(&file) }.unwrap_or_else(|e| die(&format!("mmap: {e}")));
-    let u64_at = |o: usize| -> u64 {
-        u64::from_le_bytes(map[o..o + 8].try_into().unwrap())
-    };
+    let u64_at = |o: usize| -> u64 { u64::from_le_bytes(map[o..o + 8].try_into().unwrap()) };
     let n = u64_at(0) as usize;
     let d = u64_at(8) as usize;
     // locate the query token: FNV pre-filter over the hash array
@@ -208,8 +206,7 @@ fn fast_path(index_path: &str, cid: &str, k: usize) {
         // (16 + 60n bytes of header) keeps 4-byte alignment. hand NEON
         // gemv: 4 rows interleaved so the reduction latency hides
         // behind the next row's loads (memory-bound target ~60+ GB/s).
-        let w: &[f32] =
-            unsafe { std::slice::from_raw_parts(e.as_ptr() as *const f32, n * d) };
+        let w: &[f32] = unsafe { std::slice::from_raw_parts(e.as_ptr() as *const f32, n * d) };
         neon_gemv(w, &qs, n, d)
     };
     #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
@@ -238,7 +235,7 @@ fn fast_path(index_path: &str, cid: &str, k: usize) {
             let wi = top
                 .iter()
                 .enumerate()
-                .min_by(|a, b| a.1 .0.partial_cmp(&b.1 .0).unwrap())
+                .min_by(|a, b| a.1.0.partial_cmp(&b.1.0).unwrap())
                 .map(|(i, _)| i)
                 .unwrap();
             top.swap_remove(wi);
@@ -246,7 +243,10 @@ fn fast_path(index_path: &str, cid: &str, k: usize) {
         }
     }
     top.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
-    println!("suggestions for {cid} (top {k}, {n} tokens, {:?}):", t0.elapsed());
+    println!(
+        "suggestions for {cid} (top {k}, {n} tokens, {:?}):",
+        t0.elapsed()
+    );
     for (score, v) in &top {
         if *score <= 0.0 {
             continue; // zero rows carry no signal

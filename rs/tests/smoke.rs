@@ -3,8 +3,8 @@
 
 use std::io::Write;
 
-use tru::graph::record::RECORD_SIZE;
 use tru::Graph;
+use tru::graph::record::RECORD_SIZE;
 
 fn synth_record(
     neuron: u8,

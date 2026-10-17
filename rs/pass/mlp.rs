@@ -157,11 +157,13 @@ mod tests {
     fn init_is_deterministic() {
         let a = mlp(16, 2);
         let b = mlp(16, 2);
-        assert!(a.iter().zip(&b).all(|(x, y)| x
-            .data
-            .iter()
-            .zip(&y.data)
-            .all(|(p, q)| p.raw() == q.raw())));
+        assert!(
+            a.iter().zip(&b).all(|(x, y)| x
+                .data
+                .iter()
+                .zip(&y.data)
+                .all(|(p, q)| p.raw() == q.raw()))
+        );
     }
 
     #[test]

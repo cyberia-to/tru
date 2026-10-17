@@ -16,8 +16,8 @@
 use core::cmp::Ordering;
 use core::ops::{Add, Mul, Neg, Sub};
 
-use nebu::field::P;
 use nebu::Goldilocks;
+use nebu::field::P;
 
 /// Number of fractional bits: a value `x` is stored as `x · 2^FRAC_BITS`.
 ///
@@ -212,7 +212,10 @@ impl Fx {
         // silently masks its shift amount instead of panicking, returning a
         // wrong scaled value instead of failing loudly at the point of the
         // caller error.
-        assert!(frac_bits <= FRAC_BITS, "frac_bits {frac_bits} exceeds FRAC_BITS {FRAC_BITS}");
+        assert!(
+            frac_bits <= FRAC_BITS,
+            "frac_bits {frac_bits} exceeds FRAC_BITS {FRAC_BITS}"
+        );
         let shift = FRAC_BITS - frac_bits;
         if shift == 0 {
             return self.signed() as i64;

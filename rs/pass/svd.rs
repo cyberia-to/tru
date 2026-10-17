@@ -160,9 +160,9 @@ pub fn top_svd(
                 for t in 0..nthreads {
                     let cols: Vec<usize> = (t..k).step_by(nthreads).collect();
                     let block = &block;
-                    handles.push(s.spawn(move || {
-                        cols.iter().map(|&c| mtm(&block[c])).collect::<Vec<_>>()
-                    }));
+                    handles.push(
+                        s.spawn(move || cols.iter().map(|&c| mtm(&block[c])).collect::<Vec<_>>()),
+                    );
                 }
                 handles.into_iter().map(|h| h.join().unwrap()).collect()
             });
@@ -356,8 +356,8 @@ mod banded_tests {
         let mut sig = vec![Fx::ZERO; n];
         // spread over 5 orders + near-degenerate pairs and a cluster
         let truth: Vec<f64> = [
-            100.0, 10.0, 9.5, 1.0, 0.5, 0.48, 0.1, 0.095, 0.01, 0.0099, 0.0098, 0.001,
-            0.0009, 0.0005, 0.0002, 0.0001,
+            100.0, 10.0, 9.5, 1.0, 0.5, 0.48, 0.1, 0.095, 0.01, 0.0099, 0.0098, 0.001, 0.0009,
+            0.0005, 0.0002, 0.0001,
         ]
         .to_vec();
         for (i, &s) in truth.iter().enumerate() {

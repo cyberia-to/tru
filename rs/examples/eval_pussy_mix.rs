@@ -22,7 +22,6 @@
 //!
 //! Run: cargo run -p cyber-tru --release --example eval_pussy_mix
 
-
 use tru::graph::Cyberlink;
 use tru::pass::{arch, attn, dialect, index};
 
