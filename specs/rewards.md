@@ -74,7 +74,7 @@ Three of those properties are load-bearing, each invoked by name later:
 
 $v$ is the same $\Delta\phi^+$ (§2) read over sets, by the incremental [[tri-kernel]] recomputation the network already runs.
 
-For the reward, $v$ is read in its surprise-weighted form $v^\star$: each contribution is scaled by its [[Bayesian Truth Serum|BTS]] surprise $\rho_\ell \in [0,1]$ (§5), so a copy contributes nothing and the mint divides surprising syntropy — the focus shift the crowd did not predict. Rank reads the unweighted graph (§9), so a copy's capital still ranks even as it mints nothing.
+For the reward, $v$ is read in its surprise-weighted form $v^\star$: each contribution is scaled by its [[Bayesian Truth Serum|BTS]] surprise $\rho_\ell \in [0,1]$ (§5), so a copy contributes nothing and the mint divides [[surprising syntropy]] — the focus shift the crowd did not predict. Rank reads the unweighted graph (§9), so a copy's capital still ranks even as it mints nothing.
 
 ---
 

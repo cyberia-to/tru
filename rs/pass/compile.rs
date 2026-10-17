@@ -162,7 +162,7 @@ fn config_toml(a: &arch::Arch) -> String {
          # measured). Ship near-identity rotation until fine-tuning recovers\n\
          # position-relative matching.\n\
          rope_theta = 1000000\n\
-         rms_norm_eps = 1000000\n\n\
+         rms_norm_eps = 100000\n\n\
          [tokenizer]\n\
          type = \"particle\"\n\
          bos_id = 0\n\
