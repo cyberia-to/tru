@@ -153,7 +153,15 @@ fn parse_particles(b: &[u8]) -> Result<Vec<VocabEntry>> {
         ));
     }
     let n = u32::from_le_bytes(b[0..4].try_into().unwrap()) as usize;
-    let mut entries = Vec::with_capacity(n);
+    // Not `Vec::with_capacity(n)`: `n` is a file-supplied u32 read before a
+    // single entry byte is checked to exist, so a truncated or corrupted
+    // section (as little as 4 bytes) can claim billions of entries and drive
+    // an allocation sized by a number the buffer never backs. Every entry
+    // needs at least 40 bytes (32-byte particle + 8-byte length), so cap the
+    // preallocation at what `b` could actually hold; the loop below still
+    // rejects a genuinely truncated section entry-by-entry as before.
+    let max_entries = b.len().saturating_sub(4) / 40;
+    let mut entries = Vec::with_capacity(n.min(max_entries));
     let mut c = 4;
     for i in 0..n {
         if c + 40 > b.len() {
@@ -252,5 +260,22 @@ mod tests {
         let w = Vocab::read(&path).unwrap();
         assert_eq!(w.particle(), v.particle());
         std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn parse_particles_rejects_huge_count_without_preallocating() {
+        // A 4-byte "particles" section declaring a count of u32::MAX with not
+        // one entry byte behind it. Before the fix this drove
+        // `Vec::with_capacity(u32::MAX as usize)` — a few bytes on the wire
+        // or on disk claiming gigabytes of `VocabEntry`s, an allocation
+        // abort on any `.vocab`/`.model` file load rather than the graceful
+        // truncation error every other malformed section already returns.
+        let mut section = u32::MAX.to_le_bytes().to_vec();
+        assert!(parse_particles(&section).is_err());
+
+        // Same shape, but with one real (truncated) entry present — still
+        // rejected entry-by-entry as before, not by the capacity bound.
+        section.extend_from_slice(&[0u8; 10]);
+        assert!(parse_particles(&section).is_err());
     }
 }
