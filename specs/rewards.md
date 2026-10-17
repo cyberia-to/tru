@@ -259,6 +259,8 @@ Gross rewards can exceed inflation when fees are high; net inflation can go nega
 
 Base emission goes to work and risk only. A standing yield to passive stake would be emission without contribution — it would break the invariant that inflation is [[knowledge]], and it is the mechanism by which idle capital compounds. The floor is paid only to the two providers that do work: PoW compute and active ($v_\ell \neq 0$) epistemic risk. It PID-decays toward zero as mint and fees grow to cover security. The parameters $\alpha$, floor, and $\beta$ follow PID control on observable signals (security margin, fee coverage, efficiency differential), so the system measures and adapts rather than predicts.
 
+`tru::Pid` (`rs/pid.rs`) is the shared control primitive the three loops drive: a clamped, anti-windup PID over `Fx` (`error, dt ↦ output`, output bounded to a caller-supplied range, integral frozen while saturated). It does not itself define security margin, fee coverage or efficiency differential as computable quantities, nor the gains each loop runs at — those are a per-parameter decision, the next slice for each of $\alpha$, floor and $\beta$.
+
 ---
 
 ## 11. The Reward Equation
