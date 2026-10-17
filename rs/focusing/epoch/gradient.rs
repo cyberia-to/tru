@@ -10,15 +10,20 @@
 //! `π = d/Σd`, `c_t = πᵀλ`, `u_j = (Wᵀ)ʲλ`, `v_i = Wⁱφ`):
 //!
 //! ```text
-//! diffusion   (1−α)·φ_p (λ_q − (Pᵀλ)_p)/out_p  +  (α + (1−α)·φ_dangling)·(λ_p + λ_q − 2c_t)/Σd
+//! diffusion   (1−α)·[φ_p (λ_q − f_p)/N_p + γ_d·φ_p (c_t − f_p)/N_p + (γ_d + γ_i)·φ_q (c_t − f_q)/N_q]
+//!             + (α + (1−α)·m_T)·(λ_p + λ_q − 2c_t)/Σd
 //! springs     [φ_p (λ_q − u₁_p)/d_p + φ_q (λ_p − u₁_q)/d_q]/(1+μ)  +  μ/(1+μ)·(λ_p + λ_q − 2c_t)/Σd
 //! heat        e^{−τ} Σ_{k=1}^{K} τ^k/k! Σ_{j<k} [v_{k−1−j,p}(u_{j,q} − u_{j+1,p})/d_p + (p↔q)]
 //! g_pq        λ_d·diffusion + λ_s·springs + λ_h·heat
 //! ```
 //!
 //! Each term is the derivative of a column-normalised operator with respect
-//! to one weight: `∂(xᵀ W y)/∂W_pq = y_p (x_q − (Wᵀx)_p)/d_p`. The dangling
-//! set is piecewise constant and contributes no derivative.
+//! to one weight: `∂(xᵀ W y)/∂W_pq = y_p (x_q − (Wᵀx)_p)/d_p`. In diffusion
+//! the out-row of p normalises by `N_p = out_p + w0_p` with the ground weight
+//! `w0 = γ_d·d + γ_i·in` teleporting; `f_r = (Pᵀλ)_r + s_r·c_t` is row r's
+//! value, `m_T = Σ s_r φ_r / Σφ` the teleported mass. Raising `A_pq` raises
+//! `out_p` and `d_p` (so `w0_p` by `γ_d`) and `d_q`, `in_q` (so `w0_q` by
+//! `γ_d + γ_i`).
 //!
 //! Scale: `g` is nats per raw weight unit at `2^112` (i128). The chain's
 //! attribution `a(c) = Δs(c)·σ(c)·g_pq` is then a 256-bit product
@@ -26,7 +31,7 @@
 
 use super::fixed::{GRAD_BITS, LN_BITS, PHI_BITS, Q_BITS, mul_shift_div, shr_i};
 use super::graph::EpochGraph;
-use super::kernel::{Coeffs, dir_adj_row, sym_adj, sym_fwd};
+use super::kernel::{Coeffs, row_value, sym_adj, sym_fwd, teleported};
 
 /// Per-edge gradient in internal edge order, `φ` and `λ` at the fixed point.
 pub(crate) fn edge_gradient(
@@ -56,7 +61,7 @@ pub(crate) fn edge_gradient(
 
     // Scalars of the prior's derivative.
     let mass: u128 = phi.iter().map(|&x| x as u128).sum();
-    let dm: u128 = g.dangling.iter().map(|&i| phi[i as usize] as u128).sum();
+    let dm = teleported(g, phi);
     let ct: i128 = shr_i(
         g.tele
             .iter()
@@ -69,6 +74,15 @@ pub(crate) fn edge_gradient(
     let c_dq = c.alpha as i128 + shr_i(c.oma as i128 * dm_q, Q_BITS);
     let q = |a: i128, b: i128| shr_i(a * b, Q_BITS);
     let k_d = q(c.lam_d as i128, c.oma as i128);
+    let (gd, gi) = (g.ground.degree as i128, g.ground.inbound as i128);
+    let k_gp = q(k_d, gd);
+    let k_gq = q(k_d, gd + gi);
+    // Row values f_r = (Pᵀλ)_r + s_r·c_t for every particle.
+    let mut f = vec![0i64; n];
+    super::kernel::par_fill(b, &mut f, |i, slot| {
+        *slot = row_value(g, i, lam, ct);
+        0i128
+    });
     let k_t = q(c.lam_d as i128, c_dq) + q(c.lam_s as i128, c.mu1 as i128);
     let k_s = q(c.lam_s as i128, c.mu2 as i128);
     let k_h = c.lam_he as i128;
@@ -94,7 +108,8 @@ pub(crate) fn edge_gradient(
         }
     };
     let row = |s: usize, out: &mut [i128]| {
-        let pd = dir_adj_row(g, s, lam) as i128;
+        let pd = f[s] as i128;
+        let n_gs = shr_i(phi[s] as i128 * (ct - pd), LN_BITS);
         let (fs, ls, u1s) = (phi[s] as i128, lam[s] as i128, u[1][s] as i128);
         for (k, e) in (g.out_ptr[s] as usize..g.out_ptr[s + 1] as usize).enumerate() {
             let d = g.out_dst[e] as usize;
@@ -103,7 +118,9 @@ pub(crate) fn edge_gradient(
             let n_t = (ls + ld - 2 * ct) << (PHI_BITS - LN_BITS);
             let n_ss = shr_i(fs * (ld - u1s), LN_BITS);
             let n_sd = shr_i(fd * (ls - u1d), LN_BITS);
-            let gsum = div(q(k_d, n_d), g.out_w[s])
+            let n_gd = shr_i(fd * (ct - f[d] as i128), LN_BITS);
+            let gsum = div(q(k_d, n_d) + q(k_gp, n_gs), g.norm_w[s])
+                .saturating_add(div(q(k_gq, n_gd), g.norm_w[d]))
                 .saturating_add(div(q(k_t, n_t), total))
                 .saturating_add(div(q(k_s, n_ss) + q(k_h, heat(s, d)), g.deg[s]))
                 .saturating_add(div(q(k_s, n_sd) + q(k_h, heat(d, s)), g.deg[d]));

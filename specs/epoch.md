@@ -16,10 +16,10 @@ if `Σ A ≥ 2^62`, every weight is shifted right by the smallest `s` that bring
 
 ## 2. operators
 
-with `out_p = Σ_q A_pq`, `d_p = out_p + Σ_r A_rp` (undirected degree = node stake), `π = d/Σd` (the stake prior), `P = A·diag(1/out)` and `W = (A + Aᵀ)·diag(1/d)` (both column-stochastic):
+with `out_p = Σ_q A_pq`, `in_p = Σ_r A_rp`, `d_p = out_p + in_p` (undirected degree = node stake), `π = d/Σd` (the stake prior), the ground weight `w0_p = ⌊in_p/4⌋`, the out-row normaliser `N_p = out_p + w0_p`, its teleport share `s_p = w0_p/N_p` (`s_p = 1` when `N_p = 0` and `d_p > 0`), `P = A·diag(1/N)` and `W = (A + Aᵀ)·diag(1/d)` (column-stochastic, with `P` completed by `s`):
 
 ```
-D(φ) = α·π·Σφ + (1−α)·(P φ + π·Σ_{out_p = 0} φ_p)
+D(φ) = α·π·Σφ + (1−α)·(P φ + π·Σ_p s_p φ_p)
 S(φ) = (μ·π·Σφ + W φ) / (1+μ)
 H(φ) = e^{−τ} Σ_{k=0}^{K} τ^k/k! · W^k φ
 φ'   = norm(λ_d·D(φ) + λ_s·S(φ) + λ_h·H(φ))
@@ -32,9 +32,13 @@ H(φ) = e^{−τ} Σ_{k=0}^{K} τ^k/k! · W^k φ
 | τ (heat time) | 1 |
 | λ_d, λ_s, λ_h | 0.5, 0.3, 0.2 |
 | K (heat degree) | 9 — the smallest with `2·e^{−τ}·τ^{K+1}/(K+1)! ≤ ε = 10⁻⁶` |
+| ground `γ_i` (`w0_p = γ_i·in_p`) | 1/4 (amended 2026-10-17, §7) |
+| attribution nodes `k` | 4 Gauss–Legendre nodes (amended 2026-10-17, §7) |
 | steps | `PHI_STEPS = 48`, from the uniform vector `⌊2^60/n⌋` |
 
 this is [[tri-kernel]] with the normalised (random-walk) Laplacian `I − W` for springs and heat, which tri-kernel §1.2 admits, and the stake prior as both the teleport target and the springs reference. three reasons, all measured: the combinatorial heat kernel `exp(−τ(D − A))` needs `O(τ·λ_max)` sparse passes per step and `λ_max` is the largest weighted degree (36,026 on bostrom at uniform stake, 9,007 Chebyshev sub-applications per step, about 2.6 h per step on one core); the normalised operators are scale-free, so one large stake does not change everyone's heat time; and every operator maps the simplex to itself, so the step is an affine contraction with the a-priori rate `κ = λ_d(1−α) + λ_s/(1+μ) + λ_h = 0.775` — a parameter function, no eigenvalue estimate. a particle without stake has zero prior, zero inflow and zero focus.
+
+the ground weight (amended 2026-10-17). without it, a particle with focus and no out-axon sends all of its focus to the prior, and its first out-axon — at any positive weight — redirects all of it: φ* jumps, and no gradient sees a jump (§7). with it, every particle's out-row carries a virtual weight `w0_p = in_p/4` that teleports, so the share its out-axons carry, `out_p/(out_p + w0_p)`, grows continuously from zero. a particle without in-weight is unchanged; a particle without out-weight is pure teleport, as before. the rule is scale-free (a ratio of the particle's own weights) and keeps every operator column-stochastic, so κ is unchanged.
 
 the legacy combinatorial kernel (`compute_focusing`) remains the research reference; it is not the consensus object.
 
@@ -64,21 +68,29 @@ at the fixed point `φ = M φ` (M the step before normalisation, column-stochast
 
 ```
 λ ← Mᵀ λ + g,    g_i = ln φ_i − Σ_j φ_j ln φ_j / Σφ,    λ₀ = 0,    PHI_STEPS steps
-Mᵀλ = λ_d·[(1−α) Pᵀλ + (α + (1−α)·[out_i = 0])·c_t] + λ_s·[μ c_t + Wᵀλ]/(1+μ) + λ_h e^{−τ} Σ_k τ^k/k! (Wᵀ)^k λ,    c_t = πᵀλ
+Mᵀλ = λ_d·[(1−α) f + α·c_t] + λ_s·[μ c_t + Wᵀλ]/(1+μ) + λ_h e^{−τ} Σ_k τ^k/k! (Wᵀ)^k λ,    c_t = πᵀλ,    f_i = (Pᵀλ)_i + s_i·c_t
 ```
 
 (the constant parts of `∇J` vanish because `∂M/∂A` moves no mass; a constant shift of λ changes no gradient). per directed axon `p → q`, with `u_j = (Wᵀ)^j λ`, `v_i = W^i φ`:
 
 ```
-∂J/∂A_pq = λ_d (1−α) φ_p (λ_q − (Pᵀλ)_p) / out_p
-         + (λ_d (α + (1−α) m_0) + λ_s μ/(1+μ)) (λ_p + λ_q − 2 c_t) / Σd      m_0 = Σ_{out_i=0} φ_i / Σφ
+∂J/∂A_pq = λ_d (1−α) φ_p (λ_q − f_p) / N_p
+         + λ_d (1−α) γ_i φ_q (c_t − f_q) / N_q                                  (raising A_pq raises in_q, so w0_q)
+         + (λ_d (α + (1−α) m_T) + λ_s μ/(1+μ)) (λ_p + λ_q − 2 c_t) / Σd      m_T = Σ_i s_i φ_i / Σφ
          + [λ_s/(1+μ) · φ_p (λ_q − u₁_p) + λ_h e^{−τ} Σ_{k=1}^{K} τ^k/k! Σ_{j<k} v_{k−1−j,p} (u_{j,q} − u_{j+1,p})] / d_p
          + [the same with p ↔ q] / d_q
 ```
 
-each line is `∂(xᵀ C y)/∂C_·p = y_p (x_· − (Cᵀx)_p)/norm_p` for a column-normalised operator `C`. the dangling set is piecewise constant and has no derivative. an absent axon (`A_pq = 0`) has gradient 0. numerators are formed at 2^60 with the coefficients applied, then `num·2^52/den` by `(num/den)·2^52 + ((num mod den)·2^52)/den` (truncation toward zero), the four quotients summed (saturating), and the weight shift undone by a rounded right shift.
+each line is `∂(xᵀ C y)/∂C_·p = y_p (x_· − (Cᵀx)_p)/norm_p` for a column-normalised operator `C`. (the implementation carries a `γ_d·d_p` ground term as well, zero in the protocol.) an absent axon (`A_pq = 0`) has gradient 0. numerators are formed at 2^60 with the coefficients applied, then `num·2^52/den` by `(num/den)·2^52 + ((num mod den)·2^52)/den` (truncation toward zero), the four quotients summed (saturating), and the weight shift undone by a rounded right shift.
 
-the chain's attribution `a(c) = Δs(c)·σ(c)·g_pq` (chain-economy §5.2) is a 256-bit product at 2^112; `mul_wide_shr(a, g, 52)` gives it in nats at 2^60.
+the attribution gradient is the path average over `k` Gauss–Legendre nodes `(t_i, w_i)` on `[0, 1]` (2^32 scale, the weights summing to exactly 2^32):
+
+```
+A_i  = A_prev + ⌊t_i·(A_cur − A_prev) / 2^32⌋      per axon of the union, floor (arithmetic shift)
+ḡ_pq = Σ_i ⌊w_i·g_pq(A_i) / 2^32⌋                  (256-bit product, truncated toward zero)
+```
+
+`path_gradient(prev, cur, p)` returns `ḡ` in the union's ascending order; with one node `A_1` is exactly `⌊(A_prev + A_cur)/2⌋`. the chain's attribution `a(c) = Δs(c)·σ(c)·ḡ_pq` (chain-economy §5.2) is a 256-bit product at 2^112; `mul_wide_shr(a, g, 52)` gives it in nats at 2^60. nodes (2^32): `k = 4`: t = 298207500, 1417379916, 2877587380, 3996759796; w = 747012592, 1400471056, 1400471056, 747012592.
 
 ## 5. digest
 
@@ -86,8 +98,12 @@ the chain's attribution `a(c) = Δs(c)·σ(c)·g_pq` (chain-economy §5.2) is a 
 
 ## 6. conformance
 
-`rs/tests/epoch_settlement.rs` pins, at the defaults: φ and J of a five-particle, seven-axon graph (φ preimage digest `e9462109f934da2baca3aef7f903033d829bb245f404c203c7a7352cec2ab1e0` under hemera 0.4), the gradient of each of its axons, the digest preimage of the chain vector, bit-identity across 1–8 threads and across input orders, and the gradient against central finite differences (0.2 %). any change of a bit of these is a consensus change (chain-economy §4.4) and moves the vectors.
+`rs/tests/epoch_settlement.rs` pins, at the defaults: φ and J of a five-particle, seven-axon graph (φ preimage digest `e0ff79997aa697bced38e2cdedb823b189892982bae411933ec623007de18fc8` under hemera 0.4; `e9462109…` before the ground amendment), the gradient of each of its axons, the 4-node path gradient of a fixed change of it (an axon raised, one removed, one added, one new particle), the digest preimage of the chain vector, bit-identity across 1–8 threads and across input orders, and the gradient against central finite differences (0.2 %). any change of a bit of these is a consensus change (chain-economy §4.4) and moves the vectors.
 
-## 7. limits of the gradient form
+## 7. continuity and the attribution rule (amended 2026-10-17)
 
-the integrated gradient is the Aumann–Shapley value of a smooth game ([[rewards]] §4). where the game is smooth — weights rising or falling on axons whose endpoints keep their out-axons — the chain's midpoint rule agrees with the exact Shapley value to a median 0.01 % (changes ≤ 5 % of an axon), 0.2 % (≤ 30 %) and 2.7 % (≤ 100 %); new particles are continuous and land at a median 5–6.5 %. one change is not smooth: a particle gaining its first out-axon (or losing its last) switches its focus from the teleport prior to that axon at any positive weight — a jump in φ* the gradient does not see. on such epochs the midpoint attribution differs from exact Shapley by a median 34–45 % (audit). the jump is not paid to anyone (the budget is divided by attribution, so the mint stays conserved); it is an under-payment of first out-links. closing it needs a continuous dangling rule — an open question for [[rewards]] §16.
+the integrated gradient is the Aumann–Shapley value of a smooth game ([[rewards]] §4); it can only match the Shapley value where φ* is continuous in `A`. before the ground weight one change was not: a particle gaining its first out-axon (or losing its last). against exact Shapley on random small graphs the one-node midpoint then erred by a median 34–45 %, and more nodes did not help (a jump is invisible to every quadrature).
+
+the ground weight and the node count were chosen together, by measurement against exact Shapley (audit `epoch-settlement-2026-10.md` §6), under the acceptance: median error ≤ 5 % in every class of change including first/last out-axon, ≤ 1 % for weight changes ≤ 30 %, settlement on bostrom ≤ 300 s on one core, `PHI_STEPS` still reaching ℓ1 ≤ 10⁻⁷. `γ_i = 1/4` with four nodes meets it with the widest margin measured: medians 0.65 / 1.49 / 3.03 % on first/last out-axon at changes of ≈ 5 / 30 / 100 %, 0.49 / 1.00 / 1.77 % on new particles, 0.10 / 0.35 / 1.26 % otherwise, 0.04 % on pure weight changes ≤ 30 %. the midpoint alone stays near 6 % on new particles at any ground (a new particle's `φ ln φ` grows from zero), so one node cannot meet it; two nodes meet it at `γ_i = 1/4` with less margin. smaller grounds move φ* less but leave less margin (`γ_i = 1/10` with four nodes: 4.73 % on first/last out-axon at ≈ 100 % changes, 0.3 points under the bar; with two nodes it misses).
+
+the price is a change of φ*: on pussy the ground moves φ* by ℓ1 0.21 against the plain dangling rule and keeps 877 of the top 1,000 particles; it also raises the effective teleport, so 48 steps reach the rounding floor (ℓ1 ≈ 10⁻¹⁰).

@@ -6,9 +6,11 @@
 //! - [`phi`]: φ* over `A` — `PHI_STEPS` tri-kernel steps from the uniform
 //!   vector, φ at scale 2^60, syntropy `J`, and the canonical digest
 //!   preimage ([`Phi::preimage`], hashed chain-side with `D_PHI`);
-//! - [`gradient`]: `g_pq = ∂J(φ*(A))/∂A_pq` for every present axon of `A`
-//!   (the chain calls it on `A_mid` = [`midpoint`]) — one forward and one
-//!   adjoint solve, also `PHI_STEPS` each, both cold;
+//! - [`gradient`]: `g_pq = ∂J(φ*(A))/∂A_pq` for every present axon of `A` —
+//!   one forward and one adjoint solve, `PHI_STEPS` each, both cold;
+//! - [`path_gradient`]: the attribution gradient `ḡ = Σ_i w_i g(A(t_i))`
+//!   along the epoch's straight path, `p.quadrature` Gauss–Legendre nodes
+//!   (4 by default); the chain pays `a(c) = Δs(c)·σ(c)·ḡ_pq`;
 //! - [`net_axons`]: the chain's §4.2 net weight from genesis weight and
 //!   valence-signed positions (a reference for the chain's own code and the
 //!   tests).
@@ -42,8 +44,10 @@ pub mod graph;
 pub mod integrated;
 pub mod kernel;
 
-pub use graph::{Axon, AxonKey, EpochGraph, canonical};
-pub use integrated::{AxonScore, integrated_gradient, midpoint_attribution};
+pub use graph::{Axon, AxonKey, EpochGraph, Ground, canonical};
+pub use integrated::{
+    AxonScore, PathGradient, integrated_gradient, midpoint_attribution, path_gradient,
+};
 
 use crate::arithmetic::Fx;
 
@@ -52,7 +56,8 @@ use kernel::{Coeffs, Work, adjoint_step, centred_log, forward_step, plan, unifor
 /// Tri-kernel steps per solve, fixed for consensus (chain-economy §0
 /// `PHI_STEPS`). Evidence: tru `audit/epoch-settlement-2026-10.md` — from the
 /// uniform start the ℓ1 distance to the converged φ* after 48 steps is below
-/// 10⁻⁷ on pussy and bostrom (uniform and power-law stake).
+/// 10⁻⁷ on pussy and bostrom (uniform and power-law stake); with the ground
+/// weight it is at the rounding floor (≈ 10⁻¹⁰).
 pub const PHI_STEPS: usize = 48;
 
 /// Domain separator of the φ digest (chain-economy §2, §5.6).
@@ -80,6 +85,10 @@ pub struct EpochParams {
     pub steps: usize,
     /// Worker threads. Never changes a result bit.
     pub threads: usize,
+    /// The ground weight that makes φ* continuous in `A` ([`Ground`]).
+    pub ground: Ground,
+    /// Gauss–Legendre nodes on the attribution path (1 = the midpoint).
+    pub quadrature: usize,
 }
 
 impl Default for EpochParams {
@@ -95,6 +104,8 @@ impl Default for EpochParams {
             heat_terms: 0,
             steps: PHI_STEPS,
             threads: 1,
+            ground: Ground::PROTOCOL,
+            quadrature: 4,
         }
         .derived()
     }
@@ -237,7 +248,7 @@ pub fn solve(g: &EpochGraph, p: &EpochParams) -> Phi {
 
 /// φ* of an axon list (chain-economy §4.4 solve 1).
 pub fn phi(axons: &[Axon], p: &EpochParams) -> Phi {
-    let mut g = EpochGraph::build(axons);
+    let mut g = EpochGraph::build_with(axons, p.ground);
     let mut f = solve_steps_inner(&g, p, p.steps);
     f.particles = std::mem::take(&mut g.particles);
     f
@@ -287,7 +298,7 @@ pub fn gradient_of(g: &EpochGraph, p: &EpochParams) -> Gradient {
 /// `g = ∂J(φ*(A))/∂A` for every axon of `A`, aligned with the input slice
 /// (chain-economy §5.1 solves 2 and 3, called on `A_mid`).
 pub fn gradient(axons: &[Axon], p: &EpochParams) -> Gradient {
-    gradient_of(&EpochGraph::build(axons), p)
+    gradient_of(&EpochGraph::build_with(axons, p.ground), p)
 }
 
 /// `A_mid = ⌊(A_prev + A_cur)/2⌋` per axon present in either list, ascending

@@ -7,8 +7,8 @@
 use tru::focusing::epoch::fixed::GRAD_BITS;
 use tru::focusing::epoch::integrated::{AxonScore, integrated_gradient, midpoint_attribution};
 use tru::focusing::epoch::{
-    Axon, AxonKey, EpochGraph, EpochParams, PHI_STEPS, Position, canonical, gradient, midpoint,
-    net_axons, phi, preimage, solve_steps, syntropy,
+    Axon, AxonKey, EpochGraph, EpochParams, Ground, PHI_STEPS, Position, canonical, gradient,
+    midpoint, net_axons, path_gradient, phi, preimage, solve_steps, syntropy,
 };
 
 const ONE: f64 = (1u64 << 60) as f64;
@@ -326,14 +326,54 @@ fn rel_err(est: &[AxonScore], sh: &[(AxonKey, f64)]) -> f64 {
     num / den.max(1e-300)
 }
 
+fn median(mut v: Vec<f64>) -> f64 {
+    v.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    v[v.len() / 2]
+}
+
+/// A base graph with one particle X (id 999) that has in-axons but no
+/// out-axon, and `cur` = base with five changes: X gains its first out-axon,
+/// plus four weight changes of ±30 %.
+fn first_out_link_case(seed: u64) -> (Vec<Axon>, Vec<Axon>) {
+    let mut prev = random_graph(500 + seed, 10, 34);
+    let x = pid(999);
+    for k in 0..2 {
+        prev.push(Axon {
+            from: pid((seed + 3 * k) % 10),
+            to: x,
+            weight: 2_000_000 + 1_000_000 * k as u128,
+        });
+    }
+    let prev = canonical(&prev);
+    let mut cur = prev.clone();
+    let mut r = seed ^ 0x55;
+    for _ in 0..4 {
+        r = mix(r);
+        let k = (r % cur.len() as u64) as usize;
+        cur[k].weight = cur[k].weight * (70 + (r >> 20) % 61) as u128 / 100;
+    }
+    cur.push(Axon {
+        from: x,
+        to: pid(seed % 10),
+        weight: 1_500_000,
+    });
+    (prev, canonical(&cur))
+}
+
 #[test]
-fn gradient_attribution_tracks_exact_shapley_on_smooth_changes() {
-    // Stake changes on existing axons (no particle appears, no particle loses
-    // or gains its only out-axon): the regime where the gradient form is the
-    // Aumann–Shapley value of a smooth game. Bound measured in
-    // audit/epoch-settlement-2026-10.md.
+fn path_gradient_tracks_exact_shapley() {
+    // The protocol rule (ground γ_i = 1/4, four Gauss–Legendre nodes) against
+    // exact Shapley, per class of change; acceptance in
+    // audit/epoch-settlement-2026-10.md §6: median ≤ 1 % on ±30 % weight
+    // changes, ≤ 5 % when a particle gains or loses its only out-axon.
     let p = params(256, 1);
-    let mut worst = (0.0f64, 0.0f64);
+    let protocol = |prev: &[Axon], cur: &[Axon], p: &EpochParams| {
+        rel_err(
+            &integrated_gradient(prev, cur, p.quadrature, p),
+            &shapley(prev, cur, p),
+        )
+    };
+    let mut smooth = Vec::new();
     for seed in 0..6 {
         let prev = random_graph(300 + seed, 10, 40);
         let mut cur = prev.clone();
@@ -341,20 +381,72 @@ fn gradient_attribution_tracks_exact_shapley_on_smooth_changes() {
         for _ in 0..5 {
             r = mix(r);
             let k = (r % cur.len() as u64) as usize;
-            let pct = 70 + (r >> 20) % 61; // ×0.70 … ×1.30
-            cur[k].weight = cur[k].weight * pct as u128 / 100;
+            cur[k].weight = cur[k].weight * (70 + (r >> 20) % 61) as u128 / 100;
         }
-        let sh = shapley(&prev, &cur, &p);
-        let e_mid = rel_err(&midpoint_attribution(&prev, &cur, &p), &sh);
-        let e_gl4 = rel_err(&integrated_gradient(&prev, &cur, 4, &p), &sh);
-        worst = (worst.0.max(e_mid), worst.1.max(e_gl4));
+        smooth.push(protocol(&prev, &cur, &p));
     }
-    assert!(
-        worst.0 < 0.10,
-        "midpoint vs Shapley relative ℓ1 = {}",
-        worst.0
+    let (mut first, mut last, mut plain) = (Vec::new(), Vec::new(), Vec::new());
+    let none = EpochParams {
+        ground: Ground::NONE,
+        ..p.clone()
+    };
+    for seed in 0..7 {
+        let (prev, cur) = first_out_link_case(seed);
+        first.push(protocol(&prev, &cur, &p));
+        last.push(protocol(&cur, &prev, &p));
+        plain.push(protocol(&prev, &cur, &none));
+    }
+    let (ms, mf, ml, mp) = (median(smooth), median(first), median(last), median(plain));
+    eprintln!(
+        "median error: ±30 % {ms:.4}, first out-axon {mf:.4}, last out-axon {ml:.4}, first out-axon without ground {mp:.4}"
     );
-    assert!(worst.1 < 0.10, "GL-4 vs Shapley relative ℓ1 = {}", worst.1);
+    assert!(ms <= 0.01, "±30 % weight changes: median {ms}");
+    assert!(mf <= 0.05, "first out-axon: median {mf}");
+    assert!(ml <= 0.05, "last out-axon: median {ml}");
+    assert!(
+        mp > 0.10,
+        "without the ground the first out-axon is a jump: median {mp}"
+    );
+}
+
+#[test]
+fn focus_is_continuous_at_a_first_out_axon() {
+    // X has in-axons and no out-axon; give it one of weight ε. With the ground
+    // the focus moves by O(ε); without it, it jumps.
+    let (prev, _) = first_out_link_case(1);
+    let x = pid(999);
+    let move_by = |eps: u128, ground: Ground| {
+        let mut cur = prev.clone();
+        cur.push(Axon {
+            from: x,
+            to: pid(1),
+            weight: eps,
+        });
+        let p = EpochParams {
+            ground,
+            ..params(256, 1)
+        };
+        let (a, b) = (phi(&prev, &p), phi(&cur, &p));
+        a.phi
+            .iter()
+            .zip(&b.phi)
+            .map(|(&u, &v)| u.abs_diff(v) as f64)
+            .sum::<f64>()
+            / ONE
+    };
+    let (small, tiny) = (
+        move_by(1_000, Ground::PROTOCOL),
+        move_by(10, Ground::PROTOCOL),
+    );
+    assert!(
+        small < 1e-3 && tiny < small / 20.0,
+        "ground: ε=1000 moves {small:e}, ε=10 moves {tiny:e}"
+    );
+    let jump = move_by(10, Ground::NONE);
+    assert!(
+        jump > 1e-2,
+        "without ground a weight-10 axon moves φ* by {jump:e}"
+    );
 }
 
 // ── valence: the chain's net weight ──────────────────────────────────────
@@ -459,6 +551,40 @@ fn conformance_vector_phi() {
     assert_eq!(f.syntropy, VECTOR_J);
 }
 
+/// The conformance path: axon (1,2) raised 50 %, (2,5) removed, (5,1) new
+/// (particle 5 keeps (5,3)); a new particle 6 behind (4,6).
+fn vector_path() -> (Vec<Axon>, Vec<Axon>) {
+    let prev = vector_graph();
+    let mut cur: Vec<Axon> = prev
+        .iter()
+        .filter(|a| a.from != [2; 32] || a.to != [5; 32])
+        .copied()
+        .collect();
+    cur[0].weight = 1_500_000;
+    let p = |b: u8| [b; 32];
+    cur.push(Axon {
+        from: p(5),
+        to: p(1),
+        weight: 800_000,
+    });
+    cur.push(Axon {
+        from: p(4),
+        to: p(6),
+        weight: 600_000,
+    });
+    (prev, cur)
+}
+
+#[test]
+fn conformance_vector_path_gradient() {
+    let (prev, cur) = vector_path();
+    let g = path_gradient(&prev, &cur, &EpochParams::default());
+    assert_eq!(
+        g.by_axon, VECTOR_PATH,
+        "path gradient of the conformance path moved"
+    );
+}
+
 #[test]
 fn conformance_vector_gradient() {
     let g = gradient(&vector_graph(), &EpochParams::default());
@@ -468,26 +594,38 @@ fn conformance_vector_gradient() {
     );
 }
 
-// Blessed 2026-10-17 (tru feat/epoch-settlement): `EpochParams::default()`,
-// PHI_STEPS = 48. φ in ascending particle order ([1;32] … [5;32]); the
-// gradient in input order. hemera 0.4 (7237a23) of the φ preimage:
-// e9462109f934da2baca3aef7f903033d829bb245f404c203c7a7352cec2ab1e0
+// Blessed 2026-10-17 (tru feat/epoch-ground): `EpochParams::default()` —
+// PHI_STEPS = 48, ground γ_i = 1/4, four Gauss–Legendre nodes. φ in ascending
+// particle order ([1;32] … [5;32]); the gradient in input order; the path
+// gradient in union order ([`vector_path`]). hemera 0.4 (7237a23) of the φ
+// preimage: e0ff79997aa697bced38e2cdedb823b189892982bae411933ec623007de18fc8
 const VECTOR_PHI: [u64; 5] = [
-    264_668_384_119_641_678,
-    257_361_480_420_213_991,
-    283_365_895_498_496_502,
-    222_988_084_795_569_635,
-    124_537_659_616_327_972,
+    219_310_425_963_150_397,
+    244_918_065_555_344_491,
+    314_071_252_939_911_789,
+    227_905_484_039_409_407,
+    146_716_275_947_897_466,
 ];
-const VECTOR_J: i128 = 38_984_667_269_542_703;
+const VECTOR_J: i128 = 31_829_771_616_584_911;
 const VECTOR_GRAD: [i128; 7] = [
-    25_131_023_120_481_710_517_417_596,
-    66_161_466_516_476_074_186_608_474,
-    39_963_303_351_423_591_141_803_536,
-    2_637_987_610_521_681_915_732_732,
-    1_169_308_602_267_229_865_745_330,
-    -35_266_280_524_199_669_297_466_447,
-    -138_516_978_833_138_047_665_348_459,
+    1_914_075_910_134_244_213_425_895,
+    71_171_900_741_159_642_673_700_975,
+    9_937_083_483_998_543_538_357_229,
+    -17_125_362_367_786_076_875_988_209,
+    11_207_443_854_475_690_734_085_092,
+    -13_369_225_266_052_630_809_369_953,
+    -101_821_770_616_628_008_646_342_672,
+];
+const VECTOR_PATH: [i128; 9] = [
+    24_512_188_647_810_751_159_877_835,
+    6_595_504_669_415_890_941_122_483,
+    69_113_271_079_698_993_274_897_226,
+    -129_462_933_411_104_598_769_260_648,
+    52_682_207_631_725_481_215_888_292,
+    63_409_899_129_634_271_710_099_828,
+    -830_202_655_685_804_916_443_499_496,
+    -68_394_074_836_277_878_255_736_171,
+    -23_457_048_889_162_735_643_430_197,
 ];
 
 // ── chain scale (ignored; needs /tmp/tru-epoch/*.links or TRU_EPOCH_LINKS) ─
@@ -547,12 +685,15 @@ fn bostrom_settlement_within_budget() {
     let t = std::time::Instant::now();
     let p = params(PHI_STEPS, 1);
     let f = phi(&cur, &p);
-    let g = gradient(&midpoint(&prev, &cur), &p);
+    let g = path_gradient(&prev, &cur, &p);
     let el = t.elapsed();
-    eprintln!("bostrom settlement (solve 1 + gradient), one thread: {el:.2?}");
+    eprintln!(
+        "bostrom settlement (solve 1 + {}-node path gradient), one thread: {el:.2?}",
+        p.quadrature
+    );
     assert!(f.syntropy > 0 && !g.by_axon.is_empty());
     assert!(
-        el.as_secs() < 900 / 10,
-        "settlement must stay well under SETTLE_BUDGET"
+        el.as_secs() < 300,
+        "settlement must stay within 300 s single-thread"
     );
 }

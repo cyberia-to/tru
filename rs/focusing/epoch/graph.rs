@@ -52,6 +52,9 @@ pub struct EpochGraph {
     pub(crate) sym_col: Vec<u32>,
     // ── numeric ──
     pub(crate) out_w: Vec<u64>,
+    /// Out-row normaliser `N_p = out_p + w0_p` (the ground weight `w0_p`
+    /// teleports; see [`Ground`]).
+    pub(crate) norm_w: Vec<u64>,
     /// Undirected degree = node stake `Σ_incident A`.
     pub(crate) deg: Vec<u64>,
     /// `Σ deg = 2·Σ A`.
@@ -67,10 +70,47 @@ pub struct EpochGraph {
     /// `W(r,c)/deg(r)` at 2^40 — its transpose, row r.
     pub(crate) sym_adj: Vec<u64>,
     /// Dangling nodes (stake but no out-edge).
-    pub(crate) dangling: Vec<u32>,
-    pub(crate) is_dangling: Vec<bool>,
+    /// Teleport share of each particle's out-row at 2^40: `w0_p/N_p`, and
+    /// 2^40 for a particle with stake and `N_p = 0` (dangling, no ground).
+    pub(crate) tele_share: Vec<u64>,
+    /// The ground rule the graph was built under.
+    pub(crate) ground: Ground,
     /// Right shift applied to raw weights so `Σ A < 2^62`.
     pub(crate) shift: u32,
+}
+
+/// The ground weight: every particle's out-row carries a virtual weight
+/// `w0_p = ⌊(γ_d·d_p + γ_i·in_p) / 2^32⌋` to the teleport prior, so the row
+/// normalises by `N_p = out_p + w0_p` and `w0_p/N_p` of the particle's focus
+/// teleports. φ* is then continuous in `A`: a particle's first out-axon
+/// redirects its focus gradually instead of all at once ([[epoch]] §2).
+/// `γ` at 2^32; `γ_d + γ_i ≤ 2^32`. Zero/zero is the plain dangling rule.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Ground {
+    /// Coefficient on the particle's undirected degree `d_p`, Q32.
+    pub degree: u64,
+    /// Coefficient on the particle's in-strength, Q32.
+    pub inbound: u64,
+}
+
+impl Ground {
+    /// No ground: the plain dangling rule (φ* jumps at a first out-axon).
+    pub const NONE: Ground = Ground {
+        degree: 0,
+        inbound: 0,
+    };
+    /// The protocol value: `w0_p = in_p / 4` ([[epoch]] §2, chosen by
+    /// measurement in `audit/epoch-settlement-2026-10.md` §6).
+    pub const PROTOCOL: Ground = Ground {
+        degree: 0,
+        inbound: 1 << 30,
+    };
+}
+
+impl Default for Ground {
+    fn default() -> Self {
+        Self::PROTOCOL
+    }
 }
 
 /// The right shift that brings `total` below `2^62`.
@@ -116,6 +156,15 @@ impl EpochGraph {
     /// weights are dropped, duplicates sum (see [`canonical`]); particles are
     /// indexed by ascending id.
     pub fn build(axons: &[Axon]) -> Self {
+        Self::build_with(axons, Ground::default())
+    }
+
+    /// Build under an explicit ground rule.
+    pub fn build_with(axons: &[Axon], ground: Ground) -> Self {
+        assert!(
+            ground.degree + ground.inbound <= 1 << 32,
+            "γ_d + γ_i must be ≤ 1"
+        );
         // Canonical order over input indices (no copy of the axons).
         let mut ord: Vec<u32> = (0..axons.len() as u32)
             .filter(|&k| {
@@ -182,10 +231,11 @@ impl EpochGraph {
         drop(order);
         drop(canon);
         Self::from_edges(
-            particles, ext, input_axon, axon_edge, &edges, &weights, shift,
+            particles, ext, input_axon, axon_edge, &edges, &weights, shift, ground,
         )
     }
 
+    #[allow(clippy::too_many_arguments)] // private: the build's parts, assembled once
     fn from_edges(
         particles: Vec<[u8; 32]>,
         ext: Vec<u32>,
@@ -194,6 +244,7 @@ impl EpochGraph {
         edges: &[(u32, u32)],
         weights: &[u64],
         shift: u32,
+        ground: Ground,
     ) -> Self {
         let n = particles.len();
         let m = edges.len();
@@ -274,6 +325,7 @@ impl EpochGraph {
             sym_ptr,
             sym_col,
             out_w: vec![],
+            norm_w: vec![],
             deg: vec![],
             total: 0,
             tele: vec![],
@@ -281,8 +333,8 @@ impl EpochGraph {
             p_in: vec![],
             sym_fwd: vec![],
             sym_adj: vec![],
-            dangling: vec![],
-            is_dangling: vec![],
+            tele_share: vec![],
+            ground,
             shift,
         };
         g.set_weights(weights, &sym_e);
@@ -307,6 +359,17 @@ impl EpochGraph {
                 deg[self.out_dst[e] as usize] += w;
             }
         }
+        // Ground weight and the out-row normaliser N = out + w0 (< 2^64:
+        // out ≤ 2^62, w0 ≤ d ≤ 2^63).
+        let gr = self.ground;
+        let norm_w: Vec<u64> = (0..n)
+            .map(|i| {
+                let inb = (deg[i] - out_w[i]) as u128;
+                let w0 =
+                    ((gr.degree as u128 * deg[i] as u128 + gr.inbound as u128 * inb) >> 32) as u64;
+                out_w[i] + w0
+            })
+            .collect();
         let total = 2 * total_a;
         // Reciprocals 2^126/x: one wide division per node; every per-edge
         // normalisation is then a multiply (products stay ≤ 2^126).
@@ -320,7 +383,7 @@ impl EpochGraph {
         let norm = |w: u64, r: u128| -> u64 {
             ((w as u128 * r + (1u128 << (125 - P_BITS))) >> (126 - P_BITS)) as u64
         };
-        let r_out: Vec<u128> = out_w.iter().map(|&x| recip(x)).collect();
+        let r_out: Vec<u128> = norm_w.iter().map(|&x| recip(x)).collect();
         let r_deg: Vec<u128> = deg.iter().map(|&x| recip(x)).collect();
         let mut p_out = vec![0u64; m];
         for s in 0..n {
@@ -350,11 +413,17 @@ impl EpochGraph {
                 ((d as u128 * r_tot + (1u128 << (125 - PHI_BITS))) >> (126 - PHI_BITS)) as u64
             })
             .collect();
-        self.is_dangling = (0..n).map(|i| out_w[i] == 0 && deg[i] > 0).collect();
-        self.dangling = (0..n as u32)
-            .filter(|&i| self.is_dangling[i as usize])
+        self.tele_share = (0..n)
+            .map(|i| {
+                if norm_w[i] == 0 {
+                    if deg[i] > 0 { 1u64 << P_BITS } else { 0 }
+                } else {
+                    norm(norm_w[i] - out_w[i], r_out[i])
+                }
+            })
             .collect();
         self.out_w = out_w;
+        self.norm_w = norm_w;
         self.deg = deg;
         self.total = total;
         self.p_out = p_out;
