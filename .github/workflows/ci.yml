@@ -6,8 +6,12 @@
 # tru CI — fmt, clippy, and tests on stable.
 #
 # tru has path dependencies on sibling repos (cyberia-to/strata for nebu,
-# cyberia-to/hemera), so the workflow lays them out as cyber/{tru,strata,hemera}
-# to match `../../strata/nebu/rs` and `../../hemera/rs`. Cross-repo checkout of
+# cyberia-to/hemera, and cyberia-to/honeycrisp for the macOS-only acpu
+# dev-dependency), so the workflow lays them out as
+# cyber/{tru,strata,hemera,honeycrisp} to match `../../strata/nebu/rs`,
+# `../../hemera/rs` and `../../honeycrisp/acpu`. cargo reads the manifest of
+# every path dependency, including target-specific ones, so honeycrisp must be
+# present on linux even though acpu is never built there. Cross-repo checkout of
 # public repos works with the default token; private siblings need a PAT in
 # `secrets.CYBER_CI_TOKEN` passed to the sibling checkouts.
 name: CI
@@ -38,6 +42,11 @@ jobs:
         with:
           repository: cyberia-to/hemera
           path: hemera
+      - name: checkout honeycrisp (acpu manifest)
+        uses: actions/checkout@v4
+        with:
+          repository: cyberia-to/honeycrisp
+          path: honeycrisp
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
