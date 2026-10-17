@@ -48,8 +48,15 @@ impl CsrBuilder {
         }
     }
 
+    // `assert!`, not `debug_assert!`: an out-of-range col that survives into
+    // release silently reads the wrong slot in `spmv` instead of panicking
+    // here, corrupting the tri-kernel result with no error.
     pub fn add(&mut self, row: usize, col: usize, val: Fx) {
-        debug_assert!(row < self.n && col < self.n);
+        assert!(
+            row < self.n && col < self.n,
+            "CsrBuilder::add: index ({row}, {col}) out of bounds for {0}x{0} matrix",
+            self.n
+        );
         self.triplets.push((row, col, val));
     }
 
@@ -84,5 +91,24 @@ impl CsrBuilder {
             col_idx,
             values,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "out of bounds")]
+    fn add_rejects_out_of_range_row() {
+        let mut b = CsrBuilder::new(3);
+        b.add(3, 0, Fx::ONE);
+    }
+
+    #[test]
+    #[should_panic(expected = "out of bounds")]
+    fn add_rejects_out_of_range_col() {
+        let mut b = CsrBuilder::new(3);
+        b.add(0, 3, Fx::ONE);
     }
 }
