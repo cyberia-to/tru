@@ -193,7 +193,6 @@ fn main() {
     let train_links: Vec<Cyberlink> = train.iter().map(to_cyber).collect();
 
     // ---- the shipped passes ----
-    let t0 = std::time::Instant::now();
     use std::io::Write as _;
     let t0 = std::time::Instant::now();
     let (particles, edges, adj) = index::build(&[], &train_links);
@@ -212,7 +211,6 @@ fn main() {
         dialects.len(),
         particles.len()
     );
-    use std::io::Write as _;
     std::io::stdout().flush().unwrap();
     let emb_t = embed::embed(&adj, &a.phi, a.d);
     eprintln!("[{:?}] embed done", t0.elapsed());

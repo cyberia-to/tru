@@ -20,6 +20,7 @@ pub mod arithmetic;
 pub mod error;
 pub mod focusing;
 pub mod graph;
+pub mod icbs;
 pub mod model;
 pub mod pass;
 pub mod truth_scoring;
@@ -32,5 +33,6 @@ pub use focusing::{
     Impulse, Karma, Link, Will,
 };
 pub use graph::{Cyberlink, Graph};
+pub use icbs::{cost as icbs_cost, price_no as icbs_price_no, price_yes as icbs_price_yes, Reserves as IcbsReserves};
 pub use model::Model;
 pub use truth_scoring::{accumulate, bts_scores, surprise, Report};
