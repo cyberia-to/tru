@@ -87,7 +87,7 @@ the attribution gradient is the path average over `k` Gauss–Legendre nodes `(t
 
 ```
 A_i  = A_prev + ⌊t_i·(A_cur − A_prev) / 2^32⌋      per axon of the union, floor (arithmetic shift)
-ḡ_pq = Σ_i ⌊w_i·g_pq(A_i) / 2^32⌋                  (256-bit product, truncated toward zero)
+ḡ_pq = Σ_i ⌊w_i·g_pq(A_i) / 2^32⌋                  (256-bit product, floor)
 ```
 
 `path_gradient(prev, cur, p)` returns `ḡ` in the union's ascending order; with one node `A_1` is exactly `⌊(A_prev + A_cur)/2⌋`. the chain's attribution `a(c) = Δs(c)·σ(c)·ḡ_pq` (chain-economy §5.2) is a 256-bit product at 2^112; `mul_wide_shr(a, g, 52)` gives it in nats at 2^60. nodes (2^32): `k = 4`: t = 298207500, 1417379916, 2877587380, 3996759796; w = 747012592, 1400471056, 1400471056, 747012592.

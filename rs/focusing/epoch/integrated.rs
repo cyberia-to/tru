@@ -10,7 +10,7 @@
 //! exact Shapley value on small graphs (`rs/tests/epoch_settlement.rs`); the
 //! measured errors are in `audit/epoch-settlement-2026-10.md`.
 
-use super::fixed::{GRAD_BITS, PHI_BITS, Q_BITS, mul_wide_shr};
+use super::fixed::{GRAD_BITS, PHI_BITS, Q_BITS, mul_wide_floor, mul_wide_shr};
 use super::{Axon, EpochGraph, EpochParams, canonical, gradient_of};
 
 /// One axon's attribution: `(from, to)`, `ΔA = A_cur − A_prev`, and the score
@@ -116,7 +116,7 @@ pub fn path_gradient(prev: &[Axon], cur: &[Axon], p: &EpochParams) -> PathGradie
         let g = gradient_of(&graph, p);
         drop(graph);
         for (a, &gk) in acc.iter_mut().zip(&g.by_axon) {
-            *a = a.saturating_add(mul_wide_shr(w as i128, gk, Q_BITS));
+            *a = a.saturating_add(mul_wide_floor(w as i128, gk, Q_BITS));
         }
     }
     PathGradient {
