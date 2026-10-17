@@ -11,7 +11,6 @@ use std::io::Write;
 
 use tru::graph::Cyberlink;
 use tru::graph::record::RECORD_SIZE;
-use tru::{Fx, Model};
 
 fn cid_id(c: &str) -> [u8; 32] {
     let mut h = [0u8; 32];
@@ -49,10 +48,9 @@ fn main() {
     // interning order replayed exactly as pass 1 (from, to, axon per
     // link) so the suggestion index maps token -> cid without guessing.
     let mut order: Vec<Option<String>> = Vec::new();
-    let mut seen: std::collections::HashMap<[u8; 32], usize> =
-        std::collections::HashMap::new();
+    let mut seen: std::collections::HashMap<[u8; 32], usize> = std::collections::HashMap::new();
     let text =
-        std::fs::read_to_string(&input).unwrap_or_else(|e| die(&format!("read {input}: {e}")));
+        std::fs::read_to_string(input).unwrap_or_else(|e| die(&format!("read {input}: {e}")));
     for line in text.lines() {
         let line = line.trim();
         if line.is_empty() {
@@ -85,7 +83,11 @@ fn main() {
         });
         // replay pass-1 interning: from, to, then axon(p,q) with the
         // particle ids — matches index::build byte for byte.
-        for (h, cid) in [(fh, Some(fc.clone())), (th, Some(tc)), (tru::pass::index::axon(&fh, &th), None)] {
+        for (h, cid) in [
+            (fh, Some(fc.clone())),
+            (th, Some(tc)),
+            (tru::pass::index::axon(&fh, &th), None),
+        ] {
             if let std::collections::hash_map::Entry::Vacant(e) = seen.entry(h) {
                 e.insert(order.len());
                 order.push(cid);
@@ -126,7 +128,8 @@ fn main() {
         tru::graph::Graph::open(&graph_path).unwrap_or_else(|e| die(&format!("open graph: {e}")));
     println!("compiling {} ...", g.name());
     let tc = std::time::Instant::now();
-    let mut model = tru::pass::compile::compile(&g).unwrap_or_else(|e| die(&format!("compile: {e}")));
+    let mut model =
+        tru::pass::compile::compile(&g).unwrap_or_else(|e| die(&format!("compile: {e}")));
     // particle token strings are the CIDs (tokenization is whole-word
     // lookup in the runtime). axons keep their hex form — they are
     // never prompt words.
@@ -159,9 +162,9 @@ fn main() {
     }
 
     model
-        .write(&output)
+        .write(output)
         .unwrap_or_else(|e| die(&format!("write model: {e}")));
-    let bytes = std::fs::metadata(&output).map(|m| m.len()).unwrap_or(0);
+    let bytes = std::fs::metadata(output).map(|m| m.len()).unwrap_or(0);
     let cfg = &model.config;
     let grab = |key: &str| -> String {
         cfg.lines()

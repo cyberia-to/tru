@@ -23,7 +23,7 @@
 
 use crate::arithmetic::Fx;
 
-use super::focusing::{compute_focusing, Context, FocusingGraph, FocusingParams, Link};
+use super::focusing::{Context, FocusingGraph, FocusingParams, Link, compute_focusing};
 use super::measures::entropy;
 
 /// The proven focus shift of one signal.
@@ -48,11 +48,7 @@ pub struct Impulse {
 
 /// |x| over the field.
 fn abs(x: Fx) -> Fx {
-    if x < Fx::ZERO {
-        Fx::ZERO - x
-    } else {
-        x
-    }
+    if x < Fx::ZERO { Fx::ZERO - x } else { x }
 }
 
 /// Compute the impulse of `batch` applied on top of `base`, under the attention

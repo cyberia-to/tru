@@ -20,5 +20,5 @@ pub mod svd;
 
 pub use arch::Arch;
 pub use compile::compile;
-pub use dialect::{Dialects, BOTTOM};
-pub use index::{axon, effective_stake, Adjacency, Edge, ParticleIndex};
+pub use dialect::{BOTTOM, Dialects};
+pub use index::{Adjacency, Edge, ParticleIndex, axon, effective_stake};

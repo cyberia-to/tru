@@ -13,9 +13,12 @@
 //!
 //! Run: cargo run -p cyber-tru --release --example eval_ct0
 
+// index loops over parallel arrays are the intended shape here, as in the
+// library (rs/lib.rs allows the same lint).
+#![allow(clippy::needless_range_loop)]
+
 use std::collections::HashMap;
 
-use tru::Fx;
 use tru::graph::Cyberlink;
 use tru::pass::{arch, index};
 
@@ -377,7 +380,7 @@ fn main() {
                 }
             }
         }
-        let mut rr = Rng(0xd1ec7 as u64);
+        let mut rr = Rng(0xd1ec7_u64);
         let mut sampled = Vec::new();
         while sampled.len() < edge_pairs.len() {
             let i = rr.below(v);
@@ -509,6 +512,7 @@ thread_local! {
     };
 }
 
+#[allow(non_snake_case)]
 fn NAME_OF(p: &[u8; 32]) -> Option<&'static str> {
     NAMES.with(|m| m.get(p).copied())
 }

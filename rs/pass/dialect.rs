@@ -103,12 +103,12 @@ pub fn discover(v: &ParticleIndex, edges: &[Edge]) -> Dialects {
         let alpha = e.axon;
         let mut best: Option<(usize, i128)> = None; // (head, weight)
         for (&(s, ax), &w) in &label_weight {
-            if ax == alpha {
-                if let Some(&h) = head_of.get(&s) {
-                    match best {
-                        Some((bh, bw)) if w < bw || (w == bw && h >= bh) => {}
-                        _ => best = Some((h, w)),
-                    }
+            if ax == alpha
+                && let Some(&h) = head_of.get(&s)
+            {
+                match best {
+                    Some((bh, bw)) if w < bw || (w == bw && h >= bh) => {}
+                    _ => best = Some((h, w)),
                 }
             }
         }

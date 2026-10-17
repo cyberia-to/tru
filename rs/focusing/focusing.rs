@@ -655,9 +655,11 @@ mod tests {
     fn empty_graph() {
         let g = FocusingGraph::build(vec![], &Context::none());
         assert_eq!(g.n(), 0);
-        assert!(compute_focusing(&g, &FocusingParams::default())
-            .focus
-            .is_empty());
+        assert!(
+            compute_focusing(&g, &FocusingParams::default())
+                .focus
+                .is_empty()
+        );
     }
 
     #[test]

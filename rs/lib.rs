@@ -16,21 +16,32 @@
 // intentional module layout.
 #![allow(clippy::needless_range_loop, clippy::module_inception)]
 
+pub mod allocation;
+pub mod annuity;
 pub mod arithmetic;
 pub mod error;
 pub mod focusing;
 pub mod graph;
+pub mod icbs;
 pub mod model;
 pub mod pass;
+pub mod pid;
 pub mod truth_scoring;
 pub mod vocab;
 
+pub use allocation::{security_floor, split as allocation_split};
+pub use annuity::{EpochSample, accrue, accrue_running};
 pub use arithmetic::Fx;
 pub use error::{McError, Result};
 pub use focusing::{
-    compute_focusing, impulse, propose, Context, FocusingGraph, FocusingParams, FocusingResult,
-    Impulse, Karma, Link, Will,
+    Context, FocusingGraph, FocusingParams, FocusingResult, Impulse, Karma, Link, Will,
+    compute_focusing, impulse, propose,
 };
 pub use graph::{Cyberlink, Graph};
+pub use icbs::{
+    Reserves as IcbsReserves, cost as icbs_cost, price_no as icbs_price_no,
+    price_yes as icbs_price_yes,
+};
 pub use model::Model;
-pub use truth_scoring::{accumulate, bts_scores, surprise, Report};
+pub use pid::Pid;
+pub use truth_scoring::{Report, accumulate, bts_scores, bts_scores_hardened, surprise};

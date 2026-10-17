@@ -15,6 +15,10 @@
 //!
 //! Run: cargo run -p cyber-tru --release --example eval_attn
 
+// index loops over parallel arrays are the intended shape here, as in the
+// library (rs/lib.rs allows the same lint).
+#![allow(clippy::needless_range_loop)]
+
 use std::collections::HashMap;
 
 use tru::graph::Cyberlink;
@@ -930,6 +934,7 @@ thread_local! {
     };
 }
 
+#[allow(non_snake_case)]
 fn NAME_OF(p: &[u8; 32]) -> Option<&'static str> {
     NAMES.with(|m| m.get(p).copied())
 }

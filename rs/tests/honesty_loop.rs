@@ -7,7 +7,7 @@
 //! more collective focus than an equal-stake follower's.
 
 use tru::{
-    accumulate, compute_focusing, Context, FocusingGraph, FocusingParams, Fx, Karma, Link, Report,
+    Context, FocusingGraph, FocusingParams, Fx, Karma, Link, Report, accumulate, compute_focusing,
 };
 
 fn hash(b: u8) -> [u8; 32] {

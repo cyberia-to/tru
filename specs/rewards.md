@@ -74,7 +74,7 @@ Three of those properties are load-bearing, each invoked by name later:
 
 $v$ is the same $\Delta\phi^+$ (§2) read over sets, by the incremental [[tri-kernel]] recomputation the network already runs.
 
-For the reward, $v$ is read in its surprise-weighted form $v^\star$: each contribution is scaled by its [[Bayesian Truth Serum|BTS]] surprise $\rho_\ell \in [0,1]$ (§5), so a copy contributes nothing and the mint divides surprising syntropy — the focus shift the crowd did not predict. Rank reads the unweighted graph (§9), so a copy's capital still ranks even as it mints nothing.
+For the reward, $v$ is read in its surprise-weighted form $v^\star$: each contribution is scaled by its [[Bayesian Truth Serum|BTS]] surprise $\rho_\ell \in [0,1]$ (§5), so a copy contributes nothing and the mint divides [[surprising syntropy]] — the focus shift the crowd did not predict. Rank reads the unweighted graph (§9), so a copy's capital still ranks even as it mints nothing.
 
 ---
 
@@ -186,7 +186,7 @@ Each winning ticket carries a [[zheng]] proof that $m(n)$ is a correct $v^\star$
 
 The fold is a commutative monoid: a cluster's accumulated result is $\bigl(\sum_n m(n),\, k,\, \pi_{\text{acc}}\bigr)$ — the running sum of accepted marginals, the sample count, and a validity accumulator. Commutativity makes the fold order-independent, so the tree assembles in any topology and produces the same result; no coordination of assembly order is needed, and the leaderless property is preserved.
 
-Each miner self-folds first: before broadcasting, it collapses its own batch of winning tickets into a single accumulator proof using [[zheng]]'s HyperNova IVC. The cluster fold tree then reaches depth $O(\log k_{\text{miners}})$ rather than $O(\log k_{\text{tickets}})$; each tree node is one miner's pre-aggregated batch. One IVC step per level; the final accumulator verifies in $O(1)$.
+Each miner self-folds first: before broadcasting, it collapses its own batch of winning tickets into a single accumulator proof using [[zheng]]'s accumulation (the scheme, ARC, is set by [[soft3/proposals/proof-system-repair|the proof-system repair]] §3; the earlier fold over hemera was unsound). The cluster fold tree then reaches depth $O(\log k_{\text{miners}})$ rather than $O(\log k_{\text{tickets}})$; each tree node is one miner's pre-aggregated batch. One IVC step per level; the final accumulator verifies in $O(1)$.
 
 Duplicate nonces are structurally excluded: the win-test hash commits to $(b_E,\, \text{cluster},\, n,\, \mathrm{id}(\nu),\, \mathrm{commit}(m(n)))$, pinning identity to nonce and sample. Two miners cannot share the same $(n, m(n))$ pair under different identities; a single miner's re-submission of the same nonce is a collision on the committed value. The fold counts each canonical $(\mathrm{id},\, n)$ pair once.
 
@@ -258,6 +258,8 @@ $$B = \text{floor}\cdot M + (1-\gamma)(1-\beta)F, \qquad I_{\text{net}} = \text{
 Gross rewards can exceed inflation when fees are high; net inflation can go negative. The security floor is derived from attack economics rather than chosen — $\text{floor} \ge c_{\text{sec}}\cdot(\text{TVL}/M)\cdot r_{\text{atk}}$, where $c_{\text{sec}}$ is the safety margin and $r_{\text{atk}}$ an attacker's cost of capital per epoch (distinct from the §7 hop radius $r$ and the §4 sample count $k$); here $M$ is circulating supply. This is the one emission untied to $\Delta\phi^+$.
 
 Base emission goes to work and risk only. A standing yield to passive stake would be emission without contribution — it would break the invariant that inflation is [[knowledge]], and it is the mechanism by which idle capital compounds. The floor is paid only to the two providers that do work: PoW compute and active ($v_\ell \neq 0$) epistemic risk. It PID-decays toward zero as mint and fees grow to cover security. The parameters $\alpha$, floor, and $\beta$ follow PID control on observable signals (security margin, fee coverage, efficiency differential), so the system measures and adapts rather than predicts.
+
+`tru::Pid` (`rs/pid.rs`) is the shared control primitive the three loops drive: a clamped, anti-windup PID over `Fx` (`error, dt ↦ output`, output bounded to a caller-supplied range, integral frozen while saturated). It does not itself define security margin, fee coverage or efficiency differential as computable quantities, nor the gains each loop runs at — those are a per-parameter decision, the next slice for each of $\alpha$, floor and $\beta$.
 
 ---
 

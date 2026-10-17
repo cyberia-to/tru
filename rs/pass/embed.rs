@@ -140,7 +140,16 @@ mod tests {
         // row normalization is a shipping invariant (eval/e2e_pussy.md):
         // rmsnorm amplifies near-zero rows 316x per layer otherwise.
         let mut links = Vec::new();
-        for (a, b) in [(1u8, 2u8), (2, 3), (3, 4), (4, 1), (1, 3), (2, 4), (3, 1), (4, 2)] {
+        for (a, b) in [
+            (1u8, 2u8),
+            (2, 3),
+            (3, 4),
+            (4, 1),
+            (1, 3),
+            (2, 4),
+            (3, 1),
+            (4, 2),
+        ] {
             links.push(Cyberlink {
                 neuron: [7u8; 32],
                 from: [a; 32],
@@ -170,7 +179,6 @@ mod tests {
 
     use super::super::arch;
     use super::super::index::build;
-    use super::*;
     use crate::graph::Cyberlink;
 
     fn hash(b: u8) -> [u8; 32] {

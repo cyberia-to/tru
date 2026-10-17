@@ -106,17 +106,61 @@ pub fn bts_scores(reports: &[Report]) -> Vec<Fx> {
         .collect()
 }
 
+/// The BTS score for every report, computed against a crowd reference that
+/// excludes decoy reports carrying no staked BTS exposure on the cluster.
+/// `specs/rewards.md` §5: the crowd reference `m̄_−ν` "is taken over distinct
+/// karma-bearing predictors who have themselves staked BTS exposure on the
+/// cluster ... with v_ℓ=0 reports excluded. Otherwise a stake-rich actor
+/// manufactures surprise by seeding unslashable v_ℓ=0 decoy predictions that
+/// depress the reference" (§15, "manufactured surprise"). [`bts_scores`]
+/// takes the reference over every report unconditionally and does not resist
+/// this; this function is the hardened crowd reference §5 requires.
+///
+/// `staked[i]` must align 1:1 with `reports[i]` (true = the report carries
+/// staked exposure, false = a `v_ℓ = 0` decoy). A decoy report is still
+/// scored on the left-hand side like any other — only its contribution to
+/// *other* reports' crowd reference is dropped, matching §5's "distinct
+/// karma-bearing predictors" wording.
+pub fn bts_scores_hardened(reports: &[Report], staked: &[bool]) -> Vec<Fx> {
+    assert_eq!(
+        reports.len(),
+        staked.len(),
+        "staked mask must align 1:1 with reports"
+    );
+    let n = reports.len();
+    if n < 2 {
+        return vec![Fx::ZERO; n];
+    }
+    let beliefs: Vec<Fx> = reports.iter().map(|r| r.belief).collect();
+    let preds: Vec<Fx> = reports.iter().map(|r| r.prediction).collect();
+
+    (0..n)
+        .map(|i| {
+            let others_b: Vec<Fx> = (0..n)
+                .filter(|&k| k != i && staked[k])
+                .map(|k| beliefs[k])
+                .collect();
+            let others_m: Vec<Fx> = (0..n)
+                .filter(|&k| k != i && staked[k])
+                .map(|k| preds[k])
+                .collect();
+            let pbar = geo_mean(&others_b);
+            let mbar = geo_mean(&others_m);
+            let (p, m) = (beliefs[i], preds[i]);
+            let info_gain = kl(p, mbar) - kl(p, pbar);
+            let pred_acc = kl(pbar, m);
+            info_gain - pred_acc
+        })
+        .collect()
+}
+
 /// Accumulate a BTS score into a neuron's [[karma]] `κ`: `κ' = max(0, κ + η·s)`.
 /// Karma is the running record of honest signal — it rises on positive score,
 /// falls on noise, and is floored at zero (the tri-kernel multiplier `κ(ν)` is
 /// never negative). Starts from the neutral baseline `κ = 1` for a new neuron.
 pub fn karma_step(kappa: Fx, score: Fx, eta: Fx) -> Fx {
     let next = kappa + eta * score;
-    if next < Fx::ZERO {
-        Fx::ZERO
-    } else {
-        next
-    }
+    if next < Fx::ZERO { Fx::ZERO } else { next }
 }
 
 /// The per-contribution surprise `ρ = clip(s / s_max, 0, 1)` the mint divides
@@ -264,6 +308,43 @@ mod tests {
     }
 
     #[test]
+    fn decoy_reports_depress_the_plain_crowd_reference_but_not_the_hardened_one() {
+        // The §15 "manufactured surprise" attack: an informed contrarian (SP
+        // case) scores well against a genuine crowd. A stake-rich actor then
+        // seeds unslashable v_ℓ=0 decoy reports that predict the crowd will
+        // land where the contrarian's own belief sits, closing the gap
+        // between the contrarian's belief and the (attacked) crowd reference
+        // and so depressing its score under the plain, unfiltered scorer.
+        let genuine = vec![
+            report(1, 0.8, 0.8),
+            report(2, 0.8, 0.8),
+            report(3, 0.8, 0.8),
+            report(4, 0.15, 0.8), // informed contrarian
+        ];
+        let baseline = bts_scores(&genuine)[3].to_f64();
+
+        // Same genuine reports plus three decoys predicting 0.15 (the
+        // contrarian's own belief) to shrink its apparent information gain.
+        let mut attacked = genuine;
+        attacked.push(report(90, 0.15, 0.15));
+        attacked.push(report(91, 0.15, 0.15));
+        attacked.push(report(92, 0.15, 0.15));
+        let staked = vec![true, true, true, true, false, false, false];
+
+        let plain_attacked = bts_scores(&attacked)[3].to_f64();
+        assert!(
+            plain_attacked < baseline - 1e-6,
+            "the unfiltered scorer should be manipulable: attacked ({plain_attacked}) should score below baseline ({baseline})"
+        );
+
+        let hardened_attacked = bts_scores_hardened(&attacked, &staked)[3].to_f64();
+        assert!(
+            (hardened_attacked - baseline).abs() < 1e-6,
+            "the hardened scorer must ignore v_ℓ=0 decoys and reproduce the undepressed baseline: hardened ({hardened_attacked}) vs baseline ({baseline})"
+        );
+    }
+
+    #[test]
     fn accumulate_closes_the_loop_to_a_karma_table() {
         // An informative contrarian ends with higher karma than a follower.
         let reports = vec![
@@ -279,5 +360,100 @@ mod tests {
             karma.get(&hash(4)).to_f64(),
             karma.get(&hash(1)).to_f64()
         );
+    }
+
+    #[test]
+    fn informed_minority_beats_coordinated_majority_at_scale() {
+        // Property 24 (launch.md registry): the serum selects truth over
+        // coordinated consensus — by score, not by vote count. A coordinated
+        // majority reports and predicts the same fixed point (0.8): babbling,
+        // with no private signal to offer. A single informed contrarian with
+        // an accurate meta-prediction (0.15 belief, 0.8 prediction) must keep
+        // outscoring every follower as the majority scales from a handful of
+        // agents to hundreds — the mechanism cannot be outvoted by growing
+        // the cartel.
+        let contrarian_id = 254u8;
+        for &majority_size in &[4usize, 20, 100, 200] {
+            let mut reports: Vec<Report> = (0..majority_size as u8)
+                .map(|i| report(i, 0.8, 0.8))
+                .collect();
+            reports.push(report(contrarian_id, 0.15, 0.8));
+
+            let s = bts_scores(&reports);
+            let contrarian = s[majority_size].to_f64();
+
+            for (i, follower_score) in s[..majority_size].iter().enumerate() {
+                let follower = follower_score.to_f64();
+                assert!(
+                    contrarian > follower,
+                    "majority size {majority_size}, follower {i}: contrarian ({contrarian}) must beat follower ({follower})"
+                );
+            }
+        }
+    }
+
+    /// A neuron id wide enough for populations above 255.
+    fn id(i: usize) -> [u8; 32] {
+        let mut h = [0u8; 32];
+        h[..2].copy_from_slice(&(i as u16).to_le_bytes());
+        h
+    }
+
+    #[test]
+    fn informed_minority_share_keeps_positive_margin_at_scale() {
+        // The lone-contrarian case above has a limit: against a perfectly
+        // self-predicting majority the contrarian's own score is exactly zero
+        // (the crowd's actual and predicted means coincide, so there is no
+        // surprisingly-popular gap to pay), and it wins only because its
+        // presence pushes every follower slightly negative — a margin that
+        // shrinks like 1/n². What strong-truthfulness.md needs is the
+        // fixed-share case: an informed minority holding 5% of the reports,
+        // sharing a private signal (belief 0.15) and predicting the crowd
+        // accurately, scores strictly positive — it mints under ρ — while
+        // every follower scores strictly negative, and the informed margin
+        // does not collapse as the population grows tenfold.
+        let majority = Fx::from_ratio(8, 10);
+        let informed = Fx::from_ratio(15, 100);
+        let mut informed_floor_at_100 = Fx::ZERO;
+        for &(n, k) in &[(100usize, 5usize), (200, 10), (1000, 50)] {
+            // An informed neuron's accurate meta-prediction is the geometric
+            // mean of everyone else's belief: n followers and k−1 peers.
+            let mut peers: Vec<Fx> = vec![majority; n];
+            peers.extend(std::iter::repeat_n(informed, k - 1));
+            let meta = geo_mean(&peers);
+
+            let mut reports: Vec<Report> = (0..n)
+                .map(|i| Report {
+                    neuron: id(i),
+                    belief: majority,
+                    prediction: majority,
+                })
+                .collect();
+            reports.extend((0..k).map(|i| Report {
+                neuron: id(n + i),
+                belief: informed,
+                prediction: meta,
+            }));
+
+            let s = bts_scores(&reports);
+            let informed_min = s[n..].iter().copied().fold(s[n], Fx::min);
+            let follower_max = s[..n].iter().copied().fold(s[0], Fx::max);
+            assert!(
+                informed_min > Fx::ZERO,
+                "n={n}, k={k}: every informed neuron must score positive, min {informed_min:?}"
+            );
+            assert!(
+                follower_max < Fx::ZERO,
+                "n={n}, k={k}: every follower must score negative, max {follower_max:?}"
+            );
+            if n == 100 {
+                informed_floor_at_100 = informed_min;
+            } else {
+                assert!(
+                    informed_min >= informed_floor_at_100,
+                    "n={n}: informed margin {informed_min:?} collapsed below the n=100 floor {informed_floor_at_100:?}"
+                );
+            }
+        }
     }
 }
