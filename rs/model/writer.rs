@@ -208,7 +208,7 @@ impl Model {
         let text = |name: &str| -> Result<String> {
             let &(s, e) = sec
                 .get(name)
-                .ok_or(McError::MissingSection("model section".to_string()))?;
+                .ok_or_else(|| McError::MissingSection(name.to_string()))?;
             Ok(std::str::from_utf8(&bytes[s..e])
                 .map_err(|err| McError::InvalidGraph(format!("{name} not utf-8: {err}")))?
                 .to_string())
