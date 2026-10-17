@@ -15,6 +15,10 @@
 //!
 //! Run: cargo run -p cyber-tru --release --example eval_attn
 
+// index loops over parallel arrays are the intended shape here, as in the
+// library (rs/lib.rs allows the same lint).
+#![allow(clippy::needless_range_loop)]
+
 use std::collections::HashMap;
 
 use tru::graph::Cyberlink;

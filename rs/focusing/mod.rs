@@ -7,8 +7,8 @@ pub mod spectral;
 
 pub use csr::CsrMatrix;
 pub use focusing::{
-    compute_focusing, Context, FocusingGraph, FocusingParams, FocusingResult, Karma, Link,
-    SpectralEmbedding, Will,
+    Context, FocusingGraph, FocusingParams, FocusingResult, Karma, Link, SpectralEmbedding, Will,
+    compute_focusing,
 };
-pub use impulse::{impulse, propose, Impulse};
-pub use measures::{cyberank, entropy, syntropy, telemetry, Telemetry};
+pub use impulse::{Impulse, impulse, propose};
+pub use measures::{Telemetry, cyberank, entropy, syntropy, telemetry};

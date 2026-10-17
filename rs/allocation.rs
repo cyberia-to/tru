@@ -125,14 +125,34 @@ mod tests {
 
     #[test]
     fn floor_scales_linearly_in_each_factor() {
-        let base = security_floor(Fx::from_int(1), Fx::from_int(100), Fx::from_int(1000), Fx::from_ratio(1, 100));
-        let double_c = security_floor(Fx::from_int(2), Fx::from_int(100), Fx::from_int(1000), Fx::from_ratio(1, 100));
+        let base = security_floor(
+            Fx::from_int(1),
+            Fx::from_int(100),
+            Fx::from_int(1000),
+            Fx::from_ratio(1, 100),
+        );
+        let double_c = security_floor(
+            Fx::from_int(2),
+            Fx::from_int(100),
+            Fx::from_int(1000),
+            Fx::from_ratio(1, 100),
+        );
         close(double_c, 2.0 * base.to_f64());
 
-        let double_tvl = security_floor(Fx::from_int(1), Fx::from_int(200), Fx::from_int(1000), Fx::from_ratio(1, 100));
+        let double_tvl = security_floor(
+            Fx::from_int(1),
+            Fx::from_int(200),
+            Fx::from_int(1000),
+            Fx::from_ratio(1, 100),
+        );
         close(double_tvl, 2.0 * base.to_f64());
 
-        let double_ratk = security_floor(Fx::from_int(1), Fx::from_int(100), Fx::from_int(1000), Fx::from_ratio(2, 100));
+        let double_ratk = security_floor(
+            Fx::from_int(1),
+            Fx::from_int(100),
+            Fx::from_int(1000),
+            Fx::from_ratio(2, 100),
+        );
         close(double_ratk, 2.0 * base.to_f64());
     }
 }

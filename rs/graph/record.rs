@@ -122,7 +122,13 @@ mod tests {
     fn decode_reads_valence_as_a_signed_byte() {
         // valence is documented as -1, 0, +1, but decode reads the raw byte
         // as i8, so the full signed range must round-trip correctly.
-        for (raw, expected) in [(0i8, 0i8), (1, 1), (-1, -1), (i8::MIN, i8::MIN), (i8::MAX, i8::MAX)] {
+        for (raw, expected) in [
+            (0i8, 0i8),
+            (1, 1),
+            (-1, -1),
+            (i8::MIN, i8::MIN),
+            (i8::MAX, i8::MAX),
+        ] {
             let bytes = record(0, 0, 0, 0, 0, raw, 0);
             assert_eq!(Cyberlink::decode(&bytes).valence, expected);
         }
@@ -169,10 +175,7 @@ mod tests {
         assert_eq!(links[0].neuron, [0xAA; 32]);
         assert_eq!(links[1].neuron, [0xBB; 32]);
         assert_eq!(links[2].neuron, [0xCC; 32]);
-        assert_eq!(
-            (links[0].block, links[1].block, links[2].block),
-            (1, 2, 3)
-        );
+        assert_eq!((links[0].block, links[1].block, links[2].block), (1, 2, 3));
     }
 
     #[test]

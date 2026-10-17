@@ -14,11 +14,7 @@ use super::focusing::FocusingParams;
 
 #[inline]
 fn fabs(x: Fx) -> Fx {
-    if x < Fx::ZERO {
-        Fx::ZERO - x
-    } else {
-        x
-    }
+    if x < Fx::ZERO { Fx::ZERO - x } else { x }
 }
 
 fn dot(a: &[Fx], b: &[Fx]) -> Fx {
@@ -113,11 +109,7 @@ pub fn lambda_2(sym: &CsrMatrix, degree: &[Fx], n: usize, lambda_max: Fx, iters:
         abs_max_normalize(&mut v);
     }
     let l2 = lambda_max - mu;
-    if l2 < Fx::ZERO {
-        Fx::ZERO
-    } else {
-        l2
-    }
+    if l2 < Fx::ZERO { Fx::ZERO } else { l2 }
 }
 
 /// The k leading eigenvectors of `M = λ_max·I − L` on `1^⊥` — equivalently the
@@ -240,8 +232,8 @@ pub fn steps_for(kappa: Fx, epsilon: Fx, cap: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::csr::CsrBuilder;
+    use super::*;
 
     fn fx(n: i64) -> Fx {
         Fx::from_int(n)

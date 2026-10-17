@@ -10,7 +10,7 @@
 //!
 //! Run: RUSTC_BOOTSTRAP=1 cargo run -p tru --example superadditivity
 
-use tru::focusing::{compute_focusing, Context, FocusingGraph, FocusingParams, Link};
+use tru::focusing::{Context, FocusingGraph, FocusingParams, Link, compute_focusing};
 
 const N: usize = 34;
 
@@ -435,5 +435,7 @@ fn main() {
     println!(
         "at every level. but J FALLS with λ₂ — adding edges spreads focus toward uniform, lowering"
     );
-    println!("syntropy. so the generalized-CFT σ-λ₂ claim holds; the J-λ₂ claim is refuted (opposite sign).");
+    println!(
+        "syntropy. so the generalized-CFT σ-λ₂ claim holds; the J-λ₂ claim is refuted (opposite sign)."
+    );
 }

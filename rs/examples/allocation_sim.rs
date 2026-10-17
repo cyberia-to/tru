@@ -1,8 +1,8 @@
 //! Simulation for `specs/rewards.md` §10 — the PoW/PoS allocation curve and
 //! the attack-economics security floor. Run with `cargo run --example allocation_sim`.
 
-use tru::allocation::{security_floor, split};
 use tru::Fx;
+use tru::allocation::{security_floor, split};
 
 fn pct(x: Fx) -> String {
     format!("{:.2}%", x.to_f64() * 100.0)
@@ -10,7 +10,11 @@ fn pct(x: Fx) -> String {
 
 fn main() {
     println!("-- R_PoW / R_PoS split of a unit security budget B, by staking ratio θ --");
-    for &(alpha_n, alpha_d, label) in &[(3, 10, "α=0.3 (PoW-favoring bound)"), (1, 2, "α=0.5 (neutral prior)"), (7, 10, "α=0.7 (PoS-favoring bound)")] {
+    for &(alpha_n, alpha_d, label) in &[
+        (3, 10, "α=0.3 (PoW-favoring bound)"),
+        (1, 2, "α=0.5 (neutral prior)"),
+        (7, 10, "α=0.7 (PoS-favoring bound)"),
+    ] {
         println!("{label}:");
         for theta_pct in [0, 10, 25, 50, 75, 90, 100] {
             let theta = Fx::from_ratio(theta_pct, 100);
@@ -25,7 +29,9 @@ fn main() {
     }
 
     println!();
-    println!("-- security floor = c_sec · (TVL/M) · r_atk, per-epoch attacker cost of capital r_atk = 1% --");
+    println!(
+        "-- security floor = c_sec · (TVL/M) · r_atk, per-epoch attacker cost of capital r_atk = 1% --"
+    );
     let r_atk = Fx::from_ratio(1, 100);
     for &c_sec_n in &[1, 2, 3, 5] {
         let c_sec = Fx::from_int(c_sec_n);

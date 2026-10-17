@@ -6,7 +6,7 @@
 
 use crate::arithmetic::Fx;
 
-use super::focusing::{contraction, derived_steps, FocusingGraph, FocusingParams, FocusingResult};
+use super::focusing::{FocusingGraph, FocusingParams, FocusingResult, contraction, derived_steps};
 
 /// Syntropy `J(φ*) = Σ_j φ*(j)·ln(|V|·φ*(j)) = D_KL(φ* ‖ u)` — the network
 /// order in nats. Zero at the uniform distribution, positive otherwise.
@@ -76,7 +76,7 @@ pub fn telemetry(g: &FocusingGraph, result: &FocusingResult, p: &FocusingParams)
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::focusing::{compute_focusing, Context, FocusingGraph, Link};
+    use crate::focusing::{Context, FocusingGraph, Link, compute_focusing};
 
     fn hash(b: u8) -> [u8; 32] {
         let mut h = [0u8; 32];

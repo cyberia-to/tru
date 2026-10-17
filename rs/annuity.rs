@@ -40,7 +40,10 @@ pub fn epoch_yield(sample: EpochSample) -> Fx {
 /// matching §12: "self-correcting: a link later falsified simply stops
 /// drawing it," never reversed.
 pub fn accrue(samples: &[EpochSample]) -> Fx {
-    samples.iter().copied().fold(Fx::ZERO, |acc, s| acc + epoch_yield(s))
+    samples
+        .iter()
+        .copied()
+        .fold(Fx::ZERO, |acc, s| acc + epoch_yield(s))
 }
 
 /// `accrue` at every prefix, for a caller that pays the annuity out per
@@ -87,7 +90,11 @@ mod tests {
 
     #[test]
     fn accrual_sums_across_epochs() {
-        let samples = [sample(1, 1, 1, 10), sample(1, 1, 2, 10), sample(1, 1, 3, 10)];
+        let samples = [
+            sample(1, 1, 1, 10),
+            sample(1, 1, 2, 10),
+            sample(1, 1, 3, 10),
+        ];
         close(accrue(&samples), 0.6); // 0.1+0.2+0.3 at ω=1
     }
 
@@ -105,9 +112,17 @@ mod tests {
         let running = accrue_running(&samples);
         assert_eq!(running.len(), 4);
         for w in running.windows(2) {
-            assert!(w[0] <= w[1], "running total dropped: {:?} -> {:?}", w[0], w[1]);
+            assert!(
+                w[0] <= w[1],
+                "running total dropped: {:?} -> {:?}",
+                w[0],
+                w[1]
+            );
         }
-        assert_eq!(running[1], running[3], "zero and negative growth must both be flat");
+        assert_eq!(
+            running[1], running[3],
+            "zero and negative growth must both be flat"
+        );
         assert_eq!(epoch_yield(sample(1, 1, -5, 10)), Fx::ZERO);
         close(running[3], accrue(&samples).to_f64());
     }

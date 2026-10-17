@@ -160,9 +160,9 @@ pub fn top_svd(
                 for t in 0..nthreads {
                     let cols: Vec<usize> = (t..k).step_by(nthreads).collect();
                     let block = &block;
-                    handles.push(s.spawn(move || {
-                        cols.iter().map(|&c| mtm(&block[c])).collect::<Vec<_>>()
-                    }));
+                    handles.push(
+                        s.spawn(move || cols.iter().map(|&c| mtm(&block[c])).collect::<Vec<_>>()),
+                    );
                 }
                 handles.into_iter().map(|h| h.join().unwrap()).collect()
             });
@@ -328,23 +328,24 @@ pub fn top_svd_banded_hybrid(
         // bands would be garbage, so we stop and keep the validated
         // prefix. the unresolved tail is zero-filled (the caller's
         // row-normalization then ignores it).
-        if let (Some(&head), Some(&tail)) = (part.sigma.first(), done.sigma.last()) {
-            // stop only on a REAL break: exact deflation guarantees
-            // monotone descent, so a band head more than 2x above the
-            // previous tail means leaked energy (observed ghost: 1600x,
-            // then explosion to 13293 on a 0.22-head operator). plain
-            // fixed-point noise on the tiny tail is ~1.3x — let it
-            // through so the extraction continues down the spectrum.
-            if !done.sigma.is_empty() && head > tail * Fx::from_int(2) {
-                if std::env::var_os("TRU_SVD_DEBUG").is_some() {
-                    eprintln!(
-                        "[svd] band head {head:.6} >= previous tail {tail:.6} — deflation degraded, stopping",
-                        head = head.to_f64(),
-                        tail = tail.to_f64()
-                    );
-                }
-                break;
+        // stop only on a REAL break: exact deflation guarantees
+        // monotone descent, so a band head more than 2x above the
+        // previous tail means leaked energy (observed ghost: 1600x,
+        // then explosion to 13293 on a 0.22-head operator). plain
+        // fixed-point noise on the tiny tail is ~1.3x — let it
+        // through so the extraction continues down the spectrum.
+        if let (Some(&head), Some(&tail)) = (part.sigma.first(), done.sigma.last())
+            && !done.sigma.is_empty()
+            && head > tail * Fx::from_int(2)
+        {
+            if std::env::var_os("TRU_SVD_DEBUG").is_some() {
+                eprintln!(
+                    "[svd] band head {head:.6} >= previous tail {tail:.6} — deflation degraded, stopping",
+                    head = head.to_f64(),
+                    tail = tail.to_f64()
+                );
             }
+            break;
         }
         // block reorthogonalization of the new vectors against the
         // deflated ones (inexact deflation leakage re-enters otherwise)
@@ -406,8 +407,8 @@ mod banded_tests {
         let mut sig = vec![Fx::ZERO; n];
         // spread over 5 orders + near-degenerate pairs and a cluster
         let truth: Vec<f64> = [
-            100.0, 10.0, 9.5, 1.0, 0.5, 0.48, 0.1, 0.095, 0.01, 0.0099, 0.0098, 0.001,
-            0.0009, 0.0005, 0.0002, 0.0001,
+            100.0, 10.0, 9.5, 1.0, 0.5, 0.48, 0.1, 0.095, 0.01, 0.0099, 0.0098, 0.001, 0.0009,
+            0.0005, 0.0002, 0.0001,
         ]
         .to_vec();
         for (i, &s) in truth.iter().enumerate() {
@@ -571,8 +572,14 @@ fn quantize_band(triples: Vec<(f64, Vec<f64>, Vec<f64>)>) -> Svd {
         sigma: Vec::with_capacity(triples.len()),
     };
     for (s, u, v) in triples {
-        let mut uq: Vec<Fx> = u.iter().map(|&x| Fx::from_ratio((x * 1e6) as i64, 1_000_000)).collect();
-        let mut vq: Vec<Fx> = v.iter().map(|&x| Fx::from_ratio((x * 1e6) as i64, 1_000_000)).collect();
+        let mut uq: Vec<Fx> = u
+            .iter()
+            .map(|&x| Fx::from_ratio((x * 1e6) as i64, 1_000_000))
+            .collect();
+        let mut vq: Vec<Fx> = v
+            .iter()
+            .map(|&x| Fx::from_ratio((x * 1e6) as i64, 1_000_000))
+            .collect();
         // renormalize in the field after quantization
         let un = dot(&uq, &uq).sqrt();
         if !un.is_zero() {

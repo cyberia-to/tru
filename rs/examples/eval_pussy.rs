@@ -14,6 +14,10 @@
 //!
 //! Run: cargo run -p cyber-tru --release --example eval_pussy
 
+// index loops over parallel arrays are the intended shape here, as in the
+// library (rs/lib.rs allows the same lint).
+#![allow(clippy::needless_range_loop)]
+
 use std::collections::HashMap;
 
 use tru::Fx;
@@ -351,7 +355,12 @@ fn main() {
         const TRAIN_L: usize = 4;
         buf.extend_from_slice(&(TRAIN_L.min(a.l) as u64).to_le_bytes());
         for l in 0..TRAIN_L.min(a.l) {
-            for suffix in ["q_proj.weight", "k_proj.weight", "v_proj.weight", "o_proj.weight"] {
+            for suffix in [
+                "q_proj.weight",
+                "k_proj.weight",
+                "v_proj.weight",
+                "o_proj.weight",
+            ] {
                 let t = attn_tensors
                     .iter()
                     .find(|t| t.name == format!("model.layers.{l}.self_attn.{suffix}"))
