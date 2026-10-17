@@ -8,6 +8,8 @@ alias: focusing, field computation, focus computation, tri-kernel computation, c
 
 focusing is tru's continuous computation — the act whose output is [[focus]] ($\phi^*$). every epoch: read signals from [[cybergraph]], build effective adjacency, run [[tri-kernel]], emit $\phi^*$ and derivatives.
 
+the phase-1 root chain runs this computation in its consensus form, [[epoch]]: canonical axon input, the normalised Laplacian for springs and heat, integer arithmetic at 2^60, a fixed `PHI_STEPS = 48` cold steps, and the adjoint gradient of J the chain's attribution reads.
+
 ## inputs
 
 every [[signal]] contributes a header (ν, t) and one or more [[cyberlink]] tuples (p, q, τ, a, v):
