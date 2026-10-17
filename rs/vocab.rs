@@ -128,14 +128,14 @@ impl Vocab {
 
         let &(cs, ce) = sections
             .get("card")
-            .ok_or(McError::MissingSection("card"))?;
+            .ok_or(McError::MissingSection("card".to_string()))?;
         let card = std::str::from_utf8(&bytes[cs..ce])
             .map_err(|e| McError::InvalidGraph(format!("card not utf-8: {e}")))?
             .to_string();
 
         let &(ps, pe) = sections
             .get("particles")
-            .ok_or(McError::MissingSection("particles"))?;
+            .ok_or(McError::MissingSection("particles".to_string()))?;
         let entries = parse_particles(&bytes[ps..pe])?;
 
         Ok(Self {
@@ -153,7 +153,15 @@ fn parse_particles(b: &[u8]) -> Result<Vec<VocabEntry>> {
         ));
     }
     let n = u32::from_le_bytes(b[0..4].try_into().unwrap()) as usize;
-    let mut entries = Vec::with_capacity(n);
+    // Not `Vec::with_capacity(n)`: `n` is a file-supplied u32 read before a
+    // single entry byte is checked to exist, so a truncated or corrupted
+    // section (as little as 4 bytes) can claim billions of entries and drive
+    // an allocation sized by a number the buffer never backs. Every entry
+    // needs at least 40 bytes (32-byte particle + 8-byte length), so cap the
+    // preallocation at what `b` could actually hold; the loop below still
+    // rejects a genuinely truncated section entry-by-entry as before.
+    let max_entries = b.len().saturating_sub(4) / 40;
+    let mut entries = Vec::with_capacity(n.min(max_entries));
     let mut c = 4;
     for i in 0..n {
         if c + 40 > b.len() {
@@ -165,16 +173,19 @@ fn parse_particles(b: &[u8]) -> Result<Vec<VocabEntry>> {
         particle.copy_from_slice(&b[c..c + 32]);
         let len = u64::from_le_bytes(b[c + 32..c + 40].try_into().unwrap()) as usize;
         c += 40;
-        if c + len > b.len() {
+        let end = c.checked_add(len).ok_or_else(|| {
+            McError::InvalidGraph(format!("particles entry {i} length overflows"))
+        })?;
+        if end > b.len() {
             return Err(McError::InvalidGraph(format!(
                 "particles entry {i} data past section end"
             )));
         }
         entries.push(VocabEntry {
             particle,
-            data: b[c..c + len].to_vec(),
+            data: b[c..end].to_vec(),
         });
-        c += len;
+        c = end;
     }
     Ok(entries)
 }
@@ -252,5 +263,37 @@ mod tests {
         let w = Vocab::read(&path).unwrap();
         assert_eq!(w.particle(), v.particle());
         std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn parse_particles_rejects_huge_count_without_preallocating() {
+        // A 4-byte "particles" section declaring a count of u32::MAX with not
+        // one entry byte behind it. Before the fix this drove
+        // `Vec::with_capacity(u32::MAX as usize)` — a few bytes on the wire
+        // or on disk claiming gigabytes of `VocabEntry`s, an allocation
+        // abort on any `.vocab`/`.model` file load rather than the graceful
+        // truncation error every other malformed section already returns.
+        let mut section = u32::MAX.to_le_bytes().to_vec();
+        assert!(parse_particles(&section).is_err());
+
+        // Same shape, but with one real (truncated) entry present — still
+        // rejected entry-by-entry as before, not by the capacity bound.
+        section.extend_from_slice(&[0u8; 10]);
+        assert!(parse_particles(&section).is_err());
+    }
+
+    /// A file-supplied entry length near `usize::MAX` must be rejected, not
+    /// overflow `c + len` — which panics in a debug build and wraps to a
+    /// bogus range in release, same failure shape as `frontmatter::index_sections`'s
+    /// `start + sz as usize`.
+    #[test]
+    fn parse_particles_rejects_overflowing_entry_length() {
+        let mut b = Vec::new();
+        b.extend_from_slice(&1u32.to_le_bytes()); // n = 1 entry
+        b.extend_from_slice(&[0u8; 32]); // particle
+        b.extend_from_slice(&(u64::MAX - 5).to_le_bytes()); // attacker length
+
+        let result = parse_particles(&b);
+        assert!(result.is_err(), "overflowing length must not decode");
     }
 }

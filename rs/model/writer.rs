@@ -208,7 +208,7 @@ impl Model {
         let text = |name: &str| -> Result<String> {
             let &(s, e) = sec
                 .get(name)
-                .ok_or(McError::MissingSection("model section"))?;
+                .ok_or_else(|| McError::MissingSection(name.to_string()))?;
             Ok(std::str::from_utf8(&bytes[s..e])
                 .map_err(|err| McError::InvalidGraph(format!("{name} not utf-8: {err}")))?
                 .to_string())
@@ -217,7 +217,7 @@ impl Model {
         let tensors_toml = text("tensors")?;
         let &(ws, we) = sec
             .get("weights")
-            .ok_or(McError::MissingSection("weights"))?;
+            .ok_or(McError::MissingSection("weights".to_string()))?;
         let weights = &bytes[ws..we];
 
         #[derive(Deserialize)]
@@ -232,14 +232,17 @@ impl Model {
         for (name, t) in index {
             let enc = Encoding::parse(&t.encoding)?;
             let (o, sz) = (t.offset as usize, t.size as usize);
-            if o + sz > weights.len() {
+            let end = o.checked_add(sz).ok_or_else(|| {
+                McError::InvalidGraph(format!("tensor `{name}` offset+size overflows"))
+            })?;
+            if end > weights.len() {
                 return Err(McError::InvalidGraph(format!(
                     "tensor `{name}` past weights section"
                 )));
             }
             let fb = enc.frac_bits();
             let scale = 1i64 << fb;
-            let data: Vec<Fx> = weights[o..o + sz]
+            let data: Vec<Fx> = weights[o..end]
                 .chunks_exact(enc.bytes())
                 .map(|c| match enc {
                     Encoding::U16 => Fx::from_ratio(i16::from_le_bytes([c[0], c[1]]) as i64, scale),
@@ -362,5 +365,53 @@ mod tests {
         let r = Model::read(&path).unwrap();
         assert_eq!(r.particle(), m.particle());
         std::fs::remove_file(&path).ok();
+    }
+
+    /// A tensor's file-declared offset+size must be rejected when it
+    /// overflows `usize`, not trusted to add cleanly — the same failure
+    /// shape as `frontmatter::index_sections` (`start + sz`) and
+    /// `vocab::parse_particles` (`c + len`) reject.
+    #[test]
+    fn from_bytes_rejects_overflowing_tensor_range() {
+        let weights = [0u8; 8];
+        let tensors_toml = format!(
+            "[\"t\"]\nshape = [1]\nencoding = \"u16\"\noffset = 1\nsize = {}\n\n",
+            usize::MAX
+        );
+
+        let fm = format!(
+            "[cyb]\ntypes = [\"model\"]\nname = \"overflow-test\"\n\n\
+             [[files]]\nname = \"card\"\nformat = \"md\"\n\n\
+             [[files]]\nname = \"config\"\nformat = \"toml\"\n\n\
+             [[files]]\nname = \"program\"\nformat = \"rs\"\n\n\
+             [[files]]\nname = \"tensors\"\nformat = \"toml\"\n\n\
+             [[files]]\nname = \"vocab\"\nformat = \"toml\"\n\n\
+             [[files]]\nname = \"eval\"\nformat = \"toml\"\n\n\
+             [[files]]\nname = \"weights\"\nformat = \"tensors\"\nsize = {}\n",
+            weights.len()
+        );
+
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(fm.as_bytes());
+        for (name, text) in [
+            ("card", ""),
+            ("config", ""),
+            ("program", ""),
+            ("tensors", tensors_toml.as_str()),
+            ("vocab", ""),
+            ("eval", ""),
+        ] {
+            bytes.extend_from_slice(format!("~~~{name}\n").as_bytes());
+            bytes.extend_from_slice(text.as_bytes());
+            bytes.push(b'\n');
+        }
+        bytes.extend_from_slice(b"~~~weights\n");
+        bytes.extend_from_slice(&weights);
+
+        let result = Model::from_bytes(&bytes);
+        assert!(
+            result.is_err(),
+            "offset+size overflow must not decode to a result"
+        );
     }
 }

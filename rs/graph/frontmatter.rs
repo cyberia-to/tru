@@ -71,7 +71,12 @@ pub fn index_sections(
         }
         let start = cursor + header.len();
         let end = match entry.size {
-            Some(sz) => start + sz as usize,
+            Some(sz) => start.checked_add(sz as usize).ok_or_else(|| {
+                McError::InvalidGraph(format!(
+                    "section `{}` size overflows (start={start}, size={sz})",
+                    entry.name
+                ))
+            })?,
             None => find_text_end(bytes, start),
         };
         if end > bytes.len() {
@@ -102,4 +107,73 @@ fn find_text_end(bytes: &[u8], start: usize) -> usize {
         j += 1;
     }
     bytes.len()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entry(name: &str, size: Option<u64>) -> FileEntry {
+        FileEntry {
+            name: name.into(),
+            format: "records".into(),
+            size,
+        }
+    }
+
+    #[test]
+    fn split_finds_the_first_delimiter_and_returns_the_body_offset() {
+        let bytes = b"[cyb]\nname=\"x\"\n~~~a\ndata".to_vec();
+        let (fm, body_start) = split(&bytes).unwrap();
+        assert_eq!(fm, "[cyb]\nname=\"x\"\n");
+        assert_eq!(&bytes[body_start..], b"~~~a\ndata");
+    }
+
+    #[test]
+    fn split_rejects_a_stream_with_no_delimiter() {
+        assert!(split(b"no delimiter here at all").is_err());
+    }
+
+    #[test]
+    fn split_rejects_non_utf8_frontmatter() {
+        let mut bytes = vec![0xFF, 0xFE];
+        bytes.extend_from_slice(b"\n~~~a\n");
+        assert!(split(&bytes).is_err());
+    }
+
+    #[test]
+    fn index_sections_locates_a_sized_and_an_unsized_section_in_order() {
+        let bytes = b"~~~a\nXYZ~~~b\ntail to eof".to_vec();
+        let entries = vec![entry("a", Some(3)), entry("b", None)];
+        let body_start = 0;
+        let sections = index_sections(&bytes, body_start, &entries).unwrap();
+        let (a_start, a_end) = sections["a"];
+        assert_eq!(&bytes[a_start..a_end], b"XYZ");
+        let (b_start, b_end) = sections["b"];
+        assert_eq!(&bytes[b_start..b_end], b"tail to eof");
+    }
+
+    #[test]
+    fn index_sections_rejects_a_header_that_does_not_match() {
+        let bytes = b"~~~a\ndata".to_vec();
+        let entries = vec![entry("wrong-name", None)];
+        assert!(index_sections(&bytes, 0, &entries).is_err());
+    }
+
+    #[test]
+    fn index_sections_rejects_a_size_that_runs_past_eof() {
+        let bytes = b"~~~a\nXY".to_vec();
+        let entries = vec![entry("a", Some(100))];
+        assert!(index_sections(&bytes, 0, &entries).is_err());
+    }
+
+    #[test]
+    fn index_sections_rejects_an_overflowing_size_instead_of_panicking() {
+        let bytes = b"~~~a\nXY".to_vec();
+        let entries = vec![entry("a", Some(u64::MAX))];
+        assert!(
+            index_sections(&bytes, 0, &entries).is_err(),
+            "a section size near u64::MAX must be rejected, not overflow `start + size`"
+        );
+    }
 }
