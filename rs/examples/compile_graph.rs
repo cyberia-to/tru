@@ -11,7 +11,6 @@ use std::io::Write;
 
 use tru::graph::Cyberlink;
 use tru::graph::record::RECORD_SIZE;
-use tru::{Fx, Model};
 
 fn cid_id(c: &str) -> [u8; 32] {
     let mut h = [0u8; 32];
