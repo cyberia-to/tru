@@ -8,6 +8,10 @@
 //! resolve back to CIDs through the source snapshot (vocab carries
 //! hemera ids, which are one-way hashes of the CID text).
 
+// index loops over parallel arrays are the intended shape here, as in the
+// library (rs/lib.rs allows the same lint).
+#![allow(clippy::needless_range_loop)]
+
 use std::collections::HashMap;
 
 use tru::model::{Encoding, Model};
@@ -80,26 +84,26 @@ fn main() {
     // vocab: token id -> hemera id hex ("0x..."); build the reverse map
     let mut id2tok: HashMap<[u8; 32], usize> = HashMap::with_capacity(n);
     for line in model.vocab.lines() {
-        if let Some((id_s, hex)) = line.split_once(" = ") {
-            if let Ok(id) = id_s.trim().parse::<usize>() {
-                let hex = hex.trim().trim_matches('"');
-                // 256-bit hemera id: parse per-byte (a u128 parse would
-                // silently truncate)
-                if hex.len() == 66 && hex.starts_with("0x") {
-                    let mut b = [0u8; 32];
-                    let mut ok = true;
-                    for j in 0..32 {
-                        match u8::from_str_radix(&hex[2 + 2 * j..4 + 2 * j], 16) {
-                            Ok(v) => b[j] = v,
-                            Err(_) => {
-                                ok = false;
-                                break;
-                            }
+        if let Some((id_s, hex)) = line.split_once(" = ")
+            && let Ok(id) = id_s.trim().parse::<usize>()
+        {
+            let hex = hex.trim().trim_matches('"');
+            // 256-bit hemera id: parse per-byte (a u128 parse would
+            // silently truncate)
+            if hex.len() == 66 && hex.starts_with("0x") {
+                let mut b = [0u8; 32];
+                let mut ok = true;
+                for j in 0..32 {
+                    match u8::from_str_radix(&hex[2 + 2 * j..4 + 2 * j], 16) {
+                        Ok(v) => b[j] = v,
+                        Err(_) => {
+                            ok = false;
+                            break;
                         }
                     }
-                    if ok {
-                        id2tok.insert(b, id);
-                    }
+                }
+                if ok {
+                    id2tok.insert(b, id);
                 }
             }
         }

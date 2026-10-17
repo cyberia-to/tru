@@ -92,7 +92,6 @@ fn declared_params(a: &arch::Arch) -> u64 {
 
 /// config view: the emitted layer count reaches the runtime; the rest
 /// of the architecture stays as derived.
-#[allow(clippy::too_many_fields)]
 fn arch_for_config(a: &arch::Arch, l_emit: usize) -> arch::Arch {
     arch::Arch {
         particles: a.particles,

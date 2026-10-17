@@ -284,17 +284,18 @@ pub fn top_svd_banded(
         // bands would be garbage, so we stop and keep the validated
         // prefix. the unresolved tail is zero-filled (the caller's
         // row-normalization then ignores it).
-        if let (Some(&head), Some(&tail)) = (part.sigma.first(), done.sigma.last()) {
-            if !done.sigma.is_empty() && head >= tail {
-                if std::env::var_os("TRU_SVD_DEBUG").is_some() {
-                    eprintln!(
-                        "[svd] band head {head:.6} >= previous tail {tail:.6} — deflation degraded, stopping",
-                        head = head.to_f64(),
-                        tail = tail.to_f64()
-                    );
-                }
-                break;
+        if let (Some(&head), Some(&tail)) = (part.sigma.first(), done.sigma.last())
+            && !done.sigma.is_empty()
+            && head >= tail
+        {
+            if std::env::var_os("TRU_SVD_DEBUG").is_some() {
+                eprintln!(
+                    "[svd] band head {head:.6} >= previous tail {tail:.6} — deflation degraded, stopping",
+                    head = head.to_f64(),
+                    tail = tail.to_f64()
+                );
             }
+            break;
         }
         // block reorthogonalization of the new vectors against the
         // deflated ones (inexact deflation leakage re-enters otherwise)

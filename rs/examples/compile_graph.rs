@@ -50,7 +50,7 @@ fn main() {
     let mut order: Vec<Option<String>> = Vec::new();
     let mut seen: std::collections::HashMap<[u8; 32], usize> = std::collections::HashMap::new();
     let text =
-        std::fs::read_to_string(&input).unwrap_or_else(|e| die(&format!("read {input}: {e}")));
+        std::fs::read_to_string(input).unwrap_or_else(|e| die(&format!("read {input}: {e}")));
     for line in text.lines() {
         let line = line.trim();
         if line.is_empty() {
@@ -162,9 +162,9 @@ fn main() {
     }
 
     model
-        .write(&output)
+        .write(output)
         .unwrap_or_else(|e| die(&format!("write model: {e}")));
-    let bytes = std::fs::metadata(&output).map(|m| m.len()).unwrap_or(0);
+    let bytes = std::fs::metadata(output).map(|m| m.len()).unwrap_or(0);
     let cfg = &model.config;
     let grab = |key: &str| -> String {
         cfg.lines()

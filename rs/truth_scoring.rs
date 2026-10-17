@@ -419,7 +419,7 @@ mod tests {
             // An informed neuron's accurate meta-prediction is the geometric
             // mean of everyone else's belief: n followers and k−1 peers.
             let mut peers: Vec<Fx> = vec![majority; n];
-            peers.extend(std::iter::repeat(informed).take(k - 1));
+            peers.extend(std::iter::repeat_n(informed, k - 1));
             let meta = geo_mean(&peers);
 
             let mut reports: Vec<Report> = (0..n)

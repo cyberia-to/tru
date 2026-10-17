@@ -22,6 +22,10 @@
 //!
 //! Run: cargo run -p cyber-tru --release --example eval_pussy_mix
 
+// index loops over parallel arrays are the intended shape here, as in the
+// library (rs/lib.rs allows the same lint).
+#![allow(clippy::needless_range_loop)]
+
 use tru::graph::Cyberlink;
 use tru::pass::{arch, attn, dialect, index};
 
