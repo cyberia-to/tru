@@ -342,13 +342,36 @@ The discovery leak remains open (§5, §12). The validity gate under-weights a n
 
 Settlement soundness is pinned. The beacon $b_E$ is specified ([[foculus beacon]]), the subsidy and lottery share one canonical preimage (§7–§8), and per-ticket proofs fold into one $O(1)$ accumulator per cluster (§7), so front-running, ordering-grind, the subsidy/settlement split, and the flood-of-cheap-tickets DoS are all closed.
 
-Settlement liveness and fork-safety are unspecified. The cluster average needs a deadline, a minimum sample count $k_{\min}$, and a defined default when too few samples arrive (deferral to the next epoch's annuity, not a stall) — otherwise [[tok]] has no input under thin or partitioned work. And because the pulse is irreversible (§12) while [[foculus]] finality is adaptive, settlement must bind to a $d$-deep stable state with the pulse escrowed until that depth, or a boundary reorg mints CYB against a claim set that is no longer canonical.
+Settlement liveness and fork-safety are unspecified. The cluster average needs a deadline, a minimum sample count $k_{\min}$, and a defined default when too few samples arrive (deferral to the next epoch's annuity, not a stall) — otherwise [[tok]] has no input under thin or partitioned work. And because the pulse is irreversible (§12) while [[foculus]] finality is adaptive, settlement must bind to a $d$-deep stable state with the pulse escrowed until that depth, or a boundary reorg mints CYB against a claim set that is no longer canonical. On the phase-1 root chain both are closed by construction (§16): settlement is a deterministic step of the block 120 deep past the boundary, recomputed by every node, so there is no deadline, no $k_{\min}$ and no escrow.
 
 Manufactured surprise and self-dealing are blunted, not closed. The crowd-reference hardening (§5) resists a single stake-rich actor depressing the surprise reference, but a coordinated ring still can; and a contributor controlling both endpoints of an edge, its ICBS market, and its predictor pool can mint real $\Delta\phi^+$ on a sparse subgraph only it reads. The structural defense — gating the discovery premium on *external* attention (the share of $\phi^*$ reaching the region from distinct, non-colluding high-[[karma]] neurons) — is sketched and unbuilt.
 
 The honest-reporting guarantee is for the BTS report in isolation. Once $\rho$ gates the mint, the live payoff is mint + subsidy + fee + yield + BTS redistribution, and truthfulness is a best response only if the mint multiplier is monotone in the honest score and $\rho$ and the slash read the *same* meta-prediction (so one cannot be slash-safe and surprising at once). This composite equilibrium is assumed, not proven.
 
-Two economic questions are deferred to a standalone monetary-policy pass: total issuance — the mint runs on its own budget beside the security budget $B$, with no invariant yet capping their sum per epoch — and bootstrap funding, whether the early discovery-premium mint and the security floor can fund the [[Goldilocks field processor|GFP]] hardware before fees arrive.
+Two economic questions are deferred to a standalone monetary-policy pass: total issuance — the mint runs on its own budget beside the security budget $B$, with no invariant yet capping their sum per epoch (fixed for the phase-1 root chain in §16: one subsidy, split) — and bootstrap funding, whether the early discovery-premium mint and the security floor can fund the [[Goldilocks field processor|GFP]] hardware before fees arrive.
+
+---
+
+## 16. On the Root Chain — What Phase 1 Fixes
+
+The phase-1 root chains (pussy, bostrom) run this law in consensus from genesis, on Nakamoto proof of work, with the parameters below; the normative page is soft3 `specs/chain-economy.md` (owner order 2026-10-17: "the goal is foculus, stakes with valence, and mining"). Each line names the section of this page it instantiates.
+
+| quantity | root-chain value | here |
+|---|---|---|
+| epoch | 240 blocks (2 h at 30 s); the boundary is a block, $b_E$ is its block id | §6, §7 |
+| settlement | at the block 120 deep past the boundary, recomputed by every full node; no lottery, no proof on the critical path | §6, §7, §15 |
+| $\Delta\phi^+$ attribution | integrated gradient by one adjoint solve at the midpoint of the epoch's path, $a_\ell = \Delta s_\ell\,\sigma_\ell\,\partial J/\partial A_{pq}$ at $A_{\text{mid}}$ — the Aumann–Shapley form of §4 with one gradient evaluation | §2, §4 |
+| $A^{\text{eff}}$ | $\max(0,\ G_{pq} + S^+_{pq} - S^-_{pq})$: stake of $v \in \{0,+1\}$ adds, $v=-1$ subtracts, clipped per axon; $G$ = passive genesis weight | §3, §9 |
+| karma $\kappa$, price $f$, will | 1, 1, 0 — no reports, no market, no will at launch | §3, §5 |
+| surprise $\rho$ | 1 for every active position; BTS reports arrive by a later rule set | §5 |
+| reward axis | only $v_\ell \neq 0$ stake that added weight in the epoch earns; passive stake and genesis weight earn nothing | §9 |
+| recycling | a side earns only above its decayed high-water mark (half-life 30 days); stake locked 7 days | §12, §15 |
+| emission | one subsidy (1 %/yr of genesis supply) split per epoch: the focus pool takes $\min(1/2,\ \theta^{1/2})$ of it, $\theta$ = active stake / supply, $\alpha = 1/2$; miners keep the rest and all fees | §8, §10 |
+| mint budget | the pool releases a quarter of its balance per epoch, divided by attribution; a position takes at most 1 % of its added stake; dust stays in the pool | §4, §10 |
+| conservation | in tokens: payouts $\le$ budget $\le$ pool, supply $= S_0 + h \cdot \text{SUBSIDY}$; the price of a nat of syntropy floats with the epoch | §4 |
+| annuity | not at launch: the pulse only | §11 |
+
+Two departures from the general law are deliberate. The mint is a fixed token budget divided by $\Delta\phi^+$, not $\Delta\phi^+$ converted at a set price, so the clip of §4 to $\min(v^\star(N), \Delta\phi^+(N))$ becomes conservation in tokens, and an epoch without positively attributed active stake pays nothing. And the settlement lottery of §7 is replaced by exact recomputation until the graph outgrows it, when the ticket rule set (chain-economy §7.3) brings the lottery back with the boundary block id as its beacon.
 
 ---
 
