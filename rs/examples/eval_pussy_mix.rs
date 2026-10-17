@@ -22,6 +22,9 @@
 //!
 //! Run: cargo run -p cyber-tru --release --example eval_pussy_mix
 
+// index loops over parallel arrays are the intended shape here, as in the
+// library (rs/lib.rs allows the same lint).
+#![allow(clippy::needless_range_loop)]
 
 use tru::graph::Cyberlink;
 use tru::pass::{arch, attn, dialect, index};
@@ -348,8 +351,10 @@ fn main() {
     assert_eq!(k_loaded, d, "mirror svd width mismatch");
     let f64s = |off: usize, len: usize| -> Vec<f64> {
         raw[off..off + len * 8]
-            .chunks_exact(8)
-            .map(|b| f64::from_le_bytes(b.try_into().unwrap()))
+            .as_chunks::<8>()
+            .0
+            .iter()
+            .map(|b| f64::from_le_bytes(*b))
             .collect()
     };
     let sig = f64s(8, d);

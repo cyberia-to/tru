@@ -34,7 +34,15 @@ impl Pid {
     /// zero `ki`/`kd` degrades to P-only / PI, the usual way to build up
     /// from a proportional controller).
     pub fn new(kp: Fx, ki: Fx, kd: Fx, output_min: Fx, output_max: Fx) -> Self {
-        Self { kp, ki, kd, output_min, output_max, integral: Fx::ZERO, prev_error: None }
+        Self {
+            kp,
+            ki,
+            kd,
+            output_min,
+            output_max,
+            integral: Fx::ZERO,
+            prev_error: None,
+        }
     }
 
     /// Advance the controller by one step given the current error
@@ -92,14 +100,26 @@ mod tests {
 
     #[test]
     fn proportional_only_scales_the_error() {
-        let mut pid = Pid::new(fx(1, 2), Fx::ZERO, Fx::ZERO, Fx::from_int(-100), Fx::from_int(100));
+        let mut pid = Pid::new(
+            fx(1, 2),
+            Fx::ZERO,
+            Fx::ZERO,
+            Fx::from_int(-100),
+            Fx::from_int(100),
+        );
         let out = pid.step(Fx::from_int(10), Fx::ONE);
         assert_eq!(out, Fx::from_int(5));
     }
 
     #[test]
     fn integral_accumulates_across_steps() {
-        let mut pid = Pid::new(Fx::ZERO, fx(1, 1), Fx::ZERO, Fx::from_int(-100), Fx::from_int(100));
+        let mut pid = Pid::new(
+            Fx::ZERO,
+            fx(1, 1),
+            Fx::ZERO,
+            Fx::from_int(-100),
+            Fx::from_int(100),
+        );
         let first = pid.step(Fx::from_int(1), Fx::ONE);
         let second = pid.step(Fx::from_int(1), Fx::ONE);
         assert_eq!(first, Fx::from_int(1));
@@ -108,7 +128,13 @@ mod tests {
 
     #[test]
     fn derivative_reacts_to_the_change_in_error() {
-        let mut pid = Pid::new(Fx::ZERO, Fx::ZERO, Fx::ONE, Fx::from_int(-100), Fx::from_int(100));
+        let mut pid = Pid::new(
+            Fx::ZERO,
+            Fx::ZERO,
+            Fx::ONE,
+            Fx::from_int(-100),
+            Fx::from_int(100),
+        );
         let _ = pid.step(Fx::from_int(0), Fx::ONE);
         let second = pid.step(Fx::from_int(5), Fx::ONE);
         assert_eq!(second, Fx::from_int(5));
@@ -116,14 +142,26 @@ mod tests {
 
     #[test]
     fn first_step_has_no_derivative_term() {
-        let mut pid = Pid::new(Fx::ZERO, Fx::ZERO, Fx::ONE, Fx::from_int(-100), Fx::from_int(100));
+        let mut pid = Pid::new(
+            Fx::ZERO,
+            Fx::ZERO,
+            Fx::ONE,
+            Fx::from_int(-100),
+            Fx::from_int(100),
+        );
         let out = pid.step(Fx::from_int(7), Fx::ONE);
         assert_eq!(out, Fx::ZERO);
     }
 
     #[test]
     fn output_clamps_to_bounds() {
-        let mut pid = Pid::new(Fx::from_int(10), Fx::ZERO, Fx::ZERO, Fx::ZERO, Fx::from_int(1));
+        let mut pid = Pid::new(
+            Fx::from_int(10),
+            Fx::ZERO,
+            Fx::ZERO,
+            Fx::ZERO,
+            Fx::from_int(1),
+        );
         let out = pid.step(Fx::from_int(5), Fx::ONE);
         assert_eq!(out, Fx::from_int(1));
 
@@ -136,17 +174,33 @@ mod tests {
         // kp alone already saturates the output; the integral must not
         // keep accumulating the same-direction error while saturated,
         // or the controller would overshoot on the way back down.
-        let mut pid = Pid::new(Fx::from_int(10), Fx::ONE, Fx::ZERO, Fx::ZERO, Fx::from_int(1));
+        let mut pid = Pid::new(
+            Fx::from_int(10),
+            Fx::ONE,
+            Fx::ZERO,
+            Fx::ZERO,
+            Fx::from_int(1),
+        );
         pid.step(Fx::from_int(5), Fx::ONE);
         pid.step(Fx::from_int(5), Fx::ONE);
         pid.step(Fx::from_int(5), Fx::ONE);
 
-        assert_eq!(pid.integral, Fx::ZERO, "integral must not accumulate while saturated");
+        assert_eq!(
+            pid.integral,
+            Fx::ZERO,
+            "integral must not accumulate while saturated"
+        );
     }
 
     #[test]
     fn reset_clears_integral_and_derivative_history() {
-        let mut pid = Pid::new(Fx::ZERO, Fx::ONE, Fx::ONE, Fx::from_int(-100), Fx::from_int(100));
+        let mut pid = Pid::new(
+            Fx::ZERO,
+            Fx::ONE,
+            Fx::ONE,
+            Fx::from_int(-100),
+            Fx::from_int(100),
+        );
         pid.step(Fx::from_int(3), Fx::ONE);
         pid.reset();
 
@@ -158,7 +212,13 @@ mod tests {
 
     #[test]
     fn zero_dt_skips_the_derivative_term_without_dividing_by_zero() {
-        let mut pid = Pid::new(Fx::ZERO, Fx::ZERO, Fx::ONE, Fx::from_int(-100), Fx::from_int(100));
+        let mut pid = Pid::new(
+            Fx::ZERO,
+            Fx::ZERO,
+            Fx::ONE,
+            Fx::from_int(-100),
+            Fx::from_int(100),
+        );
         pid.step(Fx::from_int(1), Fx::ONE);
         let out = pid.step(Fx::from_int(9), Fx::ZERO);
         assert_eq!(out, Fx::ZERO);

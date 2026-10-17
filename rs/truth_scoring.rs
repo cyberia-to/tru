@@ -160,11 +160,7 @@ pub fn bts_scores_hardened(reports: &[Report], staked: &[bool]) -> Vec<Fx> {
 /// never negative). Starts from the neutral baseline `κ = 1` for a new neuron.
 pub fn karma_step(kappa: Fx, score: Fx, eta: Fx) -> Fx {
     let next = kappa + eta * score;
-    if next < Fx::ZERO {
-        Fx::ZERO
-    } else {
-        next
-    }
+    if next < Fx::ZERO { Fx::ZERO } else { next }
 }
 
 /// The per-contribution surprise `ρ = clip(s / s_max, 0, 1)` the mint divides
@@ -423,13 +419,21 @@ mod tests {
             // An informed neuron's accurate meta-prediction is the geometric
             // mean of everyone else's belief: n followers and k−1 peers.
             let mut peers: Vec<Fx> = vec![majority; n];
-            peers.extend(std::iter::repeat(informed).take(k - 1));
+            peers.extend(std::iter::repeat_n(informed, k - 1));
             let meta = geo_mean(&peers);
 
             let mut reports: Vec<Report> = (0..n)
-                .map(|i| Report { neuron: id(i), belief: majority, prediction: majority })
+                .map(|i| Report {
+                    neuron: id(i),
+                    belief: majority,
+                    prediction: majority,
+                })
                 .collect();
-            reports.extend((0..k).map(|i| Report { neuron: id(n + i), belief: informed, prediction: meta }));
+            reports.extend((0..k).map(|i| Report {
+                neuron: id(n + i),
+                belief: informed,
+                prediction: meta,
+            }));
 
             let s = bts_scores(&reports);
             let informed_min = s[n..].iter().copied().fold(s[n], Fx::min);
