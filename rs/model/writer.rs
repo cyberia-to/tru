@@ -369,8 +369,8 @@ mod tests {
 
     /// A tensor's file-declared offset+size must be rejected when it
     /// overflows `usize`, not trusted to add cleanly — the same failure
-    /// shape row 76 fixed in `frontmatter::index_sections` (`start + sz`)
-    /// and row 121 fixed in `vocab::parse_particles` (`c + len`).
+    /// shape as `frontmatter::index_sections` (`start + sz`) and
+    /// `vocab::parse_particles` (`c + len`) reject.
     #[test]
     fn from_bytes_rejects_overflowing_tensor_range() {
         let weights = [0u8; 8];
