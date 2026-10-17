@@ -54,3 +54,31 @@ property 39; the row stays open until every listed repo is covered.
 this is one repo's slice of a multi-repo row. it says nothing about
 tru's own dependents (plumb/tok, foculus) resolving tru correctly, and
 nothing about the fourteen repos the sweep already found broken.
+
+## re-run 2026-10-17
+
+the 2026-09-23 numbers above are kept as measured. re-run during the
+2026-10-17 branch triage, on `origin/master` of [[tru]] at
+`74ecfb13517fad364048add5308e7c7feaa40d19` plus this page, in a
+detached worktree, against detached worktrees of the siblings'
+`origin/main`: [[strata]] `494df7a`, [[hemera]] `1c385e5` (cyber-hemera
+0.3.1), and [[honeycrisp]] `3ffc0d5` (its main checkout was clean and
+equal to origin, so it was linked rather than copied). rustc/cargo
+1.95.0 (Homebrew).
+
+```
+$ cargo fmt --all --check                                         # clean
+$ cargo clippy --locked --workspace --all-targets -- -D warnings  # clean
+$ cargo test --locked --workspace
+test result: ok. 164 passed; 0 failed; 0 ignored (lib)
+test result: ok. 1 passed; 0 failed; 0 ignored (tests/honesty_loop.rs)
+test result: ok. 1 passed; 0 failed; 0 ignored (tests/smoke.rs)
+test result: ok. 0 passed; 0 failed; 0 ignored (cli)
+test result: ok. 0 passed; 0 failed; 1 ignored (doc-tests)
+$ cargo build --locked --workspace --examples                    # 0 warnings
+```
+
+166 tests pass, 0 fail, 0 warnings. the same day the GitHub CI went
+green for the first time: it had failed on every run because the
+workflow did not check out honeycrisp, whose `acpu` manifest cargo reads
+even on linux (tru#38). tru still holds its slice of property 39.
