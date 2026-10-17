@@ -208,7 +208,7 @@ impl Model {
         let text = |name: &str| -> Result<String> {
             let &(s, e) = sec
                 .get(name)
-                .ok_or(McError::MissingSection("model section"))?;
+                .ok_or(McError::MissingSection("model section".to_string()))?;
             Ok(std::str::from_utf8(&bytes[s..e])
                 .map_err(|err| McError::InvalidGraph(format!("{name} not utf-8: {err}")))?
                 .to_string())
@@ -217,7 +217,7 @@ impl Model {
         let tensors_toml = text("tensors")?;
         let &(ws, we) = sec
             .get("weights")
-            .ok_or(McError::MissingSection("weights"))?;
+            .ok_or(McError::MissingSection("weights".to_string()))?;
         let weights = &bytes[ws..we];
 
         #[derive(Deserialize)]
