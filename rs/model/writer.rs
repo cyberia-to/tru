@@ -148,7 +148,7 @@ impl Model {
         let tensors_toml = Self::tensors_toml(&metas);
 
         let fm = format!(
-            "[cyb]\ntypes = [\"model\"]\nname = \"{}\"\n\n\
+            "[cyb]\ntypes = [\"model\"]\nname = \"{}\"\nformat_version = 2\n\n\
              [[files]]\nname = \"card\"\nformat = \"md\"\n\n\
              [[files]]\nname = \"config\"\nformat = \"toml\"\n\n\
              [[files]]\nname = \"program\"\nformat = \"rs\"\n\n\

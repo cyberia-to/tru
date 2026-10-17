@@ -278,6 +278,8 @@ $$E^{raw} = U_{:, 1:d^*} \cdot \text{diag}(\sqrt{\Sigma_{1:d^*}}) \in \mathbb{F}
 
 $$E_{i,:} \leftarrow E^{raw}_{i,:} \big/ \lVert E^{raw}_{i,:} \rVert_2$$
 
+**Role hybrid.** $E$ carries the $U$-side (out-geometry) rows, except per-row where the $U$ energy is negligible and the $V$ energy dominates — pure targets (linked-to but not linking). Their geometry lives only in $V$ (in-structure), which a pure-$U$ embedding discards; the measured consequence on bostrom (2026-09-23): true children of "president" — "Vladimir Putin", "Russia" — scored exactly zero and were invisible to the tied head. The substitution is per-row; source rows keep pure $U$ geometry (a blanket $U$/$V$ blend measurably destroys the floor, `eval_pussy_mix`).
+
 Row normalization is load-bearing, not cosmetic: raw rows span $\sim 10^{-4}$ (cold particles) to $O(1)$ (hubs), RMSNorm then amplifies the near-zero rows $1/\sqrt{\varepsilon}$ ≈ 316× per layer (a measured $2^{42}$ gradient blow-up under training), and the tied head sees a $10^4$-spread of logits (eval/e2e_pussy.md). The popularity magnitude the $\sqrt{\sigma}$ weighting carried is preserved in the row-direction cosines.
 
 ### 6.2 Determinism

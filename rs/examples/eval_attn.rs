@@ -930,6 +930,7 @@ thread_local! {
     };
 }
 
+#[allow(non_snake_case)]
 fn NAME_OF(p: &[u8; 32]) -> Option<&'static str> {
     NAMES.with(|m| m.get(p).copied())
 }
