@@ -69,6 +69,7 @@ the heart of tru. five specs that turn the weighted graph into the focus distrib
 | [impulse.md](impulse.md) | Δφ* — the proven focus shift one signal delivers; locality-bounded sparse vector | Δφ* + proof claim | ✅ `rs/focusing/impulse.rs` — Δφ*, Δφ⁺, ΔJ decomposition (proof σ external) | 1c |
 | [locus.md](locus.md) | the hyperbolic coordinate of a neuron from the follow graph: radius from stake-weighted popularity, angle from spectral positions, anchored gauge, fixed-point distance | locus(ν) = (r, θ) | spec — read by the cybergraph address record, soft3 routing, foculus fan-out; no code yet | 1d |
 | [superadditivity.md](superadditivity.md) | the collective-intelligence measure σ (collective φ* vs ego φ*_ν); generalized CFT — σ, J grow with algebraic connectivity λ₂ | σ_mean, σ_best, J(λ₂) | ✅ benchmark harness `rs/examples/superadditivity.rs` (Karate Club) | val |
+| [proving.md](proving.md) | the tri-kernel as a [[zheng]] circuit: constraints per operator and iteration, algebraic-NMT reads, capacity, prover/verifier times | proof claim for φ* (full-graph estimate) | 🟡 zheng `prove_phi_star` / `verify_phi_star` are the domain-local SpMV core; full-graph circuit unbuilt | — |
 
 ### vocabulary — the terms tru owns
 
