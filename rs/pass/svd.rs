@@ -236,6 +236,36 @@ pub fn top_svd_banded(
     band: usize,
     iters: usize,
 ) -> Svd {
+    top_svd_banded_hybrid(n, apply_m, apply_mt, None, None, k, band, iters)
+}
+
+/// Hybrid banded SVD: the first `field_band_limit` bands are extracted
+/// in the fixed-point field (where the arithmetic is exact enough); the
+/// remaining tail bands run on an f64 MIRROR of the operator and are
+/// QUANTIZED back into the field before they join the deflation, so
+/// the deflation stays field-exact on quantized triples and the shipped
+/// artifact is 100% field. This is measured engineering, not doctrine
+/// drift: three fixed-point variants (wide block, operator deflation,
+/// projection locking) all lose the tail to orthogonality collapse
+/// below ~sigma1/1e4 (observed: 5.5% nonzero embedding rows on pussy),
+/// while the f64 mirror resolves the full spectrum. The field remains
+/// the storage format, the runtime arithmetic, and the exact head of
+/// the compile.
+/// An f64 mirror of the operator (or its transpose), applied to a vector.
+pub type MirrorOp<'a> = &'a (dyn Fn(&[f64]) -> Vec<f64> + Sync);
+
+#[allow(clippy::too_many_arguments)] // two field operators, two mirrors, three sizes
+pub fn top_svd_banded_hybrid(
+    n: usize,
+    apply_m: &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync),
+    apply_mt: &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync),
+    apply_m_f64: Option<MirrorOp<'_>>,
+    apply_mt_f64: Option<MirrorOp<'_>>,
+    k: usize,
+    band: usize,
+    iters: usize,
+) -> Svd {
+    const FIELD_BAND_LIMIT: usize = 8; // components: covers the head
     let k = k.min(n);
     let band = band.max(1).min(k);
     let mut done = Svd {
@@ -274,7 +304,25 @@ pub fn top_svd_banded(
         };
         let apply_d = &apply_d as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
         let apply_dt = &apply_dt as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
-        let mut part = top_svd(n, apply_d, apply_dt, this_band, iters);
+        // head bands: field-exact extraction. tail bands: f64 mirror,
+        // quantized into the field before joining the deflation.
+        let mut part = if prev < FIELD_BAND_LIMIT {
+            top_svd(n, apply_d, apply_dt, this_band, iters)
+        } else {
+            match (apply_m_f64, apply_mt_f64) {
+                (Some(m), Some(mt)) => {
+                    let f64_banded = f64_tail_band(n, m, mt, &done, this_band, iters);
+                    if std::env::var_os("TRU_SVD_DEBUG").is_some() {
+                        let s: Vec<f64> = f64_banded.iter().map(|t| t.0).collect();
+                        eprintln!("[svd] f64 band (prev={prev}): sigma = {s:.6?}");
+                    }
+                    quantize_band(f64_banded)
+                }
+                // no mirror: keep extracting in the field (legacy path —
+                // small graphs and tests)
+                _ => top_svd(n, apply_d, apply_dt, this_band, iters),
+            }
+        };
         // numerical-rank guard: exact deflation makes the spectrum
         // strictly monotone across bands. a band whose head sigma does
         // not stay below the previous band's tail means the fixed-point
@@ -284,9 +332,15 @@ pub fn top_svd_banded(
         // bands would be garbage, so we stop and keep the validated
         // prefix. the unresolved tail is zero-filled (the caller's
         // row-normalization then ignores it).
+        // stop only on a REAL break: exact deflation guarantees
+        // monotone descent, so a band head more than 2x above the
+        // previous tail means leaked energy (observed ghost: 1600x,
+        // then explosion to 13293 on a 0.22-head operator). plain
+        // fixed-point noise on the tiny tail is ~1.3x — let it
+        // through so the extraction continues down the spectrum.
         if let (Some(&head), Some(&tail)) = (part.sigma.first(), done.sigma.last())
             && !done.sigma.is_empty()
-            && head >= tail
+            && head > tail * Fx::from_int(2)
         {
             if std::env::var_os("TRU_SVD_DEBUG").is_some() {
                 eprintln!(
@@ -428,4 +482,126 @@ mod tests {
             svd.sigma[0].to_f64()
         );
     }
+}
+
+/// One band of subspace iteration on the f64 mirror of the deflated
+/// operator. The deflation triples are the QUANTIZED field ones, so
+/// the mirror tracks the field operator exactly up to quantization.
+fn f64_tail_band(
+    n: usize,
+    apply_m: &(dyn Fn(&[f64]) -> Vec<f64> + Sync),
+    apply_mt: &(dyn Fn(&[f64]) -> Vec<f64> + Sync),
+    done: &Svd,
+    band: usize,
+    iters: usize,
+) -> Vec<(f64, Vec<f64>, Vec<f64>)> {
+    let mtm = |x: &[f64]| -> Vec<f64> { apply_mt(&apply_m(x)) };
+    // deterministic start block
+    let mut block: Vec<Vec<f64>> = (0..band)
+        .map(|c| {
+            (0..n)
+                .map(|i| (((c + 1) * (i + 3)) % 7) as f64 * 0.1 + 0.05)
+                .collect()
+        })
+        .collect();
+    // project out the quantized field directions, then orthonormalize
+    let ortho = |b: &mut Vec<Vec<f64>>| {
+        for j in 0..b.len() {
+            for i in 0..j {
+                let d: f64 = (0..n).map(|t| b[i][t] * b[j][t]).sum();
+                for t in 0..n {
+                    b[j][t] -= d * b[i][t];
+                }
+            }
+            let nm: f64 = (0..n).map(|t| b[j][t] * b[j][t]).sum::<f64>().sqrt();
+            if nm > 1e-300 {
+                for t in 0..n {
+                    b[j][t] /= nm;
+                }
+            }
+        }
+    };
+    let project = |y: &mut Vec<f64>| {
+        for v in &done.v {
+            let c: f64 = (0..n).map(|t| v[t].to_f64() * y[t]).sum();
+            if c != 0.0 {
+                for t in 0..n {
+                    y[t] -= c * v[t].to_f64();
+                }
+            }
+        }
+    };
+    for col in block.iter_mut() {
+        project(col);
+    }
+    ortho(&mut block);
+    for _ in 0..iters {
+        for col in block.iter_mut() {
+            let mut y = mtm(col);
+            project(&mut y);
+            *col = y;
+        }
+        ortho(&mut block);
+        ortho(&mut block);
+    }
+    let mut triples = Vec::with_capacity(band);
+    for mut v in block {
+        let nm: f64 = (0..n).map(|t| v[t] * v[t]).sum::<f64>().sqrt();
+        if nm > 1e-300 {
+            for t in 0..n {
+                v[t] /= nm;
+            }
+        }
+        let mv = apply_m(&v);
+        let s = (0..n).map(|t| mv[t] * mv[t]).sum::<f64>().sqrt();
+        let mut u = if s > 1e-300 {
+            mv.iter().map(|x| x / s).collect::<Vec<f64>>()
+        } else {
+            vec![0.0; n]
+        };
+        // SC-1 on the quantized pair happens after quantization
+        triples.push((s, u.clone(), v.clone()));
+        let _ = &mut u;
+    }
+    triples.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(core::cmp::Ordering::Equal));
+    triples
+}
+
+/// Quantize one f64 band back into the field so the deflation (and the
+/// shipped artifact) stay 100% Fx.
+fn quantize_band(triples: Vec<(f64, Vec<f64>, Vec<f64>)>) -> Svd {
+    let mut svd = Svd {
+        u: Vec::with_capacity(triples.len()),
+        v: Vec::with_capacity(triples.len()),
+        sigma: Vec::with_capacity(triples.len()),
+    };
+    for (s, u, v) in triples {
+        let mut uq: Vec<Fx> = u
+            .iter()
+            .map(|&x| Fx::from_ratio((x * 1e6) as i64, 1_000_000))
+            .collect();
+        let mut vq: Vec<Fx> = v
+            .iter()
+            .map(|&x| Fx::from_ratio((x * 1e6) as i64, 1_000_000))
+            .collect();
+        // renormalize in the field after quantization
+        let un = dot(&uq, &uq).sqrt();
+        if !un.is_zero() {
+            for x in uq.iter_mut() {
+                *x = *x * Fx::ONE.div(un);
+            }
+        }
+        let vn = dot(&vq, &vq).sqrt();
+        if !vn.is_zero() {
+            for x in vq.iter_mut() {
+                *x = *x * Fx::ONE.div(vn);
+            }
+        }
+        let sq = Fx::from_ratio((s * 1e6) as i64, 1_000_000);
+        sc1(&mut uq, &mut vq);
+        svd.sigma.push(sq);
+        svd.u.push(uq);
+        svd.v.push(vq);
+    }
+    svd
 }
