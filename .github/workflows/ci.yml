@@ -20,11 +20,54 @@ on:
   push:
     branches: [master, main]
   pull_request:
+    # no branch filter: covers every base, master and release/** included
 
 env:
   CARGO_TERM_COLOR: always
+  # hemera's 0.4 line; set to main once hemera#25 (release/0.4 -> main) lands
+  HEMERA_REF: release/0.4
 
 jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout tru (triggering commit)
+        uses: actions/checkout@v4
+        with:
+          path: tru
+      - name: checkout strata (nebu)
+        uses: actions/checkout@v4
+        with:
+          repository: cyberia-to/strata
+          path: strata
+      - name: checkout hemera
+        uses: actions/checkout@v4
+        with:
+          repository: cyberia-to/hemera
+          path: hemera
+          ref: ${{ env.HEMERA_REF }}
+      - name: checkout honeycrisp (acpu manifest)
+        uses: actions/checkout@v4
+        with:
+          repository: cyberia-to/honeycrisp
+          path: honeycrisp
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tru
+      - name: resolve the stand
+        run: cargo metadata --format-version 1 > /dev/null
+        working-directory: tru
+      - name: Cargo.lock changes
+        run: git -C tru diff --stat -- Cargo.lock
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Cargo.lock
+          path: tru/Cargo.lock
+      - name: committed Cargo.lock matches the stand
+        run: git -C tru diff --exit-code -- Cargo.lock
+
   ci:
     runs-on: ubuntu-latest
     steps:
@@ -42,6 +85,7 @@ jobs:
         with:
           repository: cyberia-to/hemera
           path: hemera
+          ref: ${{ env.HEMERA_REF }}
       - name: checkout honeycrisp (acpu manifest)
         uses: actions/checkout@v4
         with:
@@ -62,3 +106,6 @@ jobs:
       - name: test
         working-directory: tru
         run: cargo test --workspace
+      - name: stack-tru gate
+        working-directory: tru/rs
+        run: cargo test --locked
