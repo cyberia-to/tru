@@ -70,9 +70,13 @@ pub(crate) fn edge_gradient(
             .sum(),
         PHI_BITS,
     );
+    count!(wide_div);
     let dm_q = (dm << Q_BITS).checked_div(mass).unwrap_or(0) as i128;
     let c_dq = c.alpha as i128 + shr_i(c.oma as i128 * dm_q, Q_BITS);
-    let q = |a: i128, b: i128| shr_i(a * b, Q_BITS);
+    let q = |a: i128, b: i128| {
+        count!(grad_q);
+        shr_i(a * b, Q_BITS)
+    };
     let k_d = q(c.lam_d as i128, c.oma as i128);
     let (gd, gi) = (g.ground.degree as i128, g.ground.inbound as i128);
     let k_gp = q(k_d, gd);
@@ -90,6 +94,8 @@ pub(crate) fn edge_gradient(
     let s_bits = GRAD_BITS - PHI_BITS;
 
     let heat = |a: usize, bb: usize| -> i128 {
+        count!(grad_heat_calls);
+        count!(grad_heat_mul, kk * (kk + 1) / 2);
         let mut y = 0i128;
         for k in 1..=kk {
             let mut acc = 0i128;
@@ -108,6 +114,7 @@ pub(crate) fn edge_gradient(
         }
     };
     let row = |s: usize, out: &mut [i128]| {
+        count!(grad_edges, g.out_ptr[s + 1] - g.out_ptr[s]);
         let pd = f[s] as i128;
         let n_gs = shr_i(phi[s] as i128 * (ct - pd), LN_BITS);
         let (fs, ls, u1s) = (phi[s] as i128, lam[s] as i128, u[1][s] as i128);

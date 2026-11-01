@@ -41,12 +41,14 @@ pub const GRAD_BITS: u32 = 112;
 /// `round(a·b / 2^bits)` for unsigned operands (round half up).
 #[inline(always)]
 pub fn mul_shr(a: u64, b: u64, bits: u32) -> u64 {
+    count!(mul_shr);
     ((a as u128 * b as u128 + (1u128 << (bits - 1))) >> bits) as u64
 }
 
 /// `round(x / 2^bits)` for an unsigned wide value.
 #[inline(always)]
 pub fn shr_u(x: u128, bits: u32) -> u128 {
+    count!(shr_u);
     (x + (1u128 << (bits - 1))) >> bits
 }
 
@@ -54,6 +56,7 @@ pub fn shr_u(x: u128, bits: u32) -> u128 {
 /// rounding is symmetric so `shr_i(−x) = −shr_i(x)`.
 #[inline(always)]
 pub fn shr_i(x: i128, bits: u32) -> i128 {
+    count!(shr_i);
     let h = 1i128 << (bits - 1);
     if x >= 0 {
         (x + h) >> bits
@@ -72,6 +75,7 @@ pub fn q32(x: Fx) -> u64 {
 /// Signed division rounded half away from zero (`den > 0`).
 #[inline]
 pub fn div_round_i(num: i128, den: i128) -> i128 {
+    count!(div_round_i);
     debug_assert!(den > 0);
     let h = den / 2;
     if num >= 0 {
@@ -86,6 +90,7 @@ pub fn div_round_i(num: i128, den: i128) -> i128 {
 /// `s ≤ 63` and `|num/den| < 2^(126−s)`; saturates beyond that.
 #[inline]
 pub fn mul_shift_div(num: i128, s: u32, den: u64) -> i128 {
+    count!(mul_shift_div);
     debug_assert!(den > 0 && s <= 63);
     let d = den as i128;
     let (q, r) = (num / d, num % d);
@@ -102,6 +107,7 @@ pub fn mul_shift_div(num: i128, s: u32, den: u64) -> i128 {
 /// `a·b / 2^s` with a 256-bit intermediate, magnitude truncated (toward zero),
 /// saturating at the i128 range. `s < 128`.
 pub fn mul_wide_shr(a: i128, b: i128, s: u32) -> i128 {
+    count!(mul_wide_shr);
     let neg = (a < 0) != (b < 0);
     let (ua, ub) = (a.unsigned_abs(), b.unsigned_abs());
     let (a1, a0) = (ua >> 64, ua & u64::MAX as u128);
@@ -125,6 +131,7 @@ pub fn mul_wide_shr(a: i128, b: i128, s: u32) -> i128 {
 /// saturating at the i128 range. `0 < s < 128`. The rounding of the path
 /// gradient's weighted sum ([[epoch]] §4).
 pub fn mul_wide_floor(a: i128, b: i128, s: u32) -> i128 {
+    count!(mul_wide_floor);
     let t = mul_wide_shr(a, b, s);
     let neg = (a < 0) != (b < 0) && a != 0 && b != 0;
     if !neg || t == i128::MIN {
@@ -179,6 +186,7 @@ const LN_TABLE: [u128; 257] = {
 /// factor and a 5-term series for `ln(1+δ)`, `δ < 2^-8`: absolute error below
 /// 2^-41. Pure integer arithmetic.
 pub fn ln_q40(v: u64) -> i64 {
+    count!(ln_q40);
     if v == 0 {
         return 0;
     }
@@ -199,6 +207,7 @@ pub fn ln_q40(v: u64) -> i64 {
 
 /// `ln 2` at scale 2^40.
 pub fn ln2_q40() -> i64 {
+    count!(ln2_q40);
     shr_i(LN2_Q62 as i128, 62 - LN_BITS) as i64
 }
 

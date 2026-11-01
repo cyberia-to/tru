@@ -38,11 +38,29 @@
 //! The legacy combinatorial kernel (`focusing::compute_focusing`) stays as the
 //! research reference.
 
+// Bump an `opcount` counter (diagnostic feature); expands to nothing without it.
+#[cfg(feature = "opcount")]
+macro_rules! count {
+    ($n:ident) => {
+        count!($n, 1)
+    };
+    ($n:ident, $k:expr) => {
+        $crate::focusing::epoch::opcount::$n
+            .fetch_add(($k) as u64, ::std::sync::atomic::Ordering::Relaxed);
+    };
+}
+#[cfg(not(feature = "opcount"))]
+macro_rules! count {
+    ($($t:tt)*) => {};
+}
+
 pub mod fixed;
 pub mod gradient;
 pub mod graph;
 pub mod integrated;
 pub mod kernel;
+#[cfg(feature = "opcount")]
+pub mod opcount;
 
 pub use graph::{Axon, AxonKey, EpochGraph, Ground, canonical};
 pub use integrated::{

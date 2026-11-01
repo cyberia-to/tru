@@ -20,5 +20,9 @@ serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 memmap2 = "0.9"
 
+[features]
+# Diagnostic operation counters in the epoch kernel (soft3 plan row P7); off by default.
+opcount = []
+
 [target.'cfg(all(target_os = "macos", target_arch = "aarch64"))'.dev-dependencies]
 acpu = { path = "../../honeycrisp/acpu" }

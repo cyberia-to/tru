@@ -1,0 +1,67 @@
+# DIAGNOSTIC — never merged, never a PR (soft3 director plan, row P7).
+# The φ* relation, measured first: exact counts of every arithmetic primitive
+# and CSR entry the epoch kernel touches for phi / gradient / path_gradient, on
+# pussy's real cyberlinks and on a synthetic graph at the audit's burial
+# figures (rs/tests/p7_phi_count.rs, cargo feature `opcount`). Run on linux and
+# macOS to show the counts are platform-independent. Siblings are laid out as
+# in ci.yml (cyber/{tru,strata,hemera,honeycrisp}), each pinned by full SHA.
+name: diag-p7-phi-count
+
+on:
+  push:
+    branches: [diag/p7-phi-count]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  HEMERA_REF: 8559b52f480ebb6fdd0a25dec16ba27747da9cab
+  STRATA_REF: 5ef0c84d155ef07f9a6f33ec0ee4db6b20896bc3
+  HONEYCRISP_REF: 595ce26265e52365b23a502c19215f6de8a11758
+
+jobs:
+  measure:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux-x86_64
+            os: ubuntu-24.04
+          - label: macos-aarch64
+            os: macos-15
+    steps:
+      - name: checkout tru (triggering commit)
+        uses: actions/checkout@v4
+        with:
+          path: tru
+      - name: checkout strata (nebu)
+        uses: actions/checkout@v4
+        with:
+          repository: cyberia-to/strata
+          path: strata
+          ref: ${{ env.STRATA_REF }}
+      - name: checkout hemera
+        uses: actions/checkout@v4
+        with:
+          repository: cyberia-to/hemera
+          path: hemera
+          ref: ${{ env.HEMERA_REF }}
+      - name: checkout honeycrisp (acpu manifest)
+        uses: actions/checkout@v4
+        with:
+          repository: cyberia-to/honeycrisp
+          path: honeycrisp
+          ref: ${{ env.HONEYCRISP_REF }}
+      - uses: dtolnay/rust-toolchain@stable
+      - name: p7_phi_count
+        working-directory: tru/rs
+        run: |
+          set -o pipefail
+          cargo test --release --locked --features opcount --test p7_phi_count -- --nocapture --test-threads=1 2>&1 | tee ../../p7-${{ matrix.label }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p7-${{ matrix.label }}
+          path: p7-${{ matrix.label }}.txt

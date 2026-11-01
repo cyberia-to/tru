@@ -153,12 +153,15 @@ pub(crate) fn teleported(g: &EpochGraph, phi: &[u64]) -> u128 {
 /// its out-axons' λ and, for the teleported share, the prior's `c_t = πᵀλ`.
 #[inline(always)]
 pub(crate) fn row_value(g: &EpochGraph, i: usize, lam: &[i64], ct: i128) -> i64 {
+    count!(row_value);
     dir_adj_row(g, i, lam) + shr_i(g.tele_share[i] as i128 * ct, P_BITS) as i64
 }
 
 /// `(W x)_i` at the scale of `x` — forward random-walk row `i`.
 #[inline(always)]
 fn sym_fwd_row(g: &EpochGraph, i: usize, x: &[u64]) -> u64 {
+    count!(sym_fwd_rows);
+    count!(sym_fwd_entries, g.sym_ptr[i + 1] - g.sym_ptr[i]);
     let mut acc = 0u128;
     for k in g.sym_ptr[i] as usize..g.sym_ptr[i + 1] as usize {
         acc += g.sym_fwd[k] as u128 * x[g.sym_col[k] as usize] as u128;
@@ -169,6 +172,8 @@ fn sym_fwd_row(g: &EpochGraph, i: usize, x: &[u64]) -> u64 {
 /// `(Wᵀ y)_i` for signed `y`.
 #[inline(always)]
 fn sym_adj_row(g: &EpochGraph, i: usize, y: &[i64]) -> i64 {
+    count!(sym_adj_rows);
+    count!(sym_adj_entries, g.sym_ptr[i + 1] - g.sym_ptr[i]);
     let mut acc = 0i128;
     for k in g.sym_ptr[i] as usize..g.sym_ptr[i + 1] as usize {
         acc += g.sym_adj[k] as i128 * y[g.sym_col[k] as usize] as i128;
@@ -179,6 +184,8 @@ fn sym_adj_row(g: &EpochGraph, i: usize, y: &[i64]) -> i64 {
 /// `(P x)_i` — in-edges of `i`.
 #[inline(always)]
 fn dir_fwd_row(g: &EpochGraph, i: usize, x: &[u64]) -> u64 {
+    count!(dir_fwd_rows);
+    count!(dir_fwd_entries, g.in_ptr[i + 1] - g.in_ptr[i]);
     let mut acc = 0u128;
     for k in g.in_ptr[i] as usize..g.in_ptr[i + 1] as usize {
         acc += g.p_in[k] as u128 * x[g.in_src[k] as usize] as u128;
@@ -189,6 +196,8 @@ fn dir_fwd_row(g: &EpochGraph, i: usize, x: &[u64]) -> u64 {
 /// `(Pᵀ y)_i` — out-edges of `i`.
 #[inline(always)]
 pub(crate) fn dir_adj_row(g: &EpochGraph, i: usize, y: &[i64]) -> i64 {
+    count!(dir_adj_rows);
+    count!(dir_adj_entries, g.out_ptr[i + 1] - g.out_ptr[i]);
     let mut acc = 0i128;
     for e in g.out_ptr[i] as usize..g.out_ptr[i + 1] as usize {
         acc += g.p_out[e] as i128 * y[g.out_dst[e] as usize] as i128;
@@ -198,11 +207,13 @@ pub(crate) fn dir_adj_row(g: &EpochGraph, i: usize, y: &[i64]) -> i64 {
 
 #[inline(always)]
 fn qmul(a: u64, q: u64) -> u64 {
+    count!(qmul);
     shr_u(a as u128 * q as u128, Q_BITS) as u64
 }
 
 #[inline(always)]
 fn qmul_i(a: i64, q: u64) -> i64 {
+    count!(qmul_i);
     shr_i(a as i128 * q as i128, Q_BITS) as i64
 }
 
@@ -233,6 +244,8 @@ pub(crate) fn forward_step(
     phi: &mut Vec<u64>,
     w: &mut Work<u64>,
 ) -> u128 {
+    count!(forward_step);
+    count!(wide_div);
     let k = c.tau_k.len();
     let mass: u128 = phi.iter().map(|&x| x as u128).sum();
     let dm = teleported(g, phi);
@@ -303,6 +316,7 @@ pub(crate) fn adjoint_step(
     grad: &[i64],
     w: &mut Work<i64>,
 ) {
+    count!(adjoint_step);
     let k = c.tau_k.len();
     let ct: i128 = shr_i(
         g.tele
@@ -391,6 +405,7 @@ pub(crate) fn syntropy_with_n(phi: &[u64], n: u64, b: &[usize]) -> i128 {
 /// where `φ_i = 0`). Constants drop out: the step operator's perturbations
 /// carry zero total mass.
 pub(crate) fn centred_log(phi: &[u64], b: &[usize]) -> Vec<i64> {
+    count!(wide_div);
     let mut g = vec![0i64; phi.len()];
     let s: i128 = par_fill(b, &mut g, |i, slot| {
         let x = phi[i];
