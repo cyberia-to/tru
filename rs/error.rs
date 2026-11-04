@@ -16,6 +16,9 @@ pub enum McError {
 
     #[error("conformance check failed: {0}")]
     Conformance(String),
+
+    #[error("out of range: {0}")]
+    Range(String),
 }
 
 pub type Result<T> = std::result::Result<T, McError>;

@@ -50,6 +50,13 @@ use cyber_hemera::Hasher;
 use super::fixed::div_round_i;
 use super::graph::canonical;
 use super::{Axon, AxonKey, EpochGraph, EpochParams, kernel, solve};
+use crate::error::McError;
+
+/// Bound on the game's weights: `Σ A_prev + Σ |Δ| < 2^124`, so that no
+/// coalition's total saturates the engine's u128 sum and every build finds
+/// the right shift (`Σ A < 2^62` after it). The chain is far inside it
+/// (pussy's genesis `Σ G ≈ 2^55`).
+pub const WEIGHT_BITS: u32 = 124;
 
 /// Domain separator of a ticket's ordering,
 /// `π(n) = hemera(D_ORDER ‖ beacon(E) ‖ cluster ‖ n)` (chain-economy §7.3;
@@ -140,9 +147,21 @@ pub fn ordering(beacon: &[u8; 32], cluster: &[u8; 32], nonce: u64, n: usize) -> 
 
 impl Game {
     /// The game over `prev` (any order; canonicalised) and `players`, solved
-    /// under `p`. Costs one solve (the base value).
-    pub fn new(prev: &[Axon], players: &[Change], p: &EpochParams) -> Self {
+    /// under `p`. Costs one solve (the base value). Errors when the weights
+    /// exceed [`WEIGHT_BITS`] (`Σ A_prev + Σ |Δ| ≥ 2^124`).
+    pub fn new(prev: &[Axon], players: &[Change], p: &EpochParams) -> Result<Self, McError> {
         let base = canonical(prev);
+        let mass = base
+            .iter()
+            .map(|a| a.weight)
+            .chain(players.iter().map(|c| c.delta.unsigned_abs()))
+            .try_fold(0u128, |s, w| s.checked_add(w))
+            .filter(|&s| s < 1u128 << WEIGHT_BITS);
+        if mass.is_none() {
+            return Err(McError::Range(format!(
+                "the game's weights must sum below 2^{WEIGHT_BITS} (Σ A_prev + Σ |Δ|)"
+            )));
+        }
         let mut parts: Vec<[u8; 32]> = base
             .iter()
             .flat_map(|a| [a.from, a.to])
@@ -158,7 +177,7 @@ impl Game {
             params: p.clone(),
         };
         g.base_syntropy = g.syntropy_of(&g.base);
-        g
+        Ok(g)
     }
 
     /// The players, in the order the game indexes them.

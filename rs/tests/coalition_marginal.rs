@@ -6,6 +6,7 @@
 //! exact Shapley value by enumeration — identically over all orderings for
 //! `n ≤ 6`, by Monte Carlo for `n = 8`.
 
+use tru::focusing::epoch::coalition::WEIGHT_BITS;
 use tru::focusing::epoch::fixed::div_round_i;
 use tru::focusing::epoch::integrated::integrated_gradient;
 use tru::focusing::epoch::{Axon, Change, EpochParams, Game, canonical, ordering};
@@ -129,7 +130,7 @@ fn one_change_marginal_matches_the_engine_attribution() {
             to: a.to,
             delta: (a.weight as i128) * 3 / 10,
         };
-        let game = Game::new(&prev, &[change], &p);
+        let game = Game::new(&prev, &[change], &p).unwrap();
         let marginal = game.marginal(&[], 0);
         let mut cur = prev.clone();
         for x in cur.iter_mut() {
@@ -159,7 +160,7 @@ fn sample_sums_to_the_coalition_value_exactly() {
     for seed in 0..3u64 {
         let base = random_graph(400 + seed, 16, 48);
         let pl = players(&base, 7, seed);
-        let game = Game::new(&base, &pl, &p);
+        let game = Game::new(&base, &pl, &p).unwrap();
         let all: Vec<usize> = (0..pl.len()).collect();
         let total = game.value(&all);
         for nonce in 0..4u64 {
@@ -182,9 +183,15 @@ fn sample_is_bit_identical_across_runs_and_thread_counts() {
     let pl = players(&base, 9, 1);
     let beacon = [0x5a; 32];
     let cluster = [3; 32];
-    let one = Game::new(&base, &pl, &params(48, 1)).sample(&beacon, &cluster, 11);
-    let again = Game::new(&base, &pl, &params(48, 1)).sample(&beacon, &cluster, 11);
-    let four = Game::new(&base, &pl, &params(48, 4)).sample(&beacon, &cluster, 11);
+    let one = Game::new(&base, &pl, &params(48, 1))
+        .unwrap()
+        .sample(&beacon, &cluster, 11);
+    let again = Game::new(&base, &pl, &params(48, 1))
+        .unwrap()
+        .sample(&beacon, &cluster, 11);
+    let four = Game::new(&base, &pl, &params(48, 4))
+        .unwrap()
+        .sample(&beacon, &cluster, 11);
     assert_eq!(one, again);
     assert_eq!(one, four);
     let digest = cyber_hemera::hash(&one.preimage());
@@ -223,7 +230,7 @@ fn permutation_mean_equals_shapley_by_enumeration_up_to_six_players() {
     for (seed, k) in [(1u64, 3usize), (2, 4), (3, 5), (4, 6)] {
         let base = random_graph(600 + seed, 12, 30);
         let pl = players(&base, k, seed);
-        let game = Game::new(&base, &pl, &p);
+        let game = Game::new(&base, &pl, &p).unwrap();
         let sh = game.shapley();
         let mut acc = vec![0i128; k];
         let perms = permutations(k);
@@ -244,7 +251,7 @@ fn beacon_samples_converge_to_shapley_for_eight_players() {
     let p = params(48, 1);
     let base = random_graph(700, 18, 54);
     let pl = players(&base, 8, 3);
-    let game = Game::new(&base, &pl, &p);
+    let game = Game::new(&base, &pl, &p).unwrap();
     let sh = game.shapley();
     let nonces: Vec<u64> = (0..800).collect();
     let samples = game.samples(&[0x77; 32], &[1; 32], &nonces, 4);
@@ -302,7 +309,7 @@ fn coalition_axons_sum_deltas_and_clip_at_zero() {
             delta: 7,
         },
     ];
-    let game = Game::new(&base, &pl, &params(8, 1));
+    let game = Game::new(&base, &pl, &params(8, 1)).unwrap();
     assert_eq!(game.particles(), 3);
     let w = |ax: &[Axon], f: u64, t: u64| {
         ax.iter()
@@ -322,4 +329,35 @@ fn coalition_axons_sum_deltas_and_clip_at_zero() {
     assert_eq!(w(&a, 3, 1), Some(7));
     assert_eq!(game.value(&[]), 0);
     assert_eq!(game.axons(&[]), canonical(&base));
+}
+
+#[test]
+fn weights_beyond_the_engine_range_are_an_error_not_a_panic() {
+    let base = random_graph(800, 8, 20);
+    let huge = |i: u64| Change {
+        from: pid(i),
+        to: pid(i + 1),
+        delta: i128::MAX,
+    };
+    let p = params(8, 1);
+    assert!(Game::new(&base, &[huge(1), huge(2), huge(3)], &p).is_err());
+    // the bound is on Σ A_prev + Σ |Δ|: a negative delta counts by magnitude
+    let neg = Change {
+        from: pid(1),
+        to: pid(2),
+        delta: -(1i128 << (WEIGHT_BITS - 1)),
+    };
+    assert!(Game::new(&base, &[neg, neg], &p).is_err());
+    // inside the bound the game solves (a shift absorbs the large weights)
+    let big = Change {
+        from: pid(1),
+        to: pid(2),
+        delta: 1i128 << 100,
+    };
+    let game = Game::new(&base, &[big, big, big], &p).unwrap();
+    let all: Vec<usize> = (0..3).collect();
+    assert_eq!(
+        game.sample_along(&all).iter().sum::<i128>(),
+        game.value(&all)
+    );
 }

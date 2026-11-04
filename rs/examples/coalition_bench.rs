@@ -112,7 +112,7 @@ fn main() {
     };
 
     let t = Instant::now();
-    let game = Game::new(&base, &changes, &p);
+    let game = Game::new(&base, &changes, &p).expect("weights within the engine's range");
     let t_new = t.elapsed();
     eprintln!(
         "game: {} players over |U| = {} particles, base J = {:.6} nats, solve_threads = {threads} ({t_new:.2?})",
