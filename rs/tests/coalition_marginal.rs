@@ -544,7 +544,7 @@ fn probe_is_the_engine_s_finite_difference_at_the_drawn_node() {
         (((1u128 << 123) - 1) >> 32) * u32::MAX as u128
             + ((0xFFFF_FFFFu128 * u32::MAX as u128) >> 32)
     );
-    assert_eq!(g.probe(0, 1 << 31).u, 1 << 122);
+    assert_eq!(g.probe(0, 1 << 31).u, (1 << 122) - 1);
     assert_eq!(g.probe(1, 1 << 31).u, 1 << 121);
     // an empty epoch's ticket is all probes, W solves
     let t = game.ticket(&[1; 32], &[2; 32], 5, 0, 3);
