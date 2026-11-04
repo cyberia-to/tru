@@ -124,7 +124,9 @@ impl Sample {
 /// hemera XOF of `D_ORDER ‖ beacon ‖ cluster ‖ nonce` (little-endian u64
 /// draws, `j = draw mod (i + 1)` for `i = n−1 … 1`). Miner-independent and a
 /// pure function of the epoch beacon (chain-economy §2.3), so no ordering can
-/// be chosen, only found.
+/// be chosen, only found. The residue of `mod (i + 1)` biases a draw by at
+/// most `(i + 1)/2^64`, below `2^-46` for any cluster the chain admits
+/// (`n < 2^18`); accepted.
 pub fn ordering(beacon: &[u8; 32], cluster: &[u8; 32], nonce: u64, n: usize) -> Vec<usize> {
     let mut perm: Vec<usize> = (0..n).collect();
     if n < 2 {
@@ -257,7 +259,8 @@ impl Game {
     }
 
     /// `m(ℓ | S) = v(S ∪ {ℓ}) − v(S)`, the signed `ΔJ` marginal: two solves
-    /// (one when `S` is empty).
+    /// (one when `S` is empty). A player already in `S` has marginal 0 (the
+    /// coalition is a set); an index beyond the players panics.
     pub fn marginal(&self, coalition: &[usize], player: usize) -> i128 {
         let mut with = coalition.to_vec();
         with.push(player);
@@ -267,6 +270,14 @@ impl Game {
     /// The marginals along `order` (a permutation of the players): `|N|`
     /// solves, one per prefix; `Σ m = v(N)` exactly.
     pub fn sample_along(&self, order: &[usize]) -> Vec<i128> {
+        debug_assert!(
+            {
+                let mut o = order.to_vec();
+                o.sort_unstable();
+                o == (0..self.players.len()).collect::<Vec<_>>()
+            },
+            "order must be a permutation of the players"
+        );
         let mut m = vec![0i128; self.players.len()];
         let mut prefix = Vec::with_capacity(order.len());
         let mut prev = 0i128;
@@ -321,11 +332,14 @@ impl Game {
     }
 
     /// The exact Shapley value by subset enumeration, `2^|N|` solves — the
-    /// reference for small clusters (`|N| ≤ 20`). `round(Σ_S |S|!(n−|S|−1)!
-    /// · m(ℓ | S) / n!)` per player, nats at 2^60.
+    /// reference for small clusters (`|N| ≤ 18`: the weighted sum
+    /// `n!·max|m|` must stay inside i128, `2^52·2^72` at 18).
+    /// `round(Σ_S |S|!(n−|S|−1)! · m(ℓ | S) / n!)` per player, nats at
+    /// 2^60; each player rounds on its own, so `Σ shapley` may differ from
+    /// `v(N)` by up to `n/2` units of 2^-60 nats.
     pub fn shapley(&self) -> Vec<i128> {
         let n = self.players.len();
-        assert!(n <= 20, "exact Shapley enumerates 2^n coalitions");
+        assert!(n <= 18, "exact Shapley enumerates 2^n coalitions, n ≤ 18");
         let v: Vec<i128> = (0..1usize << n)
             .map(|mask| {
                 let s: Vec<usize> = (0..n).filter(|&i| mask >> i & 1 == 1).collect();

@@ -9,7 +9,7 @@
 use tru::focusing::epoch::coalition::WEIGHT_BITS;
 use tru::focusing::epoch::fixed::div_round_i;
 use tru::focusing::epoch::integrated::integrated_gradient;
-use tru::focusing::epoch::{Axon, Change, EpochParams, Game, canonical, ordering};
+use tru::focusing::epoch::{Axon, Change, EpochParams, Game, canonical, ordering, phi};
 
 const ONE: f64 = (1u64 << 60) as f64;
 
@@ -225,12 +225,44 @@ fn sample_is_bit_identical_across_runs_and_thread_counts() {
     let digest = cyber_hemera::hash(&one.preimage());
     eprintln!("sample digest {}", digest.to_hex());
     // Pinned on the first run (galapot, M4 Max); build-a (x86-64) reproduces
-    // it — audit/coalition-marginal-2026-11-04.md.
+    // it — audit/coalition-marginal-2026-11-04.md. The digest is hemera
+    // 0.3.1's (as the D_PHI vector's); when feat/hemera-0.4 lands it moves,
+    // and the pin moves with it.
     assert_eq!(
         hex(digest.as_bytes()),
         "ba4bd05facf5580bfa6023ef0c5b467145de2f0582e04b731d8d2f5b0cd6f17b",
         "the sample's digest moved: a consensus change"
     );
+}
+
+#[test]
+fn ordering_is_uniform_over_the_permutations_of_three() {
+    // 6,000 nonces over the 6 orderings of three players: every bucket near
+    // 1,000 (±15 %; a biased draw or a fixed point would show at once).
+    let mut buckets = std::collections::BTreeMap::new();
+    for nonce in 0..6_000u64 {
+        *buckets
+            .entry(ordering(&[4; 32], &[5; 32], nonce, 3))
+            .or_insert(0u32) += 1;
+    }
+    assert_eq!(buckets.len(), 6);
+    for (o, c) in &buckets {
+        assert!(
+            (850..=1_150).contains(c),
+            "ordering {o:?} drawn {c} times of 6,000"
+        );
+    }
+}
+
+#[test]
+fn syntropy_of_an_axon_list_is_the_engine_s_own() {
+    // J_U with U = the list's own particles is epoch::phi's syntropy, bit
+    // for bit: the game's value is the engine's function, not a sibling.
+    let p = params(48, 1);
+    let base = random_graph(900, 30, 120);
+    let game = Game::new(&base, &[], &p).unwrap();
+    assert_eq!(game.base_syntropy(), phi(&base, &p).syntropy);
+    assert_eq!(game.syntropy_of(&base), phi(&base, &p).syntropy);
 }
 
 #[test]

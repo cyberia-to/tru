@@ -45,7 +45,7 @@ the tags to it; the values here are proposed in the style of `D_PHI`).
 
 ## 2. tests (`cargo test -p cyber-tru --release --test coalition_marginal`)
 
-10 tests, 0.4 s on galapot, 0.89 s on build-a. The whole crate: 168 + 7 +
+12 tests, 0.4 s on galapot, 0.89 s on build-a. The whole crate: 168 + 7 +
 16 + 1 + 1 passed, 3 ignored (chain-scale budgets).
 
 | test | checks | measured |
@@ -72,7 +72,10 @@ and the four nodes against).
 Data: the genesis export of pussy-rc (`soft3 genesis build --chain pussy-rc
 … --export`, 2026-11-02, the frames of `/var/lib/soft3/pussy-rc/genesis.tade`
 sha256 `d20bab4b…76f5`), read from edge-b
-`/srv/edge/data/explorer/genesis/{links,balances}.tsv`: 29,113 link frames
+`/srv/edge/data/explorer/genesis/{links,balances}.tsv` (sha256
+`78caedb0388c0ff6366db151b349ef167d96171f210982f93e174c7d10761ed3` and
+`241828dd38e63cde74ba6d2e1e5deb5a6dbb62aee18291b8ef9594da3d636661`):
+29,113 link frames
 → 26,805 axons over 16,273 particles, weighted by the chain's rule
 `g(f) = max(1, ⌊B(author)/L(author)⌋)` (chain-economy §4.1), `Σ G =
 4.18 × 10¹⁶` (shift 0). Base `J = 3.605474` nats. Players: 64 (or 256)
@@ -149,6 +152,10 @@ the prefix's φ* as a warm start, which the consensus definition forbids
 (every solve is cold, `PHI_STEPS` steps).
 
 ## 4. determinism
+
+Every digest here is hemera 0.3.1's (the `D_PHI` vector's hemera as well);
+when `feat/hemera-0.4` lands, the pinned test digest and the pussy digests
+move with it, and the pins are re-blessed from the new run.
 
 - the same digest for the 9-player test game on arm64 and x86-64, at 1 and
   4 solve threads (pinned in the test);
