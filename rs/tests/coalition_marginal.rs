@@ -119,37 +119,65 @@ fn hex(b: &[u8]) -> String {
 fn one_change_marginal_matches_the_engine_attribution() {
     // A one-change epoch: the chain attributes ΔA·ḡ (four-node path gradient,
     // the Aumann–Shapley limit); the game's marginal against ∅ is the exact
-    // ΔJ. They agree to the quadrature's error.
+    // ΔJ. They agree to the quadrature's error of epoch.md §6–§7, which
+    // depends on the kind of change: a raise or a lowering of an existing
+    // axon is smooth (≈ 10⁻⁷ … 10⁻⁶); an axon to a new particle is the
+    // class §7 measures at 0.49–1.77 % (its φ ln φ grows from zero).
     let p = params(256, 1);
-    let mut worst: f64 = 0.0;
-    for seed in 0..6u64 {
-        let prev = random_graph(300 + seed, 14, 40);
-        let a = prev[(seed as usize * 5) % prev.len()];
-        let change = Change {
-            from: a.from,
-            to: a.to,
-            delta: (a.weight as i128) * 3 / 10,
-        };
-        let game = Game::new(&prev, &[change], &p).unwrap();
-        let marginal = game.marginal(&[], 0);
-        let mut cur = prev.clone();
-        for x in cur.iter_mut() {
-            if (x.from, x.to) == (a.from, a.to) {
-                x.weight = (x.weight as i128 + change.delta) as u128;
+    for (kind, bound) in [("raise", 1e-5), ("lower", 1e-4), ("new particle", 3e-2)] {
+        let mut worst: f64 = 0.0;
+        for seed in 0..6u64 {
+            let prev = random_graph(300 + seed, 14, 40);
+            let a = prev[(seed as usize * 5) % prev.len()];
+            let change = match kind {
+                "raise" => Change {
+                    from: a.from,
+                    to: a.to,
+                    delta: (a.weight as i128) * 3 / 10,
+                },
+                "lower" => Change {
+                    from: a.from,
+                    to: a.to,
+                    delta: -((a.weight as i128) * 3 / 10),
+                },
+                _ => Change {
+                    from: a.from,
+                    to: pid(900 + seed),
+                    delta: (a.weight as i128) * 3 / 10,
+                },
+            };
+            let game = Game::new(&prev, &[change], &p).unwrap();
+            let marginal = game.marginal(&[], 0);
+            let mut cur = prev.clone();
+            if kind == "new particle" {
+                cur.push(Axon {
+                    from: change.from,
+                    to: change.to,
+                    weight: change.delta as u128,
+                });
+            } else {
+                for x in cur.iter_mut() {
+                    if (x.from, x.to) == (a.from, a.to) {
+                        x.weight = (x.weight as i128 + change.delta) as u128;
+                    }
+                }
             }
+            let ig = integrated_gradient(&prev, &cur, 4, &p);
+            assert_eq!(ig.len(), 1);
+            let (m, s) = (marginal as f64 / ONE, ig[0].score as f64 / ONE);
+            let err = (m - s).abs() / s.abs().max(1e-300);
+            eprintln!("{kind} seed {seed}: marginal {m:e} attribution {s:e} rel {err:e}");
+            worst = worst.max(err);
         }
-        let ig = integrated_gradient(&prev, &cur, 4, &p);
-        assert_eq!(ig.len(), 1);
-        let (m, s) = (marginal as f64 / ONE, ig[0].score as f64 / ONE);
-        let err = (m - s).abs() / s.abs().max(1e-300);
-        eprintln!("seed {seed}: marginal {m:e} attribution {s:e} rel {err:e}");
-        worst = worst.max(err);
+        // measured: raise 1.9 × 10⁻⁷, lower 1.4 × 10⁻⁷ (the reviewer's harness
+        // saw 3 × 10⁻⁶), new particle 1.4 %
+        // (audit/coalition-marginal-2026-11-04.md §2)
+        eprintln!("{kind}: worst {worst:e}");
+        assert!(
+            worst < bound,
+            "{kind}: one-change marginal vs path gradient {worst:e} ≥ {bound:e}"
+        );
     }
-    // measured 2 × 10⁻⁷ at worst (audit/coalition-marginal-2026-11-04.md)
-    assert!(
-        worst < 1e-5,
-        "one-change marginal vs path gradient: {worst:e}"
-    );
 }
 
 // ── efficiency ────────────────────────────────────────────────────────────

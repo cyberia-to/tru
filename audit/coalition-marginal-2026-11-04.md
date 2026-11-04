@@ -45,12 +45,12 @@ the tags to it; the values here are proposed in the style of `D_PHI`).
 
 ## 2. tests (`cargo test -p cyber-tru --release --test coalition_marginal`)
 
-7 tests, 0.20 s on galapot, 0.89 s on build-a. The whole crate: 168 + 7 +
+10 tests, 0.4 s on galapot, 0.89 s on build-a. The whole crate: 168 + 7 +
 16 + 1 + 1 passed, 3 ignored (chain-scale budgets).
 
 | test | checks | measured |
 |---|---|---|
-| `one_change_marginal_matches_the_engine_attribution` | `marginal(∅, ℓ)` against `integrated_gradient(prev, cur, 4)` for a one-change epoch (+30 % on one axon, six graphs of 14 particles, 256 steps) | relative error 2.7 × 10⁻⁸ … 1.9 × 10⁻⁷; bound 10⁻⁵ |
+| `one_change_marginal_matches_the_engine_attribution` | `marginal(∅, ℓ)` against `integrated_gradient(prev, cur, 4)` for a one-change epoch (six graphs of 14 particles, 256 steps), per kind of change | relative error: raise of an axon by 30 % 1.9 × 10⁻⁷ (bound 10⁻⁵), lowering by 30 % 1.4 × 10⁻⁷ (bound 10⁻⁴; the reviewer's harness 3 × 10⁻⁶), an axon to a new particle 1.4 % (bound 3 %; epoch.md §7 measures 0.49–1.77 % on that class) — the quadrature's error, not a bit mismatch |
 | `sample_sums_to_the_coalition_value_exactly` | `Σ m(n) = v(N)` and `m[i] = marginal(prefix, i)` for 3 graphs × 4 nonces, 7 players of every kind (raised, lowered, new axon, new particle) | equal as integers |
 | `sample_is_bit_identical_across_runs_and_thread_counts` | two runs, 1 and 4 solve threads; hemera digest of the preimage pinned | `ba4bd05f…f17b` on galapot (arm64) and build-a (x86-64) |
 | `ordering_is_a_permutation_drawn_from_the_beacon` | a permutation; changes with nonce, beacon and cluster; `n ≤ 1` trivial | — |
@@ -60,8 +60,12 @@ the tags to it; the values here are proposed in the style of `D_PHI`).
 
 The first row is the one-link identity the unit asked for: the game's
 marginal is the exact `ΔJ`; the engine's attribution is its four-node
-Aumann–Shapley integral; they agree to the quadrature's error, not bit for
-bit (a gradient integral is not a difference of two solves).
+Aumann–Shapley integral; they agree to the quadrature's error of epoch.md
+§6–§7, not bit for bit (a gradient integral is not a difference of two
+solves). The error is a function of the kind of change: smooth weight
+changes agree to ≈ 10⁻⁷, an axon to a new particle to ≈ 1 % (a new
+particle's `φ ln φ` grows from zero; the class §7 chose the ground weight
+and the four nodes against).
 
 ## 3. pussy's scale
 
