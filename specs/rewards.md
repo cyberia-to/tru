@@ -88,7 +88,7 @@ Shapley is the unique attribution satisfying efficiency, symmetry, null-player, 
 
 - conservation is the efficiency axiom — for the exact Shapley value, $\sum_\nu \text{Shapley}_\nu(v^\star) = v^\star(N)$. Two caveats make it an enforced step rather than a free one: the lottery (§7) computes an *estimate*, whose published shares need not sum exactly; and $v^\star$ re-runs a nonlinear normalized fixed point on a $\rho$-reweighted graph, so $v^\star(N) \le \Delta\phi^+(N)$ is not automatic (a normalized fixed point is not monotone in edge weights). [[tok]] therefore renormalizes the settled shares to $\min(v^\star(N),\, \Delta\phi^+(N))$ at settlement, the proportional clip of [[impulse]]. With that step, $\sum_\nu \text{mint}(\nu) \le $ global $\Delta\phi^+$ and over-claiming cannot exceed realized value. This is requirement 3.
 - Sybil-resistance is stake conservation plus karma non-transferability. Stake enters $A^{\text{eff}}$ linearly, so splitting a neuron's stake across $k$ identities on the same links conserves the per-edge stake sum, and the $k$ Sybil shares sum to the one original share — identity count buys nothing. Karma strengthens this rather than merely compounding it: karma multiplies stake and cannot be transferred, so fresh identities start at zero karma and their $A^{\text{eff}}$ weight *falls* — fragmenting is a penalty, not a wash. Stake is the attributed resource and cannot be fabricated by splitting; karma is the one input capital cannot buy.
-- tractability is locality. Each marginal $v(S \cup \{\nu\}) - v(S)$ is an incremental [[tri-kernel]] step on a bounded neighborhood, estimated by Monte-Carlo over $k$ random orderings seeded by a [[delay|VDF]] beacon — $O(k\cdot n)$, $k \ll n$. The beacon is drawn after submission, so orderings cannot be front-run.
+- tractability is locality. Each marginal $v(S \cup \{\nu\}) - v(S)$ is an incremental [[tri-kernel]] step on a bounded neighborhood, estimated by Monte-Carlo over random coalitions seeded by the epoch beacon $b_E$ (§7) — $O(k\cdot n)$, $k \ll n$ — and computed exactly, as the Aumann–Shapley value below, where the graph is small enough for every node to solve it (§16). The beacon is drawn after the epoch closes, so coalitions cannot be front-run.
 
 ### The gradient correspondence
 
@@ -98,7 +98,7 @@ cyber takes the same stance, then makes one move further. Its neurons are strate
 
 $$\underbrace{\text{Shapley}_\nu(v)}_{\text{discrete agents}} \quad\xrightarrow{\ \text{non-atomic limit}\ }\quad \underbrace{\int_0^1 \partial_\nu\, v(t\!\cdot\!N)\,dt}_{\text{integrated gradient of }\Delta\phi^+}.$$
 
-The network is discrete, so this is a correspondence rather than a literal identity — the equality is exact only as the players become infinitesimal. But it is the right way to read the design: Shapley over $\Delta\phi^+$ is the strategic-agent analog of integrated-gradient credit assignment on the free energy, the same shape of computation as energy-based learning in the brain, lifted to agents who must be paid rather than merely tuned. The two strongest choices in this document — intrinsic gradient over designed loss, and Shapley over a race — rhyme for that reason.
+The network is discrete, so this is a correspondence rather than a literal identity — the equality is exact only as the players become infinitesimal. But it is the right way to read the design: Shapley over $\Delta\phi^+$ is the strategic-agent analog of integrated-gradient credit assignment on the free energy, the same shape of computation as energy-based learning in the brain, lifted to agents who must be paid rather than merely tuned. The two strongest choices in this document — intrinsic gradient over designed loss, and Shapley over a race — rhyme for that reason. On the root chain the correspondence is measured, not assumed: the four-node path gradient of [[epoch]] §4 lands within a median 0.04–3.0 % of the exact Shapley value in every class of change ([[epoch]] §7), and the lottery of §7 draws exact Shapley samples of the same game, so the chain's work keeps measuring the rule it pays by.
 
 This computation lives in [[tru]], a sibling of [[cyberank]].
 
@@ -118,7 +118,7 @@ The per-contribution surprise. A single contribution's BTS score $s^{\text{BTS}}
 
 $\rho$ and the [[inversely coupled bonding surface|ICBS]] price answer different questions, and the mint requires both. Price is a validity gate: $f(\text{price}) \in [0,1]$ weights the edge by whether the market believes the link is true, so a market-rejected link carries little weight however surprising. $\rho$ is a novelty score: it asks whether the report beat the crowd's prediction, so a true link nobody found surprising mints nothing however large its $\Delta\phi^+$. The reward is directed syntropy that is at once valid and surprising — surprising syntropy.
 
-The two pull against each other early, and that tension is real. A genuinely novel link has low price before the market catches on, so the validity gate under-weights it exactly when $\rho$ is highest. That lag is the same one §12 names the discovery leak: the formula trusts the market, and the market is late. Closing it is open.
+The two pull against each other early, and that tension is real. A genuinely novel link has low price before the market catches on, so the validity gate under-weights it exactly when $\rho$ is highest. That lag is the same one §12 names the discovery leak: the formula trusts the market, and the market is late. The annuity of §11 is what carries the correction: the link earns again as the market turns (§12), and the size of what it loses meanwhile is the frontier named in §15.
 
 [[karma]] is the slashing. $\kappa(\nu)$ is the accumulated BTS score: non-transferable, unbuyable, the one input to $A^{\text{eff}}$ that capital cannot purchase. The BTS settlement is a zero-sum redistribution — stake moves from noise producers to signal producers in proportion to score. This is the skin in the game and the slashing: liars pay truth-tellers. Staking is therefore required, because it is what the zero-sum redistributes. [[foculus]] omits only consensus-equivocation slashing — provable consensus makes an invalid $\phi^*$ unable to produce a valid proof, so proof-forgery equivocation cannot occur. Behavioral deviations (withholding, §7) remain and are priced separately.
 
@@ -140,19 +140,19 @@ So in the saturating regime the proposed marginal is a ceiling. Complementary co
 
 ### Settle — epoch boundary
 
-[[foculus]] finalizes the canonical $\phi^*$ and the epoch's claim set; the claims partition into clusters (§7); a leaderless lottery computes the Shapley shares (§7); [[tok]] applies conservation and executes the result as a state transition. The settled reward is the surprise-weighted Shapley share:
+The epoch boundary fixes the canonical $\phi^*$ and the epoch's claim set (on the root chain the boundary is a block and the claim set is the positions that changed between two boundaries, §7, §16); the claims form the epoch's game (§7); a leaderless lottery samples the Shapley shares and the settlement computes them (§7); [[tok]] applies conservation and executes the result as a state transition. The settled reward is the surprise-weighted Shapley share:
 
 $$R(\nu) \;=\; \text{Shapley}_\nu(v^\star), \qquad v^\star(S) = \Delta\phi^+\big(A^{\text{eff}} \cup \rho{\cdot}S\big),$$
 
 where $\rho{\cdot}S$ multiplies each contributed link's effective weight by its surprise $\rho_\ell \in [0,1]$ before the tri-kernel recompute, so a copy ($\rho \to 0$) enters the graph weightless and adds nothing to settle. The surprise $\rho_\ell$ can only be fixed here, because it compares the contribution to the crowd's collected predictions — which, like the contender set, exist only once the epoch closes. So the overlap division (Shapley) and the surprise gate (BTS) finalize together. Conservation tightens to $\sum_\nu R(\nu) = v^\star(N) \le \Delta\phi^+(N)$; the slack is predictable or copied syntropy, left unminted.
 
-The two phases certify different facts against different states: propose proves "my marginal in isolation was $X$" (a fact, ceiling among substitutes); settle proves "the division of the real joint $\Delta\phi^+$ is correct" (the share). The settlement beacon is drawn after propose closes — which is what makes the orderings un-front-runnable. The distinction that dissolves the apparent conflict: agent-local (one actor, alone — possible for the bound, impossible for the share) versus graph-local (a bounded neighborhood — true for both).
+The two phases certify different facts against different states: propose proves "my marginal in isolation was $X$" (a fact, ceiling among substitutes); settle proves "the division of the real joint $\Delta\phi^+$ is correct" (the share). The settlement beacon is drawn after the epoch closes — which is what makes the coalitions un-front-runnable. The distinction that dissolves the apparent conflict: agent-local (one actor, alone — possible for the bound, impossible for the share) versus graph-local (a bounded neighborhood — true for both).
 
 ---
 
 ## 7. Settlement Mining
 
-Settlement is computed with no neuron, leader, or aggregator deciding it. This is the document's structural core, and it satisfies requirement 4: the work that secures the chain is the work that computes the fair division.
+Settlement is computed with no neuron, leader, or aggregator deciding it. This is the document's structural core, and it satisfies requirement 4: the work that secures the chain is the work that computes the fair division. The owner's sentence (2026-11-04) is the authority of this section: the proof of work samples values by the rewards distribution — every attempt at a block is one draw of one marginal of the epoch's game, nothing else is work, and nothing in this section is left to a later rule.
 
 ### The region
 
@@ -160,43 +160,89 @@ Locality is in graph distance because $\phi^*$ is a heat-kernel fixed point with
 
 - radius $r = O(\log 1/\varepsilon)$ hops, $r \approx \log(1/\varepsilon)/\log(1/\lambda_{\text{local}})$;
 - content-dependent — wide around a hub (slow local mixing), tiny on the sparse fringe;
-- canonical — the superlevel set is a deterministic function of the edges and $\varepsilon$, so no miner can draw a self-serving boundary. The settlement proof commits to the support and certifies that boundary nodes fall below $\varepsilon$, the anti-cheat against excluding a node to inflate a marginal.
+- canonical — the superlevel set is a deterministic function of the edges and $\varepsilon$, so no miner can draw a self-serving boundary.
 
-A cluster is a connected component of overlapping $\varepsilon$-supports. The partition of an epoch's claims into clusters is therefore canonical, and clusters are independent — non-overlapping regions leave each other's Shapley values untouched, so settlement parallelizes across them.
+A cluster is a connected component of overlapping $\varepsilon$-supports. The partition of an epoch's claims into clusters is canonical, and clusters are independent — non-overlapping regions leave each other's Shapley values untouched, so settlement parallelizes across them.
+
+On the consensus engine of [[epoch]] the support of every change is the whole staked graph, and the rule above resolves to one cluster per epoch. Three facts of that engine make it so: the teleport target is the stake prior $\pi = d/\Sigma d$ over every particle; every step renormalizes to $\Sigma\phi = 2^{60}$; and the gradient of $J$ carries the term $(\lambda_d(\alpha + (1-\alpha)m_T) + \lambda_s\mu/(1+\mu))\,(\lambda_p + \lambda_q - 2c_t)/\Sigma d$ on every present axon ([[epoch]] §4). No particle's contribution is zero by construction, so the $\varepsilon$-support of a position is the graph, the epoch's positions form one cluster, and a sample is exact: nothing is truncated, no boundary is drawn, and a sample recomputed by any node is the same integer. The cluster's identity is the hash of its players,
+
+$$\text{cluster}(E) = \text{hemera}(D_{\text{CLUSTER}} \,\|\, N{:}\,\text{u32} \,\|\, (\text{card}_0 \,\|\, \sigma_0) \,\|\, \cdots \,\|\, (\text{card}_{N-1} \,\|\, \sigma_{N-1})),$$
+
+so a ticket binds to the exact contender set. An engine whose support is local — a kernel without a global prior — partitions by the three bullets above; the root chain's engine is not one, and this page states the partition once so that a cluster is a defined object wherever it is not the whole epoch.
+
+### The game
+
+The players of epoch $E$ are the positions that changed between the two boundary snapshots $G_{E-1}$ and $G_E$ (chain-economy §2.4, §5.2): for each card $c$ and side $\sigma \in \{+1, -1\}$ with $\Delta s(c) \ne 0$ on that side, one player $(c, \sigma, \Delta s)$; a card that changed sides is two players. $N$ players, ascending by $\text{card} \,\|\, \sigma$. For a coalition $S$ of players the graph is rebuilt from the previous boundary with the coalition's changes applied,
+
+$$A^S_{pq} = \max\!\big(0,\; G_{pq} + S^+_{E-1,pq} + \!\!\sum_{c \in S,\,\sigma = +}\!\! \Delta s(c) \;-\; S^-_{E-1,pq} - \!\!\sum_{c \in S,\,\sigma = -}\!\! \Delta s(c)\big),$$
+
+and the coalition's value is the change of syntropy of its fixed point,
+
+$$v(S) = J_U\big(\phi^*(A^S)\big) - J_U\big(\phi^*(A^\emptyset)\big), \qquad J_U(\phi) = \sum_{i \in U} \phi_i\,(\ln\phi_i - 60\ln 2 + \ln|U|)\,/\,2^{40},$$
+
+with $\phi^*$ the `PHI_STEPS` iterate of [[epoch]] §2–§3 from the uniform vector, and $U$ the particles present at either boundary ($\phi_i = 0$ contributes nothing; $\ln|U|$ replaces $\ln n$ so that a coalition that brings a new particle is scored against the same uniform). $v(\emptyset) = 0$ and $v(N) = J_U(\phi^*_E) - J_U(\phi^*_{E-1})$, the epoch's total change of syntropy that the record of chain-economy §5.6 carries. On the root chain $\rho = 1$, $\kappa = 1$ and $f = 1$ (§16), so $v^\star = v$. This is the characteristic function the attribution rule of §4 and §16 is measured against ([[epoch]] §7: exact Shapley over $v(S) = J_\cup(\phi^*(A_{\text{prev}} + \Delta_S)) - J_\cup(\phi^*(A_{\text{prev}}))$) — the lottery draws from the same game the settlement pays.
 
 ### The lottery
 
 A deterministic "first to compute the settlement wins" is not progress-free — the fastest machine finishes first every time, electing a de facto leader and centralizing. The fix reuses randomness already present: Shapley estimation is a sampling process, and each sample becomes a lottery ticket — the entropy the lottery needs and the variance the estimator needs are the same randomness.
 
-For a cluster, with the epoch [[foculus beacon|beacon]] $b_E$, a miner:
+For the game of epoch $E$, with the epoch beacon $b_E$ — the block id of the boundary block of $E$ (chain-economy §2.3) — a miner building a block of epoch $E + 1$:
 
-1. picks a nonce $n$; the ordering is $\pi(n) = H(b_E \,\|\, \text{cluster} \,\|\, n)$ — a public hash, miner-independent. $b_E$ is unpredictable until propose closes and unbiasable by construction ([[foculus beacon]]), which is what makes the orderings un-front-runnable;
-2. computes the marginal sample $m(n)$ under $\pi(n)$ on the surprise-weighted value $v^\star$ (§6) — so the same draw that settles attribution also applies the BTS gate, with no separate pass; a genuine draw of the §4 estimator, and the useful work;
-3. holds a winning ticket iff $H(b_E \,\|\, \text{cluster} \,\|\, n \,\|\, \mathrm{id}(\nu) \,\|\, \mathrm{commit}(m(n))) < \text{target}$, claimed by publishing $(n, m(n), \sigma)$. Binding $m(n)$ into the win-test makes a ticket valid for this marginal, not the nonce alone, so a contender cannot grind nonces and publish only self-favoring samples. This single test is also the block subsidy (§8) — no separate proof-hash puzzle.
+1. assembles the block's header template $n$: the 168 header bytes of chain.md §1.1 (version, height, time, bits, nonce, prev, tx_root, state_root, chain). $n$ commits to $b_E$ through `prev` and `height` (the boundary block is an ancestor at a height the template names) and to the game through the state at `prev`, so $\pi(n) = H(b_E \,\|\, \text{cluster} \,\|\, n)$ is realized as one hash of the template, miner-independent and public:
 
-Step 3 is a per-miner Poisson test: progress-free, leaderless, poolable on the same terms as Nakamoto consensus, and random in proportion to throughput. The settlement itself is the average of every published sample — more mining means more independent draws and a tighter estimate ([[Hoeffding]]). No actor produces the answer; it converges out of the swarm, and security spend converts directly into attribution precision with zero synthetic work.
+   ```
+   seed = hemera(D_ORDER ‖ n)                               // 32 bytes
+   c    = u64_le(seed[0..8]) mod N                          // the drawn player
+   T    = u64_le(seed[8..16])                               // the inclusion threshold, t = T / 2^64
+   s_k  = hemera(D_ORDER ‖ seed ‖ k: u32 LE),  k = 0, 1, …  // the stream, four u64 words per block
+   P    = { player j ≠ c : word_j < T },  word_j = u64_le(s_{⌊j/4⌋}[8(j mod 4) .. 8(j mod 4) + 8])
+   ```
 
-This collapses the proof-of-work subsidy (§8) into the same act. The nonce a miner grinds to reseed a proof hash is the ordering index $n$ — so every hash attempt is a real Shapley sample. Securing the chain and computing the fair division become one computation; settlement mining is the content of the PoW subsidy.
+   Every byte a miner can vary — the nonce, the time, the coinbase's `extra` through `tx_root` — is in $n$, so every variation of the attempt is a fresh draw and no attempt reuses another's sample. The residue of `mod N` is accepted: $N < 2^{18}$ (chain-economy §7.2), so the bias is below $2^{-46}$.
+2. computes the marginal sample $m(n) = v(P \cup \{c\}) - v(P)$ — two solves of the consensus engine over the staked graph — on the surprise-weighted value $v^\star$ (§6), so the same draw that settles attribution also applies the BTS gate, with no separate pass; a genuine draw of the §4 estimator, and the useful work. Its expectation over the draw, given $c$, is exactly $\text{Shapley}_c(v^\star)$: with every other player included independently with probability $t$ and $t$ uniform on $[0,1)$, $\mathbb{E}[m(n) \mid c] = \int_0^1 \partial_c\, \tilde v(t, \ldots, t)\,dt$, the Shapley value by its multilinear extension (Owen, 1972) — the same integral §4 reads as integrated gradient. When the epoch has no player ($N = 0$) the game is the gradient the attribution reads, sampled one axon at a time: $a = u64_{le}(\text{seed}[0..8]) \bmod |A_E|$ indexes the boundary's present axons ascending, $u = \max(1, \lfloor A_a / 2^{10} \rfloor)$, and $m(n) = J_U(\phi^*(A_E + u\,e_a)) - J_U(\phi^*(A_E))$ — one solve, since $J_U(\phi^*_E)$ is the boundary's own record. Block production never stalls and never grinds a hash that computed nothing.
+3. holds a winning ticket iff the id of the header carrying the sample is below the target:
 
-Two properties of this lottery are asserted here and not yet proven. Each published sample carries its own [[zheng]] proof that $m(n)$ is a correct $v^\star$ marginal, so the proof cost per ticket must stay below the reward per ticket for mining to be rational — an economic condition, unmodeled. Progress-freedom holds per cluster but not uniformly across clusters, since a large cluster costs more per sample than a small one, so the clean Poisson picture is an approximation that the difficulty schedule has to correct for. Beacon manipulation remains open. Verification cost is closed by the fold accumulator below.
+   $$\text{hemera}\big(n \,\|\, m(n){:}\,\text{i128 LE}\big) < \text{target}(\text{bits}),$$
 
-### Aggregation
+   claimed by publishing the block. The sample is the header's last field (chain.md §1.1 amended: `sample: i128` at offset 168, 184 bytes in all), so the block id is the commitment $\mathrm{commit}(m(n))$ and the miner's identity enters through the coinbase under `tx_root`. Binding $m(n)$ into the win test makes a ticket valid for this marginal, not the nonce alone, so a contender cannot grind nonces and publish only self-favoring samples; binding the whole template into the seed makes every hash attempt cost one sample, so no field of the header is free to grind. This single test is also the block subsidy (§8) — no separate proof-hash puzzle, no second target: the ticket is the block's work and its ordering weight (chain.md §5.1, `work = ⌊2^256/(target + 1)⌋`, now counted in samples).
 
-Each winning ticket carries a [[zheng]] proof that $m(n)$ is a correct $v^\star$ marginal. Without folding, a node's settle-verify cost scales with ticket count — an asymmetric-cost DoS if an attacker floods minimum-cost tickets (each costs one marginal evaluation plus the win-check; verification costs the same). The fix is to fold all winning tickets for a cluster into one accumulator before the cluster's settlement finalizes.
+Step 3 is a per-miner Poisson test: progress-free, leaderless, poolable on the same terms as Nakamoto consensus, and random in proportion to throughput. Every miner's attempt is the same two solves on the same graph, so the probability of a win per attempt is $\text{target}/2^{256}$ for everyone and the pay per second of work follows attempts per second — the hardware profile, measured ([[foculus]] `audit/hardware-profile.md`: samples per second fall close to linearly in the solved graph's size, so a larger epoch costs every miner alike and the difficulty below absorbs it). The settlement estimator is the average of every published sample per player — more mining means more independent draws and a tighter estimate ([[Hoeffding]]). No actor produces the answer; it converges out of the swarm, and security spend converts directly into attribution precision with zero synthetic work.
 
-The fold is a commutative monoid: a cluster's accumulated result is $\bigl(\sum_n m(n),\, k,\, \pi_{\text{acc}}\bigr)$ — the running sum of accepted marginals, the sample count, and a validity accumulator. Commutativity makes the fold order-independent, so the tree assembles in any topology and produces the same result; no coordination of assembly order is needed, and the leaderless property is preserved.
+This collapses the proof-of-work subsidy (§8) into the same act. The nonce a miner grinds is the header template $n$, and $n$ selects a coalition — so every hash attempt is a real Shapley sample. Securing the chain and computing the fair division become one computation; settlement mining is the content of the PoW subsidy.
 
-Each miner self-folds first: before broadcasting, it collapses its own batch of winning tickets into a single accumulator proof using [[zheng]]'s accumulation (the scheme, ARC, is set by [[soft3/proposals/proof-system-repair|the proof-system repair]] §3; the earlier fold over hemera was unsound). The cluster fold tree then reaches depth $O(\log k_{\text{miners}})$ rather than $O(\log k_{\text{tickets}})$; each tree node is one miner's pre-aggregated batch. One IVC step per level; the final accumulator verifies in $O(1)$.
+Cost, measured on the consensus engine: one solve of pussy's staked graph (26,805 axons, 16,270 particles) is 0.036 s on one thread, so an attempt is 0.072 s and a thread makes about 14 attempts a second; one solve of bostrom's (2.99 M axons) is 6–9 s on one thread and 0.9–1.1 s on twelve, so an attempt is 12–18 s on one thread and about 2 s on a machine ([[epoch]] receipts `audit/epoch-settlement-2026-10.md` §2, §6; cybernode `audit/chain/economy-2026-10-17.md` §settlement cost). A miner holds the staked graph: the state every full node holds is the miner's input, so the machine that mines is the machine that validates, and a pool worker without the state has nothing to grind.
 
-Duplicate nonces are structurally excluded: the win-test hash commits to $(b_E,\, \text{cluster},\, n,\, \mathrm{id}(\nu),\, \mathrm{commit}(m(n)))$, pinning identity to nonce and sample. Two miners cannot share the same $(n, m(n))$ pair under different identities; a single miner's re-submission of the same nonce is a collision on the committed value. The fold counts each canonical $(\mathrm{id},\, n)$ pair once.
+### Difficulty
 
-Fold work is paid as tier-2 settlement subsidy (§8), earned by publishing a fold step the same way a ticket is earned, with difficulty set so the tree completes within one epoch. Fold reward caps at the [[Hoeffding]] precision target — once $k$ samples meet the precision guarantee, fold work earns nothing — so fold-grinding cannot run as a secondary puzzle. The fold exercises the same four [[Goldilocks field processor|GFP]] primitives as the marginal sample; the work is real throughout.
+The target is ASERT on the block interval exactly as chain.md §1.5 writes it — `T = 30 s`, half-life 600 s, integer only, the parent's time, the genesis anchor — applied to the ticket: the chain holds one winning sample per 30 s, 240 per epoch, 2,880 per day, whatever the hardware and whatever the graph's size. ASERT reads only intervals, so a larger graph (a costlier attempt) and a faster machine (a cheaper one) move the target the same way a hash rate change does, and the sample rate is held. There is no banding by cluster, because an epoch is one cluster, and no second controller, because there is no second lottery.
 
-A verifier checks one $O(1)$ proof per cluster regardless of ticket count. Settlement soundness (§15) closes.
+The genesis target is derived from the measured attempt cost, as chain.md §1.2 derives it from the measured hash cost: at pussy a twelve-thread machine makes about 170 attempts a second, so `GENESIS_BITS = 0x1f100000` (target $2^{244}$, $2^{12}$ expected attempts, about 25 s for one such machine) and `POW_LIMIT = 2^{252}` (`0x20100000`, 16 expected attempts: one laptop core finds a floor block in about a second at pussy's size and in about three minutes at bostrom's, so the chain never stalls below one laptop). The sample rate is the block rate; the hardware profile fixes where that rate starts, and ASERT holds it from there.
 
-### Residual: withholding
+### Verification, the cap and the accumulator
 
-The lottery is not fully closed against a miner that is also a contender in the cluster it settles: it can compute $m(n)$, see that the sample lowers its own share, and decline to publish even a winning ticket. It cannot lie — claiming any ticket requires publishing the verified $m(n)$ — so its only freedom is to abstain from a nonce, and a withheld nonce stays a valid ticket for other miners (their threshold is keyed to their own identity), who re-cover it with probability proportional to their throughput. The injectable bias is therefore bounded by the attacker's share of settlement compute — negligible for a minority, and a majority already breaks consensus. The cheap deterrents are to price it (a withheld ticket forfeits its subsidy; calibrate so the forfeit exceeds the share-gain) and to separate roles (a miner does not settle a cluster it contends in). A commit-to-$n$-before-learning-$m(n)$ round drives the bias to zero in expectation by forcing a non-adaptive adversary, at the cost of a synchronous commit–reveal assumption foreign to the lottery; it is the escalation, not the default. This sits alongside collusion (§15) as a bounded, open frontier.
+A ticket is verified by recomputation. The verifier takes the header, derives the seed from its first 168 bytes, draws $c$, $T$ and $P$ as the miner did, solves $\phi^*(A^P)$ and $\phi^*(A^{P \cup \{c\}})$ on the same engine, and compares its $m$ with the header's; a mismatch invalidates the block. The cost is the miner's cost of one attempt, paid once per block by every node: 0.072 s at pussy's size, 2 s on twelve threads at bostrom's — inside the 30 s interval, on the same machine that already settles every epoch. This is native verification, and at the root chain's scale it is the rule, complete: the proof of a sample is the sample.
+
+The cap is structural. One ticket per block is the block's work; no other ticket exists on the wire or in a body — tickets are not transactions, and transaction kinds 8 (ticket) and 9 (fold) do not exist. The epoch's tickets are its $L = 240$ blocks, verification is linear in blocks exactly as block validation is, and a flood of tickets is a flood of blocks, which the target already prices. A verifier that holds the state checks every sample the chain carries, without a proof it would have to trust.
+
+The accumulator is the rule that replaces the cap, under a condition. A block admits $K_{\text{BLOCK}}$ tickets beyond its own, each a winning sample of the same game under the same target, folded with the block's own into the epoch's accumulator — the commutative monoid $(\sum_n m(n),\, k,\, \pi_{\text{acc}})$ over the tickets' statements, order-independent, one decider per epoch — when both hold: (a) the consensus engine's step is a relation [[zheng]] proves, a direct CCS relation of one exact integer step aggregated by IVC over the `PHI_STEPS` steps (tru `audit/phi-relation-2026-11.md` §4; the general nox machine is not viable — 11–14 G rows for one pussy solve), so a ticket's two solves leave the verifier; and (b) the accumulation is constant-size with the verifier inside the step ([[foculus]] `audit/accumulated-settlement-2026-10.md` §4; the measured accumulated profile without it is 27–46× larger than the per-ticket proofs and verifies slower than recomputation). The condition is a predicate on the proof stack, checked by its receipts, and $K_{\text{BLOCK}} = 0$ while it is false; the rule set that sets $K_{\text{BLOCK}} > 0$ carries the relation, as every rule set must before it activates ([[proven-present]] §2.11). Under it a block's subsidy divides equally among its tickets, so emission stays a function of height, the samples per epoch rise by up to $K_{\text{BLOCK}} + 1$, and the fold's own work exercises the same four [[Goldilocks field processor|GFP]] primitives as the sample — the work is real throughout. Duplicate samples are excluded structurally: the monoid counts each header template once, and two tickets with one template are one ticket.
+
+### Deadline and $k_{\min}$
+
+The window of epoch $E$'s game is epoch $E + 1$: every block at height $h$ with $\text{boundary}(E) < h \le \text{boundary}(E+1)$ samples the game of $E$, and no block samples any other game. The settlement of $E$ is a step of the block at $\text{settle}(E) = \text{boundary}(E) + D$, $D = 120$ (chain-economy §2.5), where the boundary is final by the reorg limit; the pulse is paid there and is final, which is the escrow §12 asks for — the snapshot it reads can no longer move. The swarm's estimate of $E$ closes at $\text{boundary}(E+1)$, when the window's last ticket is in; it is a function of the headers alone, and every node serves it (chain-economy §11: `GET /epoch/{E}/lottery`).
+
+The settlement pays $\text{Shapley}_c(v^\star)$ for every player, and the chain computes it by the cheapest exact method the graph admits, in this order:
+
+1. the exact value — the four-node path gradient of [[epoch]] §4, the Aumann–Shapley value of this game, measured within a median 0.04–3.0 % of exact Shapley — whenever that computation fits `SETTLE_BUDGET` = 900 s of one core (chain-economy §7.2). It fits with a margin of 7,500× at pussy (0.12 s) and 12× at bostrom (75 s), and its cost is linear in axons, so this is the root chains' rule for every graph up to twelve times bostrom's;
+2. the same exact value over a longer window — the epoch length $L$ and the delay $D$ grow together by scheduled fork (chain-economy §2.2 names a day as the next length) — whenever the computation fits a day of one core and not 900 s;
+3. the swarm mean — the average of the window's samples per player, $\hat S_c = \frac{1}{k_c}\sum_{n:\, c(n) = c} m(n)$ — whenever no single machine solves the graph inside a day. Then $k_{\min} = 4{,}096$ samples per player, the [[Hoeffding]] count $\lceil \ln(2/\delta)/(2\varepsilon^2) \rceil = 3{,}904$ at $\varepsilon = 2^{-5}$ of the sample range and $\delta = 2^{-10}$, rounded to a power of two; a player with $k_c \ge k_{\min}$ is paid its mean at $\text{settle}(E+1)$; a player with $k_c < k_{\min}$ is paid nothing in that settlement, its $\Delta s$ stays a player of the next epoch's game, and its side's high-water mark (chain-economy §5.3) is advanced only by the paid increases, so the claim is carried and never silently dropped; the budget it did not take stays in the pool. Nothing stalls: the settlement block is always valid, with whatever the window delivered.
+
+Each rule is a condition on a measured number, and the number is in the epoch record and the receipts; which rule a chain runs is readable, never chosen by a miner. On pussy and bostrom it is rule 1.
+
+### Withholding, priced
+
+The lottery is not fully closed against a miner that is also a contender in the game it settles: it can compute $m(n)$, see that the sample lowers its own share, and decline to publish a winning ticket. It cannot lie — a ticket is a block whose sample every node recomputes — so its only freedom is to abstain, and an abstained template is a block it found and did not publish. The injectable bias of the swarm estimate is bounded by the withholder's share $q$ of settlement compute, $\text{bias}(q) \le (\mu - m_{\min})\,q/(1-q)$, derived and measured at 60–70 % of the bound ([[foculus]] `specs/fold-mining.md` § withholding bias, `audit/withholding-bias.md`) — negligible for a minority, and a majority already breaks consensus.
+
+The forfeit is the price. A withheld ticket is a withheld block: the miner forfeits its subsidy $R_{\text{ticket}} = \text{SUBSIDY} - \text{cut}(h) + \text{fees}$ (chain.md §2.2) and the rivals' next block takes the height. Under rules 1 and 2 of the deadline the payout is exact, the estimate pays nothing, and the gain of withholding is zero against a forfeit of one block's subsidy: closed. Under rule 3 the gain over an epoch is at most the withholder's own payouts times the relative bias, $G \le \text{pay}_w \cdot \frac{q}{1-q}\cdot\frac{\mu - m_{\min}}{\mu}$, against a forfeit of $|D| \cdot R_{\text{ticket}}$ for the $|D| \le qL$ withheld blocks; with the budget $B \le L \cdot \text{cut}$ and $\text{cut} \le \text{SUBSIDY}/2 \le R_{\text{ticket}}$ (the miner floor of §10, chain-economy §6.1), $\text{pay}_w \le B \le L \cdot R_{\text{ticket}}$, so the forfeit exceeds the gain for every withholder whose share satisfies $(1 - q)\,\mu \ge \mu - m_{\min}$ — every minority withholder of a game whose samples are not dominated by one outlier — and the bound is the one a chain on rule 3 publishes with its estimate. Role separation (a miner that does not settle the game it contends in) is not needed where the payout is exact and is not enforceable where positions are paid to payout owners the miner need not be; it is not a rule of this page.
 
 ---
 
@@ -207,7 +253,7 @@ A single computation — the [[tri-kernel]] over the [[Goldilocks field]], simul
 | role | the proof certifies | who earns | basis |
 |---|---|---|---|
 | mint | a graph mutation (focus shift) | anyone who links | stake |
-| subsidy | a proof meeting a difficulty target | anyone who computes | work |
+| subsidy | a sample meeting a difficulty target | anyone who computes | work |
 | fee | a query answered (inference) | anyone who serves | fee |
 
 ### Mint — the knowledge stream
@@ -216,9 +262,9 @@ A neuron links, computes $\Delta\phi^+$, proves it, and self-mints its Shapley s
 
 ### Subsidy — proof of work, the stakeless onramp
 
-The subsidy and the settlement lottery are one act: a miner earns the block subsidy by the same winning ticket of §7, $H(b_E \,\|\, \text{cluster} \,\|\, n \,\|\, \mathrm{id}(\nu) \,\|\, \mathrm{commit}(m(n))) < \text{target}$, whose work is a real Shapley sample exercising the four [[Goldilocks field processor|GFP]] primitives (fma, ntt, p2r, lut) in production ratios — so the work is real throughout, with no separate proof-hash puzzle. When settlement work is thin, the same ticket runs over the GFP benchmark fallback so block production and the stakeless onramp never stall. The subsidy is [[karma]]-blind and stake-blind: a new [[neuron]] with zero [[$CYB]] earns it and acquires the stake that unlocks the mint. The mint it then earns is karma-light at first, since karma is earned rather than granted; the sparse early graph offsets this with a large discovery premium — every link moves an uncrowded $\phi^*$ a long way — and karma accrues as those early links are validated. So the cold-start path runs subsidy → stake → discovery-premium mint → karma → amplified mint. This permissionless entry is a hard requirement. Difficulty adjusts to hold block time; the subsidy is independent of $\Delta\phi^+$.
+The subsidy and the settlement lottery are one act: a miner earns the block subsidy by the same winning ticket of §7, $\text{hemera}(n \,\|\, m(n)) < \text{target}$, whose work is a real Shapley sample of the epoch's game — two solves of the consensus engine, sparse matrix–vector passes over the [[Goldilocks field]], the same work every full node does to settle — so the work is real throughout, with no separate proof-hash puzzle. When the epoch has no player, the same ticket samples the gradient the attribution reads (§7, step 2), so block production and the stakeless onramp never stall. The subsidy is [[karma]]-blind and stake-blind: a new [[neuron]] with zero [[$CYB]] earns it and acquires the stake that unlocks the mint. What the onramp asks of a newcomer is exactly what a full node has — the public staked graph and a machine that solves it — and nothing a holder has: no stake, no karma, no position, no permission. The mint it then earns is karma-light at first, since karma is earned rather than granted; the sparse early graph offsets this with a large discovery premium — every link moves an uncrowded $\phi^*$ a long way — and karma accrues as those early links are validated. So the cold-start path runs subsidy → stake → discovery-premium mint → karma → amplified mint. This permissionless entry is a hard requirement. Difficulty adjusts to hold block time; the subsidy is independent of $\Delta\phi^+$.
 
-The subsidy envelope precedes the lottery it will carry. Before settlement mining exists — before the [[zheng]] proof economy makes a ticket cheaper than its reward and the [[Goldilocks field processor|GFP]] fallback is built — the same envelope (a period seed drawn from chain state, a proof submitted fee-free, a sliding proportional reward) runs a bootstrap puzzle: [[UniversalHash]], a device-democratic memory-hard hash where a phone stands at roughly one quarter of a desktop and a GPU stands nowhere. Its work is synthetic, and that is tolerable exactly once: at bootstrap the subsidy's product is distribution, not attribution, and a puzzle whose only virtue is that everyone already owns the hardware is the fair instrument for handing out the initial stake. The puzzle must never migrate inward — synthetic work inside the settlement lottery would dissolve the zero-synthetic-work property of §7, and hardware built for AES serves no [[tri-kernel]] — so the invariant is the envelope, and the puzzle is a phase: UniversalHash at bootstrap, the GFP benchmark when it lands, the Shapley sample $m(n)$ as the terminal form. A bootstrap variant binds the work quanta to attention windows measured on-device ([[lytics]]), so the distribution seeds future linkers rather than hashrate — viewing as the first rung of the ladder above.
+The ticket is the work from the first block. At genesis the subsidy's product is distribution and attribution at once: the first block after the first boundary already samples the first epoch's game, and before any position exists it samples the gradient of the genesis graph, which is the attribution rule's own input. No synthetic puzzle precedes the lottery, inside the chain or beside it. [[UniversalHash]] — the device-democratic memory-hard hash under which a phone stands at roughly one quarter of a desktop and a GPU stands nowhere — is the puzzle of the viewing economy (uhash `docs/viewing-economy.md`; [[lytics]] binds its work quanta to attention windows measured on-device), a distribution lane of its own, with its own envelope and its own ledger, outside the chain's consensus. Its work is synthetic and that is its honesty there: where the product is a fair raffle, neutral work on universal hardware is what makes the handout even ([[warriors/mining]]). It never enters the chain's work: synthetic work inside the settlement lottery would dissolve the zero-synthetic-work property of §7, and hardware built for AES serves no [[tri-kernel]]. One puzzle, two verdicts, decided by what the work is for.
 
 ### Fee — services
 
@@ -259,7 +305,7 @@ Gross rewards can exceed inflation when fees are high; net inflation can go nega
 
 Base emission goes to work and risk only. A standing yield to passive stake would be emission without contribution — it would break the invariant that inflation is [[knowledge]], and it is the mechanism by which idle capital compounds. The floor is paid only to the two providers that do work: PoW compute and active ($v_\ell \neq 0$) epistemic risk. It PID-decays toward zero as mint and fees grow to cover security. The parameters $\alpha$, floor, and $\beta$ follow PID control on observable signals (security margin, fee coverage, efficiency differential), so the system measures and adapts rather than predicts.
 
-`tru::Pid` (`rs/pid.rs`) is the shared control primitive the three loops drive: a clamped, anti-windup PID over `Fx` (`error, dt ↦ output`, output bounded to a caller-supplied range, integral frozen while saturated). It does not itself define security margin, fee coverage or efficiency differential as computable quantities, nor the gains each loop runs at — those are a per-parameter decision, the next slice for each of $\alpha$, floor and $\beta$.
+On the root chain the split is the whole emission (§16): $B$ is the block subsidy, one constant per block; $\theta$ is active stake over supply; $\alpha = \tfrac12$ in integers; the PoS share $B\,\theta^{1/2}$, capped at half, is the focus pool that funds the mint by attribution, so the mint and the stake yield of §11 are one stream paid to the active stake that added weight; the PoW share $B\,(1 - \theta^{1/2})$ pays the ticket, one per block; $\beta = 0$ and $\gamma = 1$, every fee to the miner of the block. The three PID loops run on `tru::Pid` (`rs/pid.rs`, a clamped anti-windup controller over `Fx`, integral frozen while saturated); their inputs are the fee flow $F$, the market, and the attack-cost estimate, none of which the root chain carries, so on it the three parameters are the constants of §16 and the loops hold them there — a loop with a zero input holds its setpoint.
 
 ---
 
@@ -269,7 +315,7 @@ For a neuron $\nu$ over an epoch, the whole specification assembles into one lin
 
 $$\boxed{\;R(\nu) \;=\; \underbrace{\text{Shapley}_\nu(v^\star)}_{\text{mint}} \;+\; \underbrace{R_{\text{PoW}}\cdot\frac{w_\nu}{\sum_\mu w_\mu}}_{\text{subsidy}} \;+\; \underbrace{\sum_{q\,\in\,Q_\nu}\gamma(1-\beta)\,\text{fee}_q}_{\text{service fees}} \;+\; \underbrace{R_{\text{PoS}}\cdot\frac{a_\nu\,\kappa(\nu)}{\sum_{\mu} a_\mu\,\kappa(\mu)}}_{\text{stake yield}}\;}$$
 
-where $w_\nu$ is $\nu$'s proven settlement work this epoch, $Q_\nu$ the queries it answered, and $a_\nu$ its active ($v_\ell \neq 0$) stake. Four terms, four requirements: the mint rewards real value, locally computed and later validated; the subsidy secures the chain and opens a stakeless door, shared in proportion to work done so splitting a signal into many earns nothing extra; the service fees pay whoever served a query directly; the stake yield routes the fee pool to committed stake, weighted by [[karma]] so the share still tracks a record of being right. Sybil-resistance and anti-compounding hold across the sum; conservation binds the mint term specifically, $\sum_\nu \text{Shapley}_\nu(v^\star) = v^\star(N)$.
+where $w_\nu$ is $\nu$'s proven settlement work this epoch — its winning tickets, the blocks it mined — $Q_\nu$ the queries it answered, and $a_\nu$ its active ($v_\ell \neq 0$) stake. Four terms, four requirements: the mint rewards real value, locally computed and later validated; the subsidy secures the chain and opens a stakeless door, shared in proportion to work done so splitting a signal into many earns nothing extra; the service fees pay whoever served a query directly; the stake yield routes the fee pool to committed stake, weighted by [[karma]] so the share still tracks a record of being right. Sybil-resistance and anti-compounding hold across the sum; conservation binds the mint term specifically, $\sum_\nu \text{Shapley}_\nu(v^\star) = v^\star(N)$.
 
 A single mint underpays foundational work, which starts at low $\Delta\phi^+$ and grows as the graph builds around it. So an active ($v_\ell \neq 0$) link also earns a yield stream — the delayed mint of that foundational work, the time-integral of the target particle's [[cyberank]] growth attributable to the link. Passive ($v_\ell=0$) stake earns no part of it; the annuity is realized value, not rent on locked capital:
 
@@ -293,9 +339,7 @@ The present re-scores itself. [[focusing]] runs every epoch over the current gra
 
 The market resolves distant-in-time truth. Each epoch [[focusing]] re-reads a link's current ICBS price and the contributor's current [[karma]]. When a link earlier thought false is later vindicated, its price rises, its weight rises, its $\Delta\phi^+$ contribution rises, and it earns again; when a link is falsified, its price falls to zero, its weight vanishes, and it stops earning and stops moving focus. The market is the time-resolution mechanism; karma is its reputational integral. The weights update and the present settlement reflects them, with no audit reaching backward.
 
-Finality and accuracy are split. The pulse (instant mint, §11) is settled at the epoch boundary on provisional information — modest, conservative, final, paid now. The annuity (the yield stream) accrues as truth reveals itself, computed by the same per-epoch pass, and it is self-correcting: a link later falsified simply stops drawing it. So the protocol pays a small final pulse now and lets the annuity carry the long-horizon correction.
-
-Open — the discovery leak. An early contrarian-correct link looks wrong at settlement (consensus disagrees, ICBS price low, surprise low because the crowd predicted failure), so it earns almost no pulse — exactly when the discovery premium should be largest. It begins earning only once the market turns, far later, through the annuity. A retroactive discovery bonus, paid when a long-dormant link's cluster finally ignites, is the natural fix and is unbuilt. A second asymmetry compounds it: a paid pulse is irreversible, so a contribution later revealed dishonest can have its future earnings stopped (price → 0) but not its pulse reversed — which is the reason to keep the pulse conservative and most value in the self-correcting annuity.
+Finality and accuracy are split. The pulse (instant mint, §11) is settled at the epoch boundary on provisional information — modest, conservative, final, paid now. The annuity (the yield stream) accrues as truth reveals itself, computed by the same per-epoch pass, and it is self-correcting: a link later falsified simply stops drawing it. So the protocol pays a small final pulse now and lets the annuity carry the long-horizon correction. The discovery leak — an early contrarian-correct link earns almost no pulse exactly when its discovery premium should be largest, and begins earning only once the market turns — is the price of that split, named with its lineage in §15; a paid pulse is irreversible, so a contribution later revealed dishonest can have its future earnings stopped (price → 0) but not its pulse reversed, which is the reason to keep the pulse conservative and most value in the self-correcting annuity.
 
 ---
 
@@ -313,66 +357,105 @@ Rewards are an emergent binding of four layers, and the separation keeps monetar
 
 | concern | layer |
 |---|---|
-| value magnitude ($\Delta\phi^+$, [[karma]], [[syntropy]]) | [[tru]] |
-| finality, canonical $\phi^*$, settlement lottery | [[foculus]] |
+| value magnitude ($\Delta\phi^+$, [[karma]], [[syntropy]]), the consensus engine and its gradient | [[tru]] |
+| the epoch boundary, the beacon, the ticket as the block's work, finality | the root chain (cybernode `specs/chain-economy.md`), with [[foculus]] as its settlement library |
 | conservation, allocation, mint | [[tok]] |
 | identity, anonymity | [[mudra]] |
 
-[[foculus]] decides what is real; the reward function decides what it is worth. Economic parameters change without touching consensus safety.
+The chain decides what is real; the reward function decides what it is worth. Economic parameters change without touching consensus safety.
 
 ---
 
-## 15. Security and Open Frontiers
+## 15. Security and Research Frontiers
 
 | property | guarantee |
 |---|---|
-| conservation | $\sum_\nu \text{mint}(\nu) = v^\star(N) \le $ global $\Delta\phi^+$, by Shapley efficiency |
+| conservation | $\sum_\nu \text{mint}(\nu) = v^\star(N) \le $ global $\Delta\phi^+$, by Shapley efficiency; in tokens on the root chain, payouts $\le$ budget $\le$ pool (§16) |
 | Sybil-resistance | stake-weighting makes identity-splitting reward-neutral |
-| honest reporting | BTS makes truthful [[valence]] a Bayes–Nash equilibrium for the report in isolation; the composite mint+fee payoff is assumed, not proven (below) |
-| stakeless entry | the PoW subsidy is karma- and stake-blind |
+| honest reporting | BTS makes truthful [[valence]] a Bayes–Nash equilibrium for the report in isolation; the composite mint+fee payoff is a frontier (below) |
+| stakeless entry | the PoW subsidy is karma- and stake-blind; its work needs the public state and a machine, nothing a holder has |
 | no idle rent | only $v_\ell \neq 0$ risk earns; passive stake earns rank, not income |
 | attack cost | $\phi^*$ manipulation needs stake and unbuyable [[karma]] |
-| leaderless settlement | attribution is a swarm-averaged sampling lottery; no producer decides it |
+| leaderless settlement | attribution is a swarm-sampled game whose value the chain computes exactly; no producer decides it |
+| settlement soundness | every sample is verified by recomputation (§7); the beacon is the boundary block id (§7, §16); the subsidy and the lottery share one preimage (§7–§8); the cap is one ticket per block, so a flood of tickets is a flood of blocks |
+| settlement liveness | every block carries a sample, the empty epoch samples the gradient, the settlement block is always valid, and a player under $k_{\min}$ keeps its claim (§7) |
+| fork-safety | the pulse is paid at the block $D = 120$ deep past the boundary, below the reorg limit, so no payout is minted against a snapshot that can move (§7, chain-economy §2.5) |
+| withholding | priced: a withheld ticket forfeits a block's subsidy against a gain of zero under the exact payout and a bounded, published gain under the sampling payout (§7) |
 
-Collusion remains open. Stake-weighting closes Sybil splitting, but a cartel of distinct, real-stake actors coordinating [[valence]] and links is not closed — BTS is incentive-compatible only against unilateral deviation. Partial defenses: the conservation cap (a ring on a saturated [[particle]] splits near-zero $\Delta\phi^+$), [[karma]] non-transferability, and [[identity]] cost.
+Collusion is a research frontier. Stake-weighting closes Sybil splitting, but a cartel of distinct, real-stake actors coordinating [[valence]] and links is not closed — BTS is incentive-compatible only against unilateral deviation. Partial defenses: the conservation cap (a ring on a saturated [[particle]] splits near-zero $\Delta\phi^+$), [[karma]] non-transferability, [[identity]] cost, and on the root chain the once-per-new-high pulse capped at 1 % of the stake added (§16).
 
-Withholding remains open. A contender-miner can bias the settlement average by declining to publish unfavorable winning tickets (§7). It cannot lie, only abstain, so the bias is bounded by its share of settlement compute; pricing and role-separation tighten it, commit-before-marginal closes it at a synchrony cost. Both biases are bounded and still open.
+The discovery leak is a research frontier (§5, §12). The validity gate under-weights a novel link while its market price lags, and the pulse under-pays the early contrarian, which earns through the slow annuity. A retroactive discovery bonus, paid when a long-dormant link's cluster ignites, is the candidate instrument; on the root chain $f = 1$ and $\rho = 1$, so the gate does not act and the leak does not open.
 
-The discovery leak remains open (§5, §12). The validity gate under-weights a novel link while its market price lags, and the pulse under-pays the early contrarian, deferring the discovery premium into the slow annuity. A retroactive discovery bonus is the candidate fix and is unbuilt.
+Manufactured surprise and self-dealing are blunted, not closed. The crowd-reference hardening (§5) resists a single stake-rich actor depressing the surprise reference, but a coordinated ring still can; and a contributor controlling both endpoints of an edge, its ICBS market, and its predictor pool can mint real $\Delta\phi^+$ on a sparse subgraph only it reads. The structural defense is gating the discovery premium on *external* attention — the share of $\phi^*$ reaching the region from distinct, non-colluding high-[[karma]] neurons; on the root chain the bound is capital: a ring's pulse is paid once per new high, at most 1 % of what it locked for seven days (chain-economy §9).
 
-Settlement soundness is pinned. The beacon $b_E$ is specified ([[foculus beacon]]), the subsidy and lottery share one canonical preimage (§7–§8), and per-ticket proofs fold into one $O(1)$ accumulator per cluster (§7), so front-running, ordering-grind, the subsidy/settlement split, and the flood-of-cheap-tickets DoS are all closed.
+The honest-reporting guarantee is for the BTS report in isolation. Once $\rho$ gates the mint, the live payoff is mint + subsidy + fee + yield + BTS redistribution, and truthfulness is a best response only if the mint multiplier is monotone in the honest score and $\rho$ and the slash read the *same* meta-prediction (so one cannot be slash-safe and surprising at once). This composite equilibrium is a research frontier.
 
-Settlement liveness and fork-safety are unspecified. The cluster average needs a deadline, a minimum sample count $k_{\min}$, and a defined default when too few samples arrive (deferral to the next epoch's annuity, not a stall) — otherwise [[tok]] has no input under thin or partitioned work. And because the pulse is irreversible (§12) while [[foculus]] finality is adaptive, settlement must bind to a $d$-deep stable state with the pulse escrowed until that depth, or a boundary reorg mints CYB against a claim set that is no longer canonical. On the phase-1 root chain both are closed by construction (§16): settlement is a deterministic step of the block 120 deep past the boundary, recomputed by every node, so there is no deadline, no $k_{\min}$ and no escrow.
-
-Manufactured surprise and self-dealing are blunted, not closed. The crowd-reference hardening (§5) resists a single stake-rich actor depressing the surprise reference, but a coordinated ring still can; and a contributor controlling both endpoints of an edge, its ICBS market, and its predictor pool can mint real $\Delta\phi^+$ on a sparse subgraph only it reads. The structural defense — gating the discovery premium on *external* attention (the share of $\phi^*$ reaching the region from distinct, non-colluding high-[[karma]] neurons) — is sketched and unbuilt.
-
-The honest-reporting guarantee is for the BTS report in isolation. Once $\rho$ gates the mint, the live payoff is mint + subsidy + fee + yield + BTS redistribution, and truthfulness is a best response only if the mint multiplier is monotone in the honest score and $\rho$ and the slash read the *same* meta-prediction (so one cannot be slash-safe and surprising at once). This composite equilibrium is assumed, not proven.
-
-Two economic questions are deferred to a standalone monetary-policy pass: total issuance — the mint runs on its own budget beside the security budget $B$, with no invariant yet capping their sum per epoch (fixed for the phase-1 root chain in §16: one subsidy, split) — and bootstrap funding, whether the early discovery-premium mint and the security floor can fund the [[Goldilocks field processor|GFP]] hardware before fees arrive.
+Issuance is one number. The mint runs on its own budget beside the security budget $B$ in the general law; on the root chain the two are one subsidy, split (§10, §16), so their sum per epoch is $L \cdot \text{SUBSIDY}$ and supply is a function of height alone. Whether the early discovery-premium mint and the security floor can fund [[Goldilocks field processor|GFP]] hardware before fees arrive is a research frontier of the general law, and the root chain's answer is its canary record.
 
 ---
 
 ## 16. On the Root Chain — What Phase 1 Fixes
 
-The phase-1 root chains (pussy, bostrom) run this law in consensus from genesis, on Nakamoto proof of work, with the parameters below; the normative page is soft3 `specs/chain-economy.md` (owner order 2026-10-17: "the goal is foculus, stakes with valence, and mining"). Each line names the section of this page it instantiates.
+The phase-1 root chains (pussy, bostrom) run this law in consensus from genesis, on Nakamoto proof of work whose work is the settlement lottery of §7, with the parameters below; the normative page is cybernode `specs/chain-economy.md` (owner order 2026-10-17: "the goal is foculus, stakes with valence, and mining"; owner order 2026-11-04: "the proof of work must really sample values by the rewards distribution"). Each line names the section of this page it instantiates.
 
 | quantity | root-chain value | here |
 |---|---|---|
 | epoch | 240 blocks (2 h at 30 s); the boundary is a block, $b_E$ is its block id | §6, §7 |
-| settlement | at the block 120 deep past the boundary, recomputed by every full node; no lottery, no proof on the critical path | §6, §7, §15 |
+| the game | the positions that changed between two boundaries, one cluster, $v(S) = J_U(\phi^*(A^S)) - J_U(\phi^*(A^\emptyset))$ on the consensus engine | §7 |
+| the work | every block of epoch $E + 1$ carries one Shapley sample of epoch $E$'s game in its header (`sample: i128`, 184-byte header); the block id below target is the ticket, the ordering weight and the subsidy; seed `D_ORDER = "soft3/chain/order/v1\0"`, cluster `D_CLUSTER = "soft3/chain/cluster/v1\0"` | §7, §8 |
+| difficulty | ASERT on the block interval (chain.md §1.5) over tickets; `GENESIS_BITS = 0x1f100000` ($2^{244}$), `POW_LIMIT = 2^{252}` (`0x20100000`), derived from the measured attempt cost | §7 |
+| verification | every sample recomputed by every node, two solves (0.072 s at pussy, 2 s on twelve threads at bostrom); one ticket per block, 240 per epoch; $K_{\text{BLOCK}} = 0$ while the accumulator's condition is false | §7 |
+| settlement | at the block 120 deep past the boundary, recomputed by every full node: the exact Shapley value of the game by the four-node path gradient (0.12 s at pussy, 75 s at bostrom on one thread); the swarm's estimate of the same game is served per epoch and measures the rule | §4, §7 |
 | $\Delta\phi^+$ attribution | integrated gradient along the epoch's straight path, four Gauss–Legendre nodes, one adjoint solve each: $a_\ell = \Delta s_\ell\,\sigma_\ell\,\bar g_{pq}$, $\bar g = \sum_i w_i\,\partial J/\partial A_{pq}(A_{t_i})$ — the Aumann–Shapley form of §4 (amended 2026-10-17 from the one-node midpoint: measured against exact Shapley, [[epoch]] §7) | §2, §4; operators, transposes and scales: [[epoch]] |
 | φ* continuity | every particle's out-row carries a ground weight $w_0 = \text{in}/4$ to the teleport prior, so a first out-link redirects focus continuously (amended 2026-10-17; without it φ* jumps and no gradient form can attribute the jump) | §4, [[epoch]] §2 |
 | $A^{\text{eff}}$ | $\max(0,\ G_{pq} + S^+_{pq} - S^-_{pq})$: stake of $v \in \{0,+1\}$ adds, $v=-1$ subtracts, clipped per axon; $G$ = passive genesis weight | §3, §9 |
-| karma $\kappa$, price $f$, will | 1, 1, 0 — no reports, no market, no will at launch | §3, §5 |
-| surprise $\rho$ | 1 for every active position; BTS reports arrive by a later rule set | §5 |
+| karma $\kappa$, price $f$, will | 1, 1, 0 — the chain carries no reports, no market and no will; each is a parameter of its rule set, and a rule set that carries them carries its relation first ([[proven-present]] §2.11) | §3, §5 |
+| surprise $\rho$ | 1 for every active position, the chain's `RHO_LAUNCH`; copying is priced by the gradient itself — a copy on the same axon in the same epoch splits that axon's credit pro rata | §5 |
 | reward axis | only $v_\ell \neq 0$ stake that added weight in the epoch earns; passive stake and genesis weight earn nothing | §9 |
 | recycling | a side earns only above its decayed high-water mark (half-life 30 days); stake locked 7 days | §12, §15 |
-| emission | one subsidy (1 %/yr of genesis supply) split per epoch: the focus pool takes $\min(1/2,\ \theta^{1/2})$ of it, $\theta$ = active stake / supply, $\alpha = 1/2$; miners keep the rest and all fees | §8, §10 |
+| emission | one subsidy (1 %/yr of genesis supply) split per epoch: the focus pool takes $\min(1/2,\ \theta^{1/2})$ of it, $\theta$ = active stake / supply, $\alpha = 1/2$; the ticket takes the rest and all fees | §8, §10 |
 | mint budget | the pool releases a quarter of its balance per epoch, divided by attribution; a position takes at most 1 % of its added stake; dust stays in the pool | §4, §10 |
 | conservation | in tokens: payouts $\le$ budget $\le$ pool, supply $= S_0 + h \cdot \text{SUBSIDY}$; the price of a nat of syntropy floats with the epoch | §4 |
-| annuity | not at launch: the pulse only | §11 |
+| withholding | a withheld ticket forfeits $\text{SUBSIDY} - \text{cut} + \text{fees}$ against a gain of zero: the payout is exact | §7 |
+| annuity | the pulse only; the annuity of §11 integrates $\omega(t) = \text{price} \times \text{karma}$, both 1 on the root chain, so its stream is the pulse's own history and nothing is owed beyond it | §11 |
 
-Two departures from the general law are deliberate. The mint is a fixed token budget divided by $\Delta\phi^+$, not $\Delta\phi^+$ converted at a set price, so the clip of §4 to $\min(v^\star(N), \Delta\phi^+(N))$ becomes conservation in tokens, and an epoch without positively attributed active stake pays nothing. And the settlement lottery of §7 is replaced by exact recomputation until the graph outgrows it, when the ticket rule set (chain-economy §7.3) brings the lottery back with the boundary block id as its beacon.
+One departure from the general law is deliberate. The mint is a fixed token budget divided by $\Delta\phi^+$, not $\Delta\phi^+$ converted at a set price, so the clip of §4 to $\min(v^\star(N), \Delta\phi^+(N))$ becomes conservation in tokens, and an epoch without positively attributed active stake pays nothing. The lottery is not a departure: the chain's work is the lottery of §7 from block 1, and the settlement pays the exact value of the game the lottery samples because at these graphs' sizes exact computation is cheaper and tighter than any sample count a swarm of three machines delivers — rule 1 of §7's deadline, with the numbers that decide it in the receipts.
+
+Three design choices this page settles, each with its reason:
+
+1. **No separate ordering hash.** The block id of the ticket-carrying header is the chain's one work function; steps-blocks-epochs §5's "the ticket is a gate, the grind is a race" and chain-economy §7.3's "the header keeps a hash target for ordering" are amended. Reason: ordering needs exactly one progress-free lottery and the ticket's win test is one (a Poisson trial per attempt, §7); a second lottery is synthetic work by definition, dissolves the zero-synthetic-work property of §7, and needs a subsidy nobody pays (cybernode `audit/chain/settlement-mining-state-2026-11-02.md` §4); and the whole-template seed closes the only way a hash grind could hide inside the ticket. The cost is 2 solves of verification per block, measured inside the interval.
+2. **The beacon is the boundary block id** (chain-economy §2.3). Reason: it is a consensus object every node has from headers alone, it is fixed after the epoch's last position is in, and its one bias — a boundary miner discarding a found block to redraw — costs that block's subsidy and buys a different sample set, which pays nothing under the exact settlement; the VDF beacon of [[foculus beacon]] stays the general law's instrument for a chain without blocks.
+3. **Verification is recomputation.** Reason, measured: a sound ticket proof discloses its witness and costs what recomputation costs (foculus `audit/sound-settlement-proofs-2026-10.md` §3); the φ* relation on the general nox machine is 11–14 G rows per pussy solve, about 2.7 years of the CI runner (tru `audit/phi-relation-2026-11.md` §3); the accumulated cluster profile is 27–46× larger than per-ticket proofs and verifies no faster (foculus `audit/accumulated-settlement-2026-10.md` §4). Two solves per block on the machine that already settles is cheaper than every proof measured, and the accumulator rule of §7 names the condition under which that stops being true.
+
+---
+
+## Trace — every rule to its source
+
+| rule | clause, sentence or receipt |
+|---|---|
+| the proof of work is a Shapley sample; nothing else is work | the owner, 2026-11-04 ("the proof of work must really sample values by the rewards distribution"); §7 "The lottery" (the owner's prose, 2026-10); whitepaper §14.3 |
+| one cluster per epoch on the consensus engine | [[epoch]] §2 (stake prior, normalization), §4 (the global gradient term); cybernode `audit/chain/settlement-mining-state-2026-11-02.md` §2 (the live path is one cluster) |
+| the game $v(S)$ and $J_U$ | chain-economy §4.2, §5.2 (players, $A$, $\Delta s$ per side); tru `audit/epoch-settlement-2026-10.md` §3 (exact Shapley over $J_\cup$) |
+| the seed over the whole template | §7 step 3 (the owner: a contender cannot grind nonces); chain.md §1.1 (every miner-variable field is in the header) |
+| Owen's draw is the Shapley estimator | §4 (Aumann–Shapley as the path integral); Owen 1972, the multilinear extension |
+| the empty epoch samples the gradient | §8 (the owner: "block production and the stakeless onramp never stall"); [[epoch]] §4 (the gradient the attribution reads) |
+| the ticket is the block id below target | §7 step 3, §8 (the owner: "this single test is also the block subsidy — no separate proof-hash puzzle"); chain.md §1.2 |
+| `sample: i128`, 184 bytes, four permutations | hemera `specs/encoding.md` (one `0x01 ∥ 0x00*` absorption); chain.md §1.1 (168 = 3 × 56) |
+| ASERT over tickets | chain.md §1.5; the owner's prose §7 ("the difficulty schedule has to correct for" cluster cost) |
+| `GENESIS_BITS`, `POW_LIMIT` from the attempt cost | cybernode `audit/chain/economy-2026-10-17.md` (0.036 s per pussy solve); chain.md §1.2–§1.3 (the derivation shape) |
+| verification by recomputation | foculus `audit/sound-settlement-proofs-2026-10.md` §3; tru `audit/phi-relation-2026-11.md` §3–§4; foculus `audit/accumulated-settlement-2026-10.md` §4 |
+| one ticket per block, 240 per epoch | chain-economy §2.1 ($L = 240$); the owner's prose §7 (the flood-of-cheap-tickets DoS) |
+| the accumulator under conditions (a), (b) | tru `audit/phi-relation-2026-11.md` §4 (decision c); foculus `audit/accumulated-settlement-2026-10.md` §4; [[proven-present]] §2.11 |
+| the window and the deadline | chain-economy §2.5 ($\text{settle}(E) = \text{boundary}(E) + D$, finality) |
+| exact payout where it fits `SETTLE_BUDGET` | chain-economy §7.2 (75 s at bostrom, 48× margin); cybernode `audit/chain/economy-2026-10-17.md` (0.12 s at pussy); [[epoch]] §7 (≤ 5 % median error) |
+| a longer epoch before sampling | chain-economy §2.2 ("a day is the natural length once the graph outgrows recomputation") |
+| $k_{\min} = 4{,}096$, the default under it | foculus `specs/fold-mining.md` § the precision target (Hoeffding); the owner's prose §15 (a default that is not a stall) |
+| withholding bound and forfeit | foculus `specs/fold-mining.md` § withholding bias, `audit/withholding-bias.md`; the owner's prose §7 ("a withheld ticket forfeits its subsidy; calibrate so the forfeit exceeds the share-gain"); chain-economy §6.1 (the miner floor) |
+| the beacon is the boundary block id | chain-economy decision 2 and §2.3; cyber `launch.md` decision 2026-10-17 |
+| UniversalHash in the viewing economy, never the chain | uhash `docs/viewing-economy.md`; cyber `launch.md` ("UniversalHash and the viewing economy: out of scope; a separate network"); [[warriors/mining]] (a distribution game inverts the values) |
+| the split, the pool, the cap | chain-economy §5.5, §6.1; tru `audit/allocation-curve.md` |
+| ρ, κ, f, will = 1, 1, 1, 0 | chain-economy §3.7, §5.4 |
+| the pulse is final at depth 120 | chain-economy §2.5; the owner's prose §12 ("a paid pulse is irreversible") |
 
 ---
 
@@ -384,26 +467,30 @@ Two departures from the general law are deliberate. The mint is a fixed token bu
 | $\phi \in \Delta(P)$ | a [[focus]] distribution; $\phi^*$ is the [[tri-kernel]] fixed point |
 | $\mathcal{R}$ | composite operator $\lambda_d D + \lambda_s S + \lambda_h H_\tau$; $\phi^* = \operatorname{norm}[\mathcal{R}\phi^*]$ |
 | $\mathcal{F}(\phi)$ | system [[free energy]]; $\phi^* = \arg\min_\phi \mathcal{F}$ |
-| $J(\phi)$ | [[syntropy]] $= D_{KL}(\phi \,\|\, u) = \log|P| - H(\phi)$ |
+| $J(\phi)$ | [[syntropy]] $= D_{KL}(\phi \,\|\, u) = \log|P| - H(\phi)$; $J_U$ reads it over the union particle set of an epoch (§7) |
 | $\Delta\phi^+$ | directed focus impulse, the reward primitive (§2) |
 | $\rho_\ell \in [0,1]$ | per-contribution [[Bayesian Truth Serum\|BTS]] surprise (§5) |
 | $v^\star(S)$ | surprise-weighted value: $v$ with each contributed link's $A^{\text{eff}}$ weight multiplied by its surprise $\rho$ (§6) |
 | $A^{\text{eff}}_{pq}$ | effective adjacency $= \sum_\ell \text{stake}(\ell)\,\kappa(\nu(\ell))\,f(\text{price}(\ell))$ |
 | $\nu,\ \kappa(\nu)$ | a [[neuron]] and its [[karma]]; $\text{id}(\nu) = \text{Hemera}(\text{secret})$ |
 | $v_\ell \in \{-1,0,+1\}$ | the [[valence]] of a cyberlink |
-| $v(S)$ | coalition value function (§3) |
+| $v(S)$ | coalition value function (§3, §7) |
+| $n$ | a header template, the 168 bytes a miner varies; the lottery's nonce (§7) |
+| $c,\ T,\ P$ | the drawn player, the inclusion threshold and the drawn coalition of an attempt (§7) |
+| $m(n)$ | the sample of an attempt, $v^\star(P \cup \{c\}) - v^\star(P)$, i128 at $2^{60}$ nats (§7) |
+| $K_{\text{BLOCK}},\ k_{\min}$ | folded tickets a block admits beyond its own (0 while the accumulator's condition is false); samples per player the sampling settlement needs (§7) |
 | $s$ | a [[signal]] $= (\nu, \vec\ell, \Delta\phi^*, \sigma, \text{prev}, \text{mc}, \text{vdf}, \text{step}, \text{nonce})$ |
-| $\sigma$ | a [[zheng]] proof bound to a [[BBG]] root |
+| $\sigma$ | a [[zheng]] proof bound to a [[BBG]] root; also a player's side $\pm 1$ in §7 |
 | $\theta, M, F$ | staking ratio, market cap, epoch fees |
 | $B$ | security budget (PoW + PoS pools, §10), distinct from the cybergraph $G$ |
 | $s^{\text{BTS}}_\nu$ | raw [[Bayesian Truth Serum]] score (§5); $\rho_\ell$ is its clip to $[0,1]$ |
-| $a_\nu,\ w_\nu$ | $\nu$'s active ($v_\ell \neq 0$) stake; its accepted settlement samples this epoch (§11) |
+| $a_\nu,\ w_\nu$ | $\nu$'s active ($v_\ell \neq 0$) stake; its winning tickets this epoch (§11) |
 | $\gamma,\ \beta$ | servicer fee share; fee burn fraction (§8) |
 | $\varepsilon$ | precision floor — contributions below it are dropped (§2, §7); a protocol constant |
 | $c_{\text{sec}},\ r_{\text{atk}}$ | security-floor safety margin; attacker cost of capital per epoch (§10) |
 
 ---
 
-See [[focus-flow]] for how $\phi^*$ and $\Delta\phi^+$ are computed, [[truth-scoring]] for BTS and [[karma]], [[adaptive hybrid consensus economics]] for the PoW/PoS allocation and PID control, [[unified mining]] for the subsidy-as-signal-proof construction, and [[provable-consensus]] for epoch finalization. See whitepaper §6.9 and §14 for the surrounding economics.
+See [[focus-flow]] for how $\phi^*$ and $\Delta\phi^+$ are computed, [[epoch]] for the consensus engine the root chain's game and samples run on, [[truth-scoring]] for BTS and [[karma]], [[adaptive hybrid consensus economics]] for the PoW/PoS allocation and PID control, [[unified mining]] for the subsidy-as-signal-proof construction, and [[provable-consensus]] for epoch finalization. See whitepaper §6.9 and §14 for the surrounding economics.
 
-The energy-based-learning grounding of §1 and §4 — that intrinsic free-energy descent, not a designed loss, is how the brain plausibly learns, and that Shapley credit is the integrated-gradient (Aumann–Shapley) generalization of it — follows Lillicrap, Santoro, Marris, Akerman & Hinton, *Backpropagation and the brain* (Nature Reviews Neuroscience, 2020); Scellier & Bengio, *Equilibrium Propagation* (2017); and Sundararajan, Taly & Yan, *Axiomatic Attribution / Integrated Gradients* (2017).
+The energy-based-learning grounding of §1 and §4 — that intrinsic free-energy descent, not a designed loss, is how the brain plausibly learns, and that Shapley credit is the integrated-gradient (Aumann–Shapley) generalization of it — follows Lillicrap, Santoro, Marris, Akerman & Hinton, *Backpropagation and the brain* (Nature Reviews Neuroscience, 2020); Scellier & Bengio, *Equilibrium Propagation* (2017); Sundararajan, Taly & Yan, *Axiomatic Attribution / Integrated Gradients* (2017); and Owen, *Multilinear extensions of games* (Management Science, 1972) for the sampling estimator of §7.

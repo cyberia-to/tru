@@ -117,7 +117,7 @@ this is the point. tru is not a ranking engine that happens to have rewards bolt
 
 | spec | defines | status |
 |------|---------|--------|
-| [rewards.md](rewards.md) | surprising-syntropy self-minting, Shapley attribution + settlement mining, the three streams (mint/subsidy/fee), supply/allocation, timing & accrual | ✅ tru layer built — `rs/rewards.rs`: value `v★(S)=Δφ⁺(A^eff∪ρ·S)`, Shapley (3 axioms tested), settlement ordering. lottery→[[foculus]], conservation/mint→[[tok]] |
+| [rewards.md](rewards.md) | surprising-syntropy self-minting, Shapley attribution + settlement mining, the three streams (mint/subsidy/fee), supply/allocation, timing & accrual | ✅ tru layer built — `rs/rewards.rs`: value `v★(S)=Δφ⁺(A^eff∪ρ·S)`, Shapley (3 axioms tested), settlement ordering. the lottery is the root chain's work (cybernode chain-economy §7, [[foculus]] as its library); the game and the sample on the epoch engine are the next slice of `rs/focusing/epoch/`; conservation/mint→[[tok]] |
 
 ---
 
