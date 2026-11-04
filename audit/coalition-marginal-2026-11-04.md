@@ -32,6 +32,10 @@ solves the base value once. Then:
 | `samples(beacon, cluster, nonces, workers)` | the miner's loop, one sample per nonce, nonces in parallel | — |
 | `shapley()` | the exact Shapley value by subset enumeration (`\|N\| ≤ 20`) | `2^\|N\|` solves |
 | `Sample::preimage()` | `D_SAMPLE ‖ k ‖ m[0] … m[k−1]` (i128 LE), the `commit(m(n))` preimage | — |
+| `ticket(beacon, cluster, nonce, r, W)` | rewards.md §7 step 2 (tru#45): the marginals of `W' = min(N, W−1)` cyclic ranks of `π(n)` from the drawn rank `r` (prefix reuse, `v(∅)` free on the wrap), then `W − W'` gradient probes | at most `W + 1` solves, for any `N` |
+| `probes(beacon, cluster, nonce, count, \|A_E\|)` | the draws `(a_i, t_i)`: `u64 mod \|A_E\|` and `u32` from the hemera XOF of `D_PROBE ‖ beacon ‖ cluster ‖ nonce` | one hash |
+| `probe(a, t)` | `J_U(φ*(A_E + u·e_a)) − J_U(φ*_E)`, `u = max(1, ⌊A_a·t/2^32⌋)` — the one-axon form of the path nodes of epoch.md §4 | one solve |
+| `Ticket::preimage()` | §7 step 3: `D_SAMPLE ‖ W ‖ m_{c_1} … m_{c_{W'}}` (covered players ascending) `‖` probes in draw order | — |
 
 `φ*` is `epoch::solve` on `EpochGraph::build_with(A_S, ground)` — the same
 function, the same bits, as `epoch::phi` of that axon list; `J_U` is the
@@ -45,7 +49,7 @@ the tags to it; the values here are proposed in the style of `D_PHI`).
 
 ## 2. tests (`cargo test -p cyber-tru --release --test coalition_marginal`)
 
-12 tests, 0.4 s on galapot, 0.89 s on build-a. The whole crate: 168 + 7 +
+16 tests, 0.4 s on galapot, 1.2 s on build-a, 0.89 s on build-a. The whole crate: 168 + 7 +
 16 + 1 + 1 passed, 3 ignored (chain-scale budgets).
 
 | test | checks | measured |
@@ -56,6 +60,12 @@ the tags to it; the values here are proposed in the style of `D_PHI`).
 | `ordering_is_a_permutation_drawn_from_the_beacon` | a permutation; changes with nonce, beacon and cluster; `n ≤ 1` trivial | — |
 | `permutation_mean_equals_shapley_by_enumeration_up_to_six_players` | the rounded mean of `sample_along` over all `n!` orderings equals `shapley()` for `n = 3, 4, 5, 6` | equal as integers |
 | `beacon_samples_converge_to_shapley_for_eight_players` | 800 beacon-drawn samples, 8 players, against exact Shapley (256 coalitions) | `Σ\|mean − Shapley\| / Σ\|Shapley\| = 8.2 × 10⁻⁴`; bound 10⁻² |
+| `window_covers_each_player_with_probability_w_over_n` | 3,000 tickets, N = 10, W = 4: each player covered ≈ 900 times (bound 765–1,035), the window cyclic, 4 entries each | — |
+| `full_window_ticket_is_the_sample_and_sums_to_v_n` | W − 1 ≥ N: the window is the whole ordering (= `sample`) and sums to `v(N)` at every rank; the rest are probes | equal as integers |
+| `probe_is_the_engine_s_finite_difference_at_the_drawn_node` | the probe equals `J_U(A_E + u·e_a) − J_U(A_E)` exactly and its four-node attribution to the quadrature's error; `u ≥ 1`; an empty epoch's ticket is all probes | attribution error 1.2 × 10⁻⁸ … 1.6 × 10⁻⁶ (bound 10⁻⁴) |
+| `probes_change_with_the_nonce_and_the_seed` | a different nonce (template digest), beacon or cluster draws different probes | — |
+| `window_mean_per_player_equals_shapley_by_enumeration_for_n_above_the_width` | N = 5, W = 3: over every ordering and rank each player's covered marginals average to `shapley()` exactly; the ticket's window equals `sample_along`'s | equal as integers |
+| `ticket_is_bit_identical_across_runs_and_thread_counts` | two runs, 1 and 4 threads, 9 players, W = 8 (7 marginals + 1 probe); preimage 154 bytes; digest pinned | `331ed368…9730` on galapot and build-a |
 | `coalition_axons_sum_deltas_and_clip_at_zero` | `A_S`: deltas sum per axon, clip at 0, a repeated index counts once, `v(∅) = 0` | — |
 
 The first row is the one-link identity the unit asked for: the game's
@@ -107,6 +117,23 @@ cargo build -p cyber-tru --release --example coalition_bench
 A sample of 256 players on build-a, one thread: 32.3 s (126 ms per
 marginal) — linear in the players, as the construction says (one solve per
 prefix).
+
+One ticket of rewards.md §7 (tru#45): `W_TICKET = 64` over the 64-player
+game, rank `r = u64_le(hemera(nonce)[8..16]) mod N = 8` — 63 marginals from
+rank 8 (one prefix solve, then one per rank, the wrap at rank 0 free) and
+one probe, 65 solves:
+
+```
+./target/release/examples/coalition_bench DIR 64 1 0 0 pussy 64
+```
+
+| machine | one ticket, 65 solves | per solve | digest of the preimage |
+|---|---|---|---|
+| build-a, one thread (load average 16) | 7.75–7.83 s | 120 ms | `90a90b92…ae5f` |
+| galapot, one thread | 2.15 s | 33 ms | `90a90b92…ae5f` |
+
+The ticket costs what the sample costs: `W + 1` solves whatever the player
+count, so the rate above (samples/s) is the ticket rate for `W = 64`.
 
 Per-solve threads are a loss at pussy's size: the kernel spawns a scoped
 thread per row chunk per pass (≈ 12 passes × 48 steps), and at 16 k
@@ -161,6 +188,8 @@ move with it, and the pins are re-blessed from the new run.
   4 solve threads (pinned in the test);
 - the same digest for the pussy game, 64 and 256 players, on both machines,
   at 1, 12 and 32 solve threads and under 1–96 workers;
+- the same ticket digest for the 9-player test game (`331ed368…9730`, pinned)
+  and for the pussy game at `W = 64` (`90a90b92…ae5f`) on both machines;
 - `ordering` is a pure function of `(beacon, cluster, nonce, n)`; the sample
   of a nonce is a pure function of the game and that ordering.
 
