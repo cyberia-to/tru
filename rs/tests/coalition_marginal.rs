@@ -524,6 +524,28 @@ fn probe_is_the_engine_s_finite_difference_at_the_drawn_node() {
     }
     // the floor: t = 0 adds one unit
     assert_eq!(game.probe(0, 0).u, 1);
+    // at the weight bound the product A·t does not overflow (R46-11)
+    let heavy = vec![
+        Axon {
+            from: pid(1),
+            to: pid(2),
+            weight: (1u128 << 123) - 1,
+        },
+        Axon {
+            from: pid(2),
+            to: pid(3),
+            weight: 1 << 122,
+        },
+    ];
+    let g = Game::new(&heavy, &[], &params(8, 1)).unwrap();
+    let pr = g.probe(0, u32::MAX);
+    assert_eq!(
+        pr.u,
+        (((1u128 << 123) - 1) >> 32) * u32::MAX as u128
+            + ((0xFFFF_FFFFu128 * u32::MAX as u128) >> 32)
+    );
+    assert_eq!(g.probe(0, 1 << 31).u, 1 << 122);
+    assert_eq!(g.probe(1, 1 << 31).u, 1 << 121);
     // an empty epoch's ticket is all probes, W solves
     let t = game.ticket(&[1; 32], &[2; 32], 5, 0, 3);
     assert!(t.covered.is_empty() && t.probes.len() == 3 && t.width() == 3);
@@ -557,7 +579,9 @@ fn window_mean_per_player_equals_shapley_by_enumeration_for_n_above_the_width() 
     let (mut acc, mut cnt) = ([0i128; 5], [0i128; 5]);
     for o in permutations(5) {
         for rank in 0..5 {
-            // a ticket over an explicit ordering: the window of `sample_along`
+            // the window over an explicit ordering (a ticket's ordering comes
+            // from the beacon, so the enumeration uses `sample_along`; the
+            // ticket is compared with it on drawn orderings below)
             let m = game.sample_along(&o);
             for k in 0..2 {
                 let i = o[(rank + k) % 5];
@@ -565,7 +589,6 @@ fn window_mean_per_player_equals_shapley_by_enumeration_for_n_above_the_width() 
                 cnt[i] += 1;
             }
         }
-        // and the real path agrees with the explicit one on a drawn ordering
     }
     let mean: Vec<i128> = (0..5).map(|i| div_round_i(acc[i], cnt[i])).collect();
     assert_eq!(mean, sh);

@@ -421,7 +421,10 @@ impl Game {
     /// own `J_U(φ*_E)` ([`Probe`]).
     pub fn probe(&self, axon: usize, t: u32) -> Probe {
         let a = self.base[axon];
-        let u = ((a.weight * t as u128) >> 32).max(1);
+        // ⌊A·t/2^32⌋ without a 160-bit product: A = hi·2^32 + lo, so
+        // ⌊A·t/2^32⌋ = hi·t + ⌊lo·t/2^32⌋ exactly; A < 2^124 keeps hi·t < 2^124.
+        let (hi, lo) = (a.weight >> 32, a.weight & 0xFFFF_FFFF);
+        let u = (hi * t as u128 + ((lo * t as u128) >> 32)).max(1);
         let mut with = self.base.clone();
         with[axon].weight = a.weight.saturating_add(u);
         Probe {
@@ -459,7 +462,7 @@ impl Game {
         // the prefix is empty again.
         let mut by_player: Vec<(usize, i128)> = Vec::with_capacity(w_m);
         let mut prefix: Vec<usize> = order[..rank].to_vec();
-        let mut prev = self.value(&prefix);
+        let mut prev = if w_m == 0 { 0 } else { self.value(&prefix) };
         for k in 0..w_m {
             let j = (rank + k) % n;
             if j == 0 && k > 0 {
