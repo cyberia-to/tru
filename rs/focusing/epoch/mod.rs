@@ -13,7 +13,11 @@
 //!   (4 by default); the chain pays `a(c) = Δs(c)·σ(c)·ḡ_pq`;
 //! - [`net_axons`]: the chain's §4.2 net weight from genesis weight and
 //!   valence-signed positions (a reference for the chain's own code and the
-//!   tests).
+//!   tests);
+//! - [`coalition`]: the marginal `Δφ⁺(ℓ | S)` of one change against a
+//!   coalition and a ticket's Shapley sample `m(n)` along the beacon-drawn
+//!   ordering `π(n)` (rewards.md §7) — the settlement-mining entry point, on
+//!   the same solves.
 //!
 //! Consensus properties:
 //!
@@ -38,12 +42,14 @@
 //! The legacy combinatorial kernel (`focusing::compute_focusing`) stays as the
 //! research reference.
 
+pub mod coalition;
 pub mod fixed;
 pub mod gradient;
 pub mod graph;
 pub mod integrated;
 pub mod kernel;
 
+pub use coalition::{Change, D_ORDER, D_SAMPLE, Game, Sample, ordering};
 pub use graph::{Axon, AxonKey, EpochGraph, Ground, canonical};
 pub use integrated::{
     AxonScore, PathGradient, integrated_gradient, midpoint_attribution, path_gradient,
