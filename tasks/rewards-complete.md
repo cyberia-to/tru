@@ -204,3 +204,7 @@ red. (1) The history key is spoofable, so the bound is false: the coinbase neuro
 ## review, RW-1 at 7a57687
 
 red on one sentence; the rule is free of unsound shortcuts (history tier and probe check gone; hash first, node-wide budget, chainwork, local tie draw, relay after verification, safety untouched: all hold). The bound is false as stated: with ties drawn at random, an attacker who presents F target-passing headers at the live tip's chainwork gets the honest header served with probability V_BUDGET/(V_BUDGET + F) per interval, so the delay is about (F/V_BUDGET) intervals, not at most V_BUDGET·t_verify, and the cost is F·2^256/target hashes (F × 128 at pussy's genesis target, about 1.4 ms of one core each), not V_BUDGET headers. The true statement, acceptable as a rule with a condition: a connected flood of F headers delays one node's acceptance of a block by about F/V_BUDGET intervals at F·128 hashes, per node, non-propagating, safety untouched, until the proof or the accumulator (and the pool's eviction rule for forged headers must be stated).
+
+## review, RW-1 at 32e876b
+
+green. The bound reads V/(V+F) per interval, expected delay about F/V intervals at F·2^256/target hashes, per node, non-propagating, safety untouched; failed headers dropped, scored, never re-queued, verified once; the condition is the proof or the accumulator. A rule with its bound and its condition, no hole.
