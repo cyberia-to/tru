@@ -2,7 +2,7 @@
 //! the epoch engine, and the marginal sample `m(n)` of a settlement ticket
 //! (tru `specs/rewards.md` §4, §7; soft3 `specs/chain-economy.md` §7.3).
 //!
-//! The game. The epoch's canonical input is the staked graph `G_E`: the axon
+//! The game. The epoch's canonical input is the staked graph `G_E` (the base `A_{E−1}` and the epoch's changes): the axon
 //! list `A_prev` at the previous boundary and the epoch's changes — one
 //! [`Change`] per position (its `Δs·σ` on one axon, chain-economy §5.2) or per
 //! link. A coalition `S` is a set of changes; its graph is
@@ -158,7 +158,7 @@ pub fn ordering(beacon: &[u8; 32], cluster: &[u8; 32], nonce: u64, n: usize) -> 
 /// (rewards.md §7 step 1).
 pub const D_PROBE: &[u8] = b"soft3/chain/probe/v1\0";
 
-/// A ticket's probe draws: `count` pairs `(a_i, t_i)` — "`u64 mod |A_E|` and
+/// A ticket's probe draws: `count` pairs `(a_i, t_i)` — "`u64 mod |A_{E−1}|` and
 /// `u32` from the hemera XOF of `D_PROBE ‖ b_E ‖ cluster ‖ nonce`"
 /// (rewards.md §7 step 1), in draw order; `a_i` indexes the boundary's
 /// present axons ascending, `t_i` is a fraction at 2^32. Little-endian; an
@@ -194,8 +194,8 @@ pub fn probes(
 
 /// One gradient probe of a ticket (rewards.md §7 step 2): the finite
 /// difference of `J_U` along one present axon of the boundary graph at a
-/// drawn fraction of its weight — "`m^probe_i(n) = J_U(φ*(A_E + u_i e_{a_i}))
-/// − J_U(φ*_E)`, `u_i = max(1, ⌊A_{a_i} t_i / 2^32⌋)`", the one-axon form of
+/// drawn fraction of its weight — "`m^probe_i(n) = J_U(φ*(A_{E−1} + u_i e_{a_i}))
+/// − J_U(φ*_{E−1})`, `u_i = max(1, ⌊A_{a_i} t_i / 2^32⌋)`", the one-axon form of
 /// the path nodes of [[epoch]] §4.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Probe {
@@ -205,7 +205,7 @@ pub struct Probe {
     pub t: u32,
     /// `u = max(1, ⌊A_a·t/2^32⌋)`, the weight added.
     pub u: u128,
-    /// `J_U(φ*(A_E + u·e_a)) − J_U(φ*_E)`, nats at 2^60.
+    /// `J_U(φ*(A_{E−1} + u·e_a)) − J_U(φ*_{E−1})`, nats at 2^60.
     pub value: i128,
 }
 
@@ -412,13 +412,13 @@ impl Game {
         }
     }
 
-    /// The boundary's axons `A_E`, ascending — the index space of a probe.
+    /// The base's axons `A_{E−1}` (the previous boundary), ascending — the index space of a probe.
     pub fn base(&self) -> &[Axon] {
         &self.base
     }
 
     /// One gradient probe at `(axon, t)`: one solve against the boundary's
-    /// own `J_U(φ*_E)` ([`Probe`]).
+    /// own `J_U(φ*_{E−1})` (the base) ([`Probe`]).
     pub fn probe(&self, axon: usize, t: u32) -> Probe {
         let a = self.base[axon];
         // ⌊A·t/2^32⌋ without a 160-bit product: A = hi·2^32 + lo, so

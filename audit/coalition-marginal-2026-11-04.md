@@ -33,8 +33,8 @@ solves the base value once. Then:
 | `shapley()` | the exact Shapley value by subset enumeration (`\|N\| ≤ 20`) | `2^\|N\|` solves |
 | `Sample::preimage()` | `D_SAMPLE ‖ k ‖ m[0] … m[k−1]` (i128 LE), the `commit(m(n))` preimage | — |
 | `ticket(beacon, cluster, nonce, r, W)` | rewards.md §7 step 2 (tru#45): the marginals of `W' = min(N, W−1)` cyclic ranks of `π(n)` from the drawn rank `r` (prefix reuse, `v(∅)` free on the wrap), then `W − W'` gradient probes | at most `W + 1` solves, for any `N` |
-| `probes(beacon, cluster, nonce, count, \|A_E\|)` | the draws `(a_i, t_i)`: `u64 mod \|A_E\|` and `u32` from the hemera XOF of `D_PROBE ‖ beacon ‖ cluster ‖ nonce` | one hash |
-| `probe(a, t)` | `J_U(φ*(A_E + u·e_a)) − J_U(φ*_E)`, `u = max(1, ⌊A_a·t/2^32⌋)` — the one-axon form of the path nodes of epoch.md §4 | one solve |
+| `probes(beacon, cluster, nonce, count, \|A_{E−1}\|)` | the draws `(a_i, t_i)`: `u64 mod \|A_{E−1}\|` and `u32` from the hemera XOF of `D_PROBE ‖ beacon ‖ cluster ‖ nonce` | one hash |
+| `probe(a, t)` | `J_U(φ*(A_{E−1} + u·e_a)) − J_U(φ*_{E−1})`, `u = max(1, ⌊A_a·t/2^32⌋)` — the one-axon form of the path nodes of epoch.md §4 | one solve |
 | `Ticket::preimage()` | §7 step 3: `D_SAMPLE ‖ W ‖ m_{c_1} … m_{c_{W'}}` (covered players ascending) `‖` probes in draw order | — |
 
 `φ*` is `epoch::solve` on `EpochGraph::build_with(A_S, ground)` — the same
@@ -62,7 +62,7 @@ the tags to it; the values here are proposed in the style of `D_PHI`).
 | `beacon_samples_converge_to_shapley_for_eight_players` | 800 beacon-drawn samples, 8 players, against exact Shapley (256 coalitions) | `Σ\|mean − Shapley\| / Σ\|Shapley\| = 8.2 × 10⁻⁴`; bound 10⁻² |
 | `window_covers_each_player_with_probability_w_over_n` | 3,000 tickets, N = 10, W = 4: each player covered ≈ 900 times (bound 765–1,035), the window cyclic, 4 entries each | — |
 | `full_window_ticket_is_the_sample_and_sums_to_v_n` | W − 1 ≥ N: the window is the whole ordering (= `sample`) and sums to `v(N)` at every rank; the rest are probes | equal as integers |
-| `probe_is_the_engine_s_finite_difference_at_the_drawn_node` | the probe equals `J_U(A_E + u·e_a) − J_U(A_E)` exactly and its four-node attribution to the quadrature's error; `u ≥ 1`; an empty epoch's ticket is all probes | attribution error 1.2 × 10⁻⁸ … 1.6 × 10⁻⁶ (bound 10⁻⁴) |
+| `probe_is_the_engine_s_finite_difference_at_the_drawn_node` | the probe equals `J_U(A_{E−1} + u·e_a) − J_U(A_{E−1})` exactly and its four-node attribution to the quadrature's error; `u ≥ 1`; an empty epoch's ticket is all probes | attribution error 1.2 × 10⁻⁸ … 1.6 × 10⁻⁶ (bound 10⁻⁴) |
 | `probes_change_with_the_nonce_and_the_seed` | a different nonce (template digest), beacon or cluster draws different probes | — |
 | `window_mean_per_player_equals_shapley_by_enumeration_for_n_above_the_width` | N = 5, W = 3: over every ordering and rank each player's covered marginals average to `shapley()` exactly; the ticket's window equals `sample_along`'s | equal as integers |
 | `ticket_is_bit_identical_across_runs_and_thread_counts` | two runs, 1 and 4 threads, 9 players, W = 8 (7 marginals + 1 probe); preimage 154 bytes; digest pinned | `331ed368…9730` on galapot and build-a |
