@@ -1,5 +1,5 @@
-//! coalition — the marginal `Δφ⁺(ℓ | S)` of one link against a coalition, on
-//! the epoch engine, and the Shapley sample `m(n)` of a settlement ticket
+//! coalition — the marginal `m(ℓ | S)` of one change against a coalition, on
+//! the epoch engine, and the marginal sample `m(n)` of a settlement ticket
 //! (tru `specs/rewards.md` §4, §7; soft3 `specs/chain-economy.md` §7.3).
 //!
 //! The game. The epoch's canonical input is the staked graph `G_E`: the axon
@@ -12,8 +12,15 @@
 //!
 //! ```text
 //! v(S) = J_U(φ*(A_S)) − J_U(φ*(A_prev)),        v(∅) = 0
-//! Δφ⁺(ℓ | S) = v(S ∪ {ℓ}) − v(S)
+//! m(ℓ | S) = v(S ∪ {ℓ}) − v(S)
 //! ```
+//!
+//! The marginal is the signed `ΔJ` — a change that lowers syntropy carries a
+//! negative marginal, as the chain's attribution `a(c)` does (chain-economy
+//! §5.2). It is not the clipped `Δφ⁺ = [ΔJ]₊` of rewards.md §2: the clips
+//! apply after the sample, per position (`max(0, a(c))`, chain-economy §5.3)
+//! and on the total (`min(v*(N), Δφ⁺(N))`, rewards.md §4); the ticket's
+//! sample carries the signed marginal (rewards.md §7, `m_j(n)`).
 //!
 //! `φ*` is the engine's own solve ([`super::solve`] on the canonical build of
 //! `A_S`, `PHI_STEPS` steps, cold) — the same function, the same bits, the
@@ -230,7 +237,8 @@ impl Game {
         self.syntropy_of(&self.axons(coalition)) - self.base_syntropy
     }
 
-    /// `Δφ⁺(ℓ | S) = v(S ∪ {ℓ}) − v(S)`: two solves (one when `S` is empty).
+    /// `m(ℓ | S) = v(S ∪ {ℓ}) − v(S)`, the signed `ΔJ` marginal: two solves
+    /// (one when `S` is empty).
     pub fn marginal(&self, coalition: &[usize], player: usize) -> i128 {
         let mut with = coalition.to_vec();
         with.push(player);
@@ -295,7 +303,7 @@ impl Game {
 
     /// The exact Shapley value by subset enumeration, `2^|N|` solves — the
     /// reference for small clusters (`|N| ≤ 20`). `round(Σ_S |S|!(n−|S|−1)!
-    /// · Δφ⁺(ℓ | S) / n!)` per player, nats at 2^60.
+    /// · m(ℓ | S) / n!)` per player, nats at 2^60.
     pub fn shapley(&self) -> Vec<i128> {
         let n = self.players.len();
         assert!(n <= 20, "exact Shapley enumerates 2^n coalitions");

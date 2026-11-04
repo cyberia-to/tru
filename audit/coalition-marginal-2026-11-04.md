@@ -26,7 +26,7 @@ solves the base value once. Then:
 | call | meaning | cost |
 |---|---|---|
 | `value(S)` | `v(S) = J_U(φ*(A_S)) − J_U(φ*(A_prev))`, `A_S = max(0, A_prev + Σ_S Δ)` | one build + one `PHI_STEPS` solve |
-| `marginal(S, ℓ)` | `Δφ⁺(ℓ \| S) = v(S ∪ {ℓ}) − v(S)` | two solves (one when `S = ∅`) |
+| `marginal(S, ℓ)` | `m(ℓ \| S) = v(S ∪ {ℓ}) − v(S)`, the signed `ΔJ` marginal | two solves (one when `S = ∅`) |
 | `ordering(beacon, cluster, n, k)` | `π(n)`: Fisher–Yates on the hemera XOF of `D_ORDER ‖ beacon ‖ cluster ‖ n` | one hash |
 | `sample(beacon, cluster, n)` | `m(n)`: every player's marginal along `π(n)`; `Σ m = v(N)` exactly | `\|N\|` solves |
 | `samples(beacon, cluster, nonces, workers)` | the miner's loop, one sample per nonce, nonces in parallel | — |
@@ -180,6 +180,9 @@ the prefix's φ* as a warm start, which the consensus definition forbids
    (foculus#61) still has no constraint system for the solve — unchanged by
    this unit;
 6. the `directed` clip `[ΔJ]₊` of `tru::impulse` is not applied per marginal
-   here: a marginal is signed (a position that lowers syntropy pays
-   negatively, as the chain's attribution does, chain-economy §5.2); the
-   clip of rewards.md §4 belongs to the mint (tok), at `v(N)`.
+   here: a marginal is the signed `ΔJ` (a position that lowers syntropy
+   carries a negative marginal, as the chain's attribution `a(c)` does,
+   chain-economy §5.2) and the ticket's sample carries it signed (rewards.md
+   §7, `m_j(n)`); the clips apply after the sample — per position,
+   `max(0, a(c))` (chain-economy §5.3), and on the total, `min(v*(N),
+   Δφ⁺(N))` (rewards.md §4) — in the settlement, not in tru.
