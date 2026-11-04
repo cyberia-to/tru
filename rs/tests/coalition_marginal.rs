@@ -6,10 +6,11 @@
 //! exact Shapley value by enumeration — identically over all orderings for
 //! `n ≤ 6`, by Monte Carlo for `n = 8`.
 
+use tru::focusing::epoch::D_SAMPLE;
 use tru::focusing::epoch::coalition::WEIGHT_BITS;
 use tru::focusing::epoch::fixed::div_round_i;
 use tru::focusing::epoch::integrated::integrated_gradient;
-use tru::focusing::epoch::{Axon, Change, EpochParams, Game, canonical, ordering, phi};
+use tru::focusing::epoch::{Axon, Change, EpochParams, Game, canonical, ordering, phi, probes};
 
 const ONE: f64 = (1u64 << 60) as f64;
 
@@ -419,5 +420,190 @@ fn weights_beyond_the_engine_range_are_an_error_not_a_panic() {
     assert_eq!(
         game.sample_along(&all).iter().sum::<i128>(),
         game.value(&all)
+    );
+}
+
+// ── the ticket: the window and the probes (rewards.md §7) ─────────────────
+
+/// The chain's rank draw, `r = u64_le(hemera(template)[8..16]) mod N`, with
+/// the nonce bytes standing in for the template.
+fn rank_of(nonce: u64, n: usize) -> usize {
+    let h = cyber_hemera::hash(&nonce.to_le_bytes());
+    (u64::from_le_bytes(h.as_bytes()[8..16].try_into().unwrap()) % n as u64) as usize
+}
+
+#[test]
+fn window_covers_each_player_with_probability_w_over_n() {
+    // N = 10 players, W_TICKET = 4 (three marginals, one probe): over 3,000
+    // tickets each player is covered ≈ 900 times (3/10; ±15 %), the window
+    // is cyclic (ranks 8, 9, 0 when r = 8) and every ticket has 4 entries.
+    let p = params(16, 1);
+    let base = random_graph(1000, 14, 40);
+    let pl = players(&base, 10, 2);
+    let game = Game::new(&base, &pl, &p).unwrap();
+    let (b, c) = ([6u8; 32], [7u8; 32]);
+    let mut covered = [0u32; 10];
+    let mut wrapped = false;
+    for nonce in 0..3_000u64 {
+        let t = game.ticket(&b, &c, nonce, rank_of(nonce, 10), 4);
+        assert_eq!(t.width(), 4);
+        assert_eq!(t.covered.len(), 3);
+        assert_eq!(t.probes.len(), 1);
+        assert!(t.covered.windows(2).all(|w| w[0] < w[1]));
+        let ranks: Vec<usize> = (0..3).map(|k| t.order[(t.rank + k) % 10]).collect();
+        let mut sorted = ranks.clone();
+        sorted.sort_unstable();
+        assert_eq!(sorted, t.covered);
+        wrapped |= t.rank == 8;
+        for &i in &t.covered {
+            covered[i] += 1;
+        }
+    }
+    assert!(wrapped);
+    for (i, &k) in covered.iter().enumerate() {
+        assert!(
+            (765..=1_035).contains(&k),
+            "player {i} covered {k} of 3,000"
+        );
+    }
+}
+
+#[test]
+fn full_window_ticket_is_the_sample_and_sums_to_v_n() {
+    // W_TICKET − 1 ≥ N: the marginals are the whole ordering (= `sample`),
+    // Σ = v(N) exactly, whatever the drawn rank; the rest are probes.
+    let p = params(48, 1);
+    let base = random_graph(1100, 16, 48);
+    let pl = players(&base, 5, 4);
+    let game = Game::new(&base, &pl, &p).unwrap();
+    let (b, c) = ([8u8; 32], [9u8; 32]);
+    let all: Vec<usize> = (0..5).collect();
+    let total = game.value(&all);
+    for nonce in 0..6u64 {
+        let s = game.sample(&b, &c, nonce);
+        for rank in 0..5 {
+            let t = game.ticket(&b, &c, nonce, rank, 8);
+            assert_eq!(t.covered, all);
+            assert_eq!(
+                t.marginals.iter().sum::<i128>(),
+                total,
+                "nonce {nonce} rank {rank}"
+            );
+            assert_eq!(t.probes.len(), 3);
+            // a wrapped window re-walks the ordering from ∅: the same marginals
+            assert_eq!(t.marginals, s.marginals, "nonce {nonce} rank {rank}");
+        }
+    }
+}
+
+#[test]
+fn probe_is_the_engine_s_finite_difference_at_the_drawn_node() {
+    // m^probe = J_U(φ*(A_E + u·e_a)) − J_U(φ*_E), u = max(1, ⌊A_a·t/2^32⌋):
+    // exactly the game's own value of that change, and the engine's four-node
+    // attribution of it to the quadrature's error.
+    let p = params(256, 1);
+    let base = random_graph(1200, 14, 40);
+    let game = Game::new(&base, &[], &p).unwrap();
+    let draws = probes(&[1; 32], &[2; 32], 5, 4, base.len());
+    assert_eq!(draws.len(), 4);
+    for &(a, t) in &draws {
+        let pr = game.probe(a, t);
+        assert_eq!(pr.u, ((base[a].weight * t as u128) >> 32).max(1));
+        let mut cur = base.clone();
+        cur[a].weight += pr.u;
+        assert_eq!(pr.value, game.syntropy_of(&cur) - game.base_syntropy());
+        let ig = integrated_gradient(&base, &cur, 4, &p);
+        assert_eq!(ig.len(), 1);
+        let (m, s) = (pr.value as f64 / ONE, ig[0].score as f64 / ONE);
+        let err = (m - s).abs() / s.abs().max(1e-300);
+        eprintln!(
+            "probe axon {a} t {t} u {}: {m:e} vs attribution {s:e} rel {err:e}",
+            pr.u
+        );
+        assert!(err < 1e-4, "probe vs path gradient: {err:e}");
+    }
+    // the floor: t = 0 adds one unit
+    assert_eq!(game.probe(0, 0).u, 1);
+    // an empty epoch's ticket is all probes, W solves
+    let t = game.ticket(&[1; 32], &[2; 32], 5, 0, 3);
+    assert!(t.covered.is_empty() && t.probes.len() == 3 && t.width() == 3);
+    assert_eq!(t.probes[0].value, game.probe(draws[0].0, draws[0].1).value);
+}
+
+#[test]
+fn probes_change_with_the_nonce_and_the_seed() {
+    let d = |b: u8, c: u8, n: u64| probes(&[b; 32], &[c; 32], n, 2, 1_000);
+    assert_eq!(d(1, 2, 3), d(1, 2, 3));
+    assert_ne!(
+        d(1, 2, 3),
+        d(1, 2, 4),
+        "a different template digest draws different probes"
+    );
+    assert_ne!(d(1, 2, 3), d(9, 2, 3));
+    assert_ne!(d(1, 2, 3), d(1, 9, 3));
+    assert!(probes(&[1; 32], &[2; 32], 3, 2, 0).is_empty());
+}
+
+#[test]
+fn window_mean_per_player_equals_shapley_by_enumeration_for_n_above_the_width() {
+    // N = 5 > W_TICKET − 1 = 2: over every ordering and every rank each
+    // player's covered marginals average to its Shapley value, exactly.
+    let p = params(48, 1);
+    let base = random_graph(1300, 12, 30);
+    let pl = players(&base, 5, 6);
+    let game = Game::new(&base, &pl, &p).unwrap();
+    let sh = game.shapley();
+    let (b, c) = ([3u8; 32], [4u8; 32]);
+    let (mut acc, mut cnt) = ([0i128; 5], [0i128; 5]);
+    for o in permutations(5) {
+        for rank in 0..5 {
+            // a ticket over an explicit ordering: the window of `sample_along`
+            let m = game.sample_along(&o);
+            for k in 0..2 {
+                let i = o[(rank + k) % 5];
+                acc[i] += m[i];
+                cnt[i] += 1;
+            }
+        }
+        // and the real path agrees with the explicit one on a drawn ordering
+    }
+    let mean: Vec<i128> = (0..5).map(|i| div_round_i(acc[i], cnt[i])).collect();
+    assert_eq!(mean, sh);
+    // the ticket's window is that window: compare on drawn orderings
+    for nonce in 0..4u64 {
+        let t = game.ticket(&b, &c, nonce, rank_of(nonce, 5), 3);
+        let m = game.sample_along(&t.order);
+        for (i, v) in t.covered.iter().zip(&t.marginals) {
+            assert_eq!(*v, m[*i]);
+        }
+    }
+}
+
+#[test]
+fn ticket_is_bit_identical_across_runs_and_thread_counts() {
+    let base = random_graph(500, 40, 160);
+    let pl = players(&base, 9, 1);
+    let (b, c) = ([0x5a; 32], [3; 32]);
+    let one = Game::new(&base, &pl, &params(48, 1))
+        .unwrap()
+        .ticket(&b, &c, 11, 4, 8);
+    let again = Game::new(&base, &pl, &params(48, 1))
+        .unwrap()
+        .ticket(&b, &c, 11, 4, 8);
+    let four = Game::new(&base, &pl, &params(48, 4))
+        .unwrap()
+        .ticket(&b, &c, 11, 4, 8);
+    assert_eq!(one, again);
+    assert_eq!(one, four);
+    assert_eq!(one.covered.len(), 7);
+    assert_eq!(one.probes.len(), 1);
+    let digest = cyber_hemera::hash(&one.preimage());
+    eprintln!("ticket digest {}", digest.to_hex());
+    assert_eq!(one.preimage().len(), D_SAMPLE.len() + 4 + 16 * 8);
+    // hemera 0.3.1's digest; moves with feat/hemera-0.4 (re-blessed then)
+    assert_eq!(
+        hex(digest.as_bytes()),
+        "331ed36850cd2a82d26fa783e6db8417ebd0f6d4bdfaf47dce801c14f32e9730",
+        "the ticket's digest moved: a consensus change"
     );
 }

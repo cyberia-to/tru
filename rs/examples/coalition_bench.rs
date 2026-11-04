@@ -12,7 +12,7 @@
 //! existing particles. Floats appear only in the printing.
 //!
 //! ```text
-//! cargo run -p cyber-tru --release --example coalition_bench -- DIR [players] [solve_threads] [workers] [nonces] [denom]
+//! cargo run -p cyber-tru --release --example coalition_bench -- DIR [players] [solve_threads] [workers] [nonces] [denom] [w_ticket]
 //! ```
 
 use std::collections::HashMap;
@@ -75,6 +75,7 @@ fn main() {
     let arg = |i: usize, d: usize| args.get(i).and_then(|s| s.parse().ok()).unwrap_or(d);
     let (players, threads, workers, nonces) = (arg(2, 64), arg(3, 1), arg(4, 1), arg(5, 1));
     let denom = args.get(6).map(String::as_str).unwrap_or("pussy");
+    let w_ticket = arg(7, 0);
 
     let t = Instant::now();
     let raw = genesis_axons(dir, denom);
@@ -147,6 +148,25 @@ fn main() {
         s.total as f64 / (1u64 << 60) as f64,
         digest.to_hex()
     );
+
+    // one ticket of W_TICKET entries (rewards.md §7): min(N, W−1) marginals
+    // from a drawn rank, the rest probes — at most W + 1 solves
+    if w_ticket > 0 {
+        let h = cyber_hemera::hash(&0u64.to_le_bytes());
+        let rank = (u64::from_le_bytes(h.as_bytes()[8..16].try_into().unwrap())
+            % players.max(1) as u64) as usize;
+        let t = Instant::now();
+        let tk = game.ticket(&beacon, &cluster, 0, rank, w_ticket);
+        let t_ticket = t.elapsed();
+        let digest = cyber_hemera::hash(&tk.preimage());
+        eprintln!(
+            "ticket (W_TICKET = {w_ticket}, rank {rank}): {} marginals + {} probes = {} solves + prefix: {t_ticket:.2?}; digest {}",
+            tk.marginals.len(),
+            tk.probes.len(),
+            w_ticket,
+            digest.to_hex()
+        );
+    }
 
     // throughput: `nonces` samples on `workers` threads
     if nonces > 0 {

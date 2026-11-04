@@ -49,7 +49,9 @@ pub mod graph;
 pub mod integrated;
 pub mod kernel;
 
-pub use coalition::{Change, D_ORDER, D_SAMPLE, Game, Sample, ordering};
+pub use coalition::{
+    Change, D_ORDER, D_PROBE, D_SAMPLE, Game, Probe, Sample, Ticket, ordering, probes,
+};
 pub use graph::{Axon, AxonKey, EpochGraph, Ground, canonical};
 pub use integrated::{
     AxonScore, PathGradient, integrated_gradient, midpoint_attribution, path_gradient,
