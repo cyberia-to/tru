@@ -81,9 +81,21 @@ Implementation delta for tru#46 (for its author): (1) no change to `ordering` �
 
 Self-check, re-run after round 2: (1) clause fidelity — the Trace rows re-pointed (the ordering, the nonce, the probes, the window per chain, the payout, K_MIN, hash first); §1–§3, §9, §13 still byte-identical to origin/master; (2) deferral grep — see the log line below; (3) nothing superfluous — the probes, `W_TICKET`, `K_MIN`, `D_PROBE` each carry a derivation; the restored owner sentences (RW-12 b, c) are his; the ε/δ constants and the three-rule ladder are gone.
 
+
+## final — RW-1 and RW-6 as the round-2 review specified, 2026-11-04
+
+| id | disposition |
+|---|---|
+| RW-1 | fixed — the bound no longer keys on an endpoint id: hash first; a node verifies at most one sample per `(prev, height)` slot per connection slot per block interval, and only for headers on a tip within `MAX_REORG` (chain.md §5.2), others wait in the orphan pool; each forced verification costs a fresh id-passing header on the live tip, `2^256/target` hashes (128 at pussy's genesis, rising with ASERT) against 65 solves ≈ 2.2 s — a ratio the tip rule, not the target, makes acceptable; "the slots, not the target" sentence removed; amendments 2.11, 2b.3, 2b.5 rewritten; chain-wire §5 and chain.md §5.2 cited. |
+| RW-6 | fixed — the rescale applies only when `Σ a⁺ > 0` and `v(N) > 0` after clipping negative shares to zero (chain-economy §5.3; rewards §4's clip of the total); otherwise nothing is paid and the pool carries (chain-economy §5.5); the mean is the integer quotient toward zero, every rescaled share floored in the chain's integer arithmetic (arithmetic.md), the dust to the pool; `x(c)` reads the rescaled share; amendment 1.18 rewritten. |
+| slips | bostrom ticket 22–25 s on one core, 7–9 s on twelve (builds included), genesis target two minutes per machine, floor six to seven minutes on one core; `2^27` attempts a year; the probe value space stated as `Σ_a min(A_a, 2^32)` with the `≥ 2^32`-per-axon condition for the `2^46` / `2^53` figures and `Σ G ≈ 2^55` at pussy as the floor. |
+
+Left as the reviewer's nits, outside the coordinator's final list: "at least 64" as an expectation (§7 K_MIN paragraph), the trace row's "the coordinator's reading" wording, the collapse paragraph's "every hash attempt is a real Shapley sample".
+
 ## log
 
 - 2026-11-04 · opened on D20 (soft3#680).
+- 2026-11-04 · final: RW-1 and RW-6 closed as the round-2 review specified, the three slips fixed; deferral grep → (empty); commit `spec(rewards): final — RW-1 and RW-6 as the review specified`.
 - 2026-11-04 · round 2: every finding RW-1…RW-12 disposed (table above); deferral grep `grep -nE 'unspecified|not at genesis|later rule set|deferred|replaced by|until the graph outgrows|open frontier' specs/rewards.md` → (empty, exit 1); the wider sweep (`unbuilt|not yet proven|unmodeled|undone|shadow|deferr|next slice|not at launch|when it lands|to be measured|TODO|**`) → (empty, exit 1); §1–§3, §9, §13 byte-identical to origin/master; the tru#46 delta above is for its author.
 - 2026-11-04 · the coordinator's input from unit P15a (tru#46, `audit/coalition-marginal-2026-11-04.md`) taken as the measured basis of §7 and §16: the ordering by `epoch::ordering`, the commitment by `Sample::preimage` under `D_SAMPLE`, the ticket as a 64-rank window of one ordering (the receipt's sample when N ≤ 64, bounded at 65 solves for any N), the rate 5.06 / 1.59 samples per second, `GENESIS_BITS` re-derived to 2^249, the header to 200 bytes; the one-marginal draw and the raw `i128` field of the first commit withdrawn.
 - 2026-11-04 · design and the completed specification on this branch; amendments listed; self-check passes 1–3 logged above; pull request to tru master opened: https://github.com/cyberia-to/tru/pull/45 (labels decision, wide); not merged — the owner's decision.
