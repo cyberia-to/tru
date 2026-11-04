@@ -60,4 +60,4 @@ Amendments to the other documents: `audit/rewards-amendments-2026-11-04.md` — 
 ## log
 
 - 2026-11-04 · opened on D20 (soft3#680).
-- 2026-11-04 · design and the completed specification on this branch; amendments listed; self-check passes 1–3 logged above; pull request to tru master opened (link in the first comment of the PR and below).
+- 2026-11-04 · design and the completed specification on this branch; amendments listed; self-check passes 1–3 logged above; pull request to tru master opened: https://github.com/cyberia-to/tru/pull/45 (labels decision, wide); not merged — the owner's decision.
