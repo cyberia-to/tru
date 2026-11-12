@@ -337,3 +337,7 @@ Ready for the apparatus's approving review: no (R18-14 and R18-15). The six item
 ## P15b · review round 2, re-check at 4fd067b
 
 R18-15 green (532 header-only forgeries reproduced on build-a: honest block extended, cap held), R18-16 green, R18-4 green (EMA, floor 1). R18-14 red: `behind_verified()` needs an applied (`Valid`) header above tip + D, but `Valid` is set only on apply, so a syncing node never satisfies it and catch-up stays throttled by V_BUDGET (R18-2 sync half regresses); forged-header switch-off is closed. Ready for the apparatus review: no.
+
+## P15b · review round 2, re-check at d2ab6c7
+
+R18-14 red on cost: `catching_up` keys on a contiguous PoW-valid header chain longer than D, which a body-less forger mints for about 121 x 2^256/target = 15k hashes (~0.3 s of a core), switching the budget off at the live tip; tests pass, the exemption is the issue. Throttle by CPU fraction while catching up, or key it to ticket-verified ancestry or a checkpoint; a tru#45 decision. Ready for the apparatus review: no.
