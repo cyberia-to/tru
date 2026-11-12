@@ -23,6 +23,6 @@ What is measured: the ticket's cost on the hardware that exists — 35 ms per ma
 
 ## what closes it
 
-The canary record: the ticket's subsidy against the measured cost of the machines that mine pussy over phase 2 (cyber `launch.md`, phase 2: 90 days under real use). The question closes as `measured` when a receipt in `audit/` states the subsidy per machine-day in coin and the machine's cost in the same unit, or as `refuted` when the record shows the floor does not pay for the hardware and the owner moves the floor.
+The canary record: the ticket's subsidy against the measured cost of the machines that mine pussy over phase 2 (cyber `launch.md`: the canary under real use; no date on the public pages). The question moves from `open` to `measured` when a receipt in `audit/` states the subsidy per machine-day in coin and the machine's cost in the same unit; what the owner does with a measured answer that says the floor does not pay for the hardware is his decision, not this page's.
 
 See [[rewards]] §8 (the three roles, the GFP flywheel), §10 (the split and the floor) and §16 (the root chain's values).

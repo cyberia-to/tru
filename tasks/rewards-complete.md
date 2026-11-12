@@ -107,9 +107,22 @@ The owner on tru#45 (2026-11-12, translated): "I found §15 framed as a frontier
 
 Self-check, three passes: (1) clause fidelity — six Trace rows added (the cartel bound, the gate, the leak's bound, `s_max` and the one report, issuance); §1–§3, §9, §13 byte-identical to origin/master; (2) deferral and frontier grep — `grep -nE -i 'frontier|research|unbuilt|not closed|blunted|unspecified|not at genesis|later rule set|deferred|replaced by|until the graph outgrows|open frontier|to be measured|\*\*' specs/rewards.md` → (empty, exit 1); (3) nothing superfluous — one harness, one receipt, one roadmap file; the gate and the bound each carry a derivation and a measurement; the old §15 prose deleted, its substance in §5, §7, §10, §12 and the table.
 
+## P14b · round 2 (final), 2026-11-12
+
+| id | disposition |
+|---|---|
+| P14b-1 | fixed — the cartel bound is `min(⌊R/100⌋, ⌊F/4⌋)`, `F` the pool at the settlement, fed per block at the previous epoch's `focus_bps` (so the cartel cannot raise its own epoch's budget; the miners fund it, at most half the subsidy; after `q` quiet epochs the pool holds `4 + q` inflows); the harness reruns with that rule (steady and ten quiet epochs, supply at the settlement height): at most 0.056 % of the cartel's stake in the steady state, 0.197 % after ten quiet epochs, falling as 1/R (`audit/ring-extraction-2026-11-12.md`, tru dc874b9); "0 for every isolated ring" now reads "within the sweep (R ≤ 6.5 × 10^15, 0.6 % of S0), a property of the measure, not a rule"; "the cartel funds the budget" corrected. |
+| P14b-3 | decided by the receipt, (b) — the gate deleted from the rules: with one old link the ring keeps 88–99 % of the budget, a spoiler's new axons scale an honest raise toward zero, no on-chain test of whose the earlier attention is; the cartel bound holds with and without it, so the gate adds nothing a measured bound does not; §7 states the withdrawal and why, §15's self-dealing row reads the bound; amendment 1.19 withdrawn, 1.20 (line 833) rewritten. |
+| P14b-2 | fixed — "never more" dropped; the leak is `(1 − f)` of the pulse at first order in the weight (attribution linear in Δs at a fixed path gradient, chain-economy §5.2; `f` enters the path, the second order is the quadrature's, epoch §7 ≤ 5 %); moot on the root chain. |
+| P14b-4 | fixed — the composite claim scoped to the reports rule set (on the root chain the row is empty); the clip stated honestly: affine where it does not bind, truncating where it does, with the convex kink's gain bounded by `M·E[(−s)⁺]/s_max` against the unclipped linear slash; §15's row says the same. |
+| P14b-5 | fixed — `roadmap/gfp-funding.md` uses the registry's four words only (`open` → `measured`), the decision on a bad answer left to the owner; phase 2 named without a date. |
+
+Self-check re-run: (1) the Trace rows re-pointed (`⌊F/4⌋`, the gate "measured and withdrawn", the leak's second order); §1–§3, §9, §13 byte-identical to origin/master; (2) grep (frontier, research, unbuilt, not closed, blunted, never more, ext(R), unspecified, deferred, to be measured, bold) on specs/rewards.md: see the log line; (3) nothing superfluous — the gate's paragraph is one, stating a withdrawal and its reason; the appendix rows of the gate removed.
+
 ## log
 
 - 2026-11-04 · opened on D20 (soft3#680).
+- 2026-11-12 · P14b round 2: every finding disposed (table above); grep → (empty, exit 1); commit `spec(rewards): P14b round 2 — the pool budget, the gate decided by the receipt`.
 - 2026-11-12 · the owner's sentence on §15 logged above; the task's allowance for a frontier list withdrawn; P14b delivered: `spec(rewards): §15 — every frontier closed into a rule, the projection to roadmap`.
 - 2026-11-04 · final: RW-1 and RW-6 closed as the round-2 review specified, the three slips fixed; deferral grep → (empty); commit `spec(rewards): final — RW-1 and RW-6 as the review specified`.
 - 2026-11-04 · round 2: every finding RW-1…RW-12 disposed (table above); deferral grep `grep -nE 'unspecified|not at genesis|later rule set|deferred|replaced by|until the graph outgrows|open frontier' specs/rewards.md` → (empty, exit 1); the wider sweep (`unbuilt|not yet proven|unmodeled|undone|shadow|deferr|next slice|not at launch|when it lands|to be measured|TODO|**`) → (empty, exit 1); §1–§3, §9, §13 byte-identical to origin/master; the tru#46 delta above is for its author.
