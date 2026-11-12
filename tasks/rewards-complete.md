@@ -301,3 +301,7 @@ For this page (R18-9, spec gaps in tru#45):
 - the empty-game rank: `r = u64 mod N` is undefined at N = 0; tru takes 0; say so.
 
 Ready for the owner: no. Re-check when the receipt and `ticket_flood.rs` land: the miner runs in the fleet, tickets/s and verification time, lock-hold time, equal epoch records on two nodes with the first payout at height 600, a restart without `tickets/`, the settlement job started at the boundary, the unverified store bounded under the flood with V_BUDGET honoured, and the redrawn payout tests (mean, exact, mixed, v(N) ≤ 0, dust).
+
+## review, 020c020
+
+green. cluster(E) = hemera(D_CLUSTER ‖ N u32 LE ‖ (card 32 ‖ side u8)…) and the 218-byte record (198 + 4 + 4 + 4 + 8) match cybernode#18 (`cluster_id`, `RECORD_BYTES = 218`); empty-game rank 0 matches `ticket.rs`; V_BUDGET scoped to tip gossip and the one-engine floor are consequences, no new rule; greps empty, §1–§3, §9, §13 byte-identical.
