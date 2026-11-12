@@ -26,7 +26,7 @@ date: 2026-11-04
 
 ## checks
 
-- no deferral words remain in rewards.md: "unspecified", "not at genesis", "later rule set", "deferred", "open frontier" in the normative sections (§15's frontier list may stay as research, not as holes in the contract);
+- no deferral words remain in rewards.md: "unspecified", "not at genesis", "later rule set", "deferred", "open frontier", "research frontier", "blunted", "not closed" — in every section; the allowance of 2026-11-04 that §15's frontier list might stay as research was withdrawn by the owner on 2026-11-12 (below);
 - every rule carries a clause, the owner's sentence or a receipt; a reviewer of another body re-opens each;
 - the three design choices are settled in the text, with the reason;
 - the amendments quote the current text verbatim at origin heads;
@@ -93,9 +93,24 @@ Self-check, re-run after round 2: (1) clause fidelity — the Trace rows re-poin
 
 Left as the reviewer's nits, outside the coordinator's final list: "at least 64" as an expectation (§7 K_MIN paragraph), the trace row's "the coordinator's reading" wording, the collapse paragraph's "every hash attempt is a real Shapley sample".
 
+## P14b — §15 closed into rules, 2026-11-12
+
+The owner on tru#45 (2026-11-12, translated): "I found §15 framed as a frontier — but I think it is the core of completeness: without that process you cannot say the rewards are complete." Same branch, same method: the clauses of §15 and the pages it leaned on re-read (strong-truthfulness, truth-scoring, chain-economy §5.3–§5.5, §6.1, §9, the economy and coordinated-consensus audits), a rule written for each item with its reason and, where it is a bound, a receipt; §15 renamed "Security", a table only.
+
+| item | the rule, and its receipt |
+|---|---|
+| collusion | §7 "the cartel bound": a cartel locking `R` extracts at most `min(⌊R/100⌋, B)` an epoch, `B = L·SUBSIDY·min(½, √((R+H)/S0))`, once per new high, on seven-day locks (52× a year at most by rotation); relative to its stake `≤ L·SUBSIDY·√((R+H)/S0)/R`, falling as 1/√R. Measured on the pussy genesis graph on build-a (`audit/ring-extraction-2026-11-12.md`, `rs/examples/ring_extraction.rs` at 0f70b0f; rings k = 2…64 at 10^11–10^14 per colluder against swarms of 64 and 256): 0.070 % of its stake at most (bound 0.072 %), 0 for every isolated ring (attribution ≤ 0), 99.99 % of a budget the cartel itself funds when R ≫ H. |
+| discovery leak | §12: a link gated at `f < 1` loses `(1 − f)` of its pulse at first order and never more (attribution linear in Δs, chain-economy §5.2; receipt: the linearity test of cybernode `audit/chain/economy-2026-10-17.md`, 100 pays what 60 + 40 pays), the annuity pays it back as the market turns; on the root chain `f = ρ = 1` (chain-economy §3.7) and the leak is zero. No retroactive bonus: the standing rule, with its receipt. |
+| manufactured surprise, self-dealing | §7 "the external-attention gate": `x(c) ← ⌊x(c)·min(1, ext(R)/int(R))⌋`, `R` the closure of the position's endpoints under the epoch's new axons, `ext` the pre-existing weight entering it, `int` the new stake into it; a region nobody else reads earns nothing; on the root chain "others" = every pre-existing weight. Measured: isolated ring `ext = 0`, nothing; anchored ring `ext = 1.19×10^12`, the honest swarm's pulse restored from 18 % to 83–100 % of its ungated value; the ring's pulse bounded by the cartel bound. Amendment 1.19 (chain-economy §5.4). |
+| composite honest-reporting equilibrium | §5: `s_max = ln 2` (the information gain of a certain report against an even crowd), `ρ` linear in the score on `[0, s_max]`, the slash linear in the same score, both reading one meta-prediction `m_ν` (kind 10; the valence on the root chain where ρ = 1 and nothing is slashed); the composite payoff is an affine image with positive slope of a strictly proper score, hence strictly proper on the attainable range, weakly so at the clip's ends — the proof sketch is in the text; the serum's part measured (`audit/coordinated-consensus-scoring.md`). |
+| issuance, GFP funding | §10, §15: one subsidy, `L·SUBSIDY` an epoch, supply `S0 + h·SUBSIDY` — the rule; the GFP-funding question, a projection with a named assumption (the coin's price against the hardware's cost), moved to `roadmap/gfp-funding.md` with status `open` and what closes it (the phase-2 canary record). |
+
+Self-check, three passes: (1) clause fidelity — six Trace rows added (the cartel bound, the gate, the leak's bound, `s_max` and the one report, issuance); §1–§3, §9, §13 byte-identical to origin/master; (2) deferral and frontier grep — `grep -nE -i 'frontier|research|unbuilt|not closed|blunted|unspecified|not at genesis|later rule set|deferred|replaced by|until the graph outgrows|open frontier|to be measured|\*\*' specs/rewards.md` → (empty, exit 1); (3) nothing superfluous — one harness, one receipt, one roadmap file; the gate and the bound each carry a derivation and a measurement; the old §15 prose deleted, its substance in §5, §7, §10, §12 and the table.
+
 ## log
 
 - 2026-11-04 · opened on D20 (soft3#680).
+- 2026-11-12 · the owner's sentence on §15 logged above; the task's allowance for a frontier list withdrawn; P14b delivered: `spec(rewards): §15 — every frontier closed into a rule, the projection to roadmap`.
 - 2026-11-04 · final: RW-1 and RW-6 closed as the round-2 review specified, the three slips fixed; deferral grep → (empty); commit `spec(rewards): final — RW-1 and RW-6 as the review specified`.
 - 2026-11-04 · round 2: every finding RW-1…RW-12 disposed (table above); deferral grep `grep -nE 'unspecified|not at genesis|later rule set|deferred|replaced by|until the graph outgrows|open frontier' specs/rewards.md` → (empty, exit 1); the wider sweep (`unbuilt|not yet proven|unmodeled|undone|shadow|deferr|next slice|not at launch|when it lands|to be measured|TODO|**`) → (empty, exit 1); §1–§3, §9, §13 byte-identical to origin/master; the tru#46 delta above is for its author.
 - 2026-11-04 · the coordinator's input from unit P15a (tru#46, `audit/coalition-marginal-2026-11-04.md`) taken as the measured basis of §7 and §16: the ordering by `epoch::ordering`, the commitment by `Sample::preimage` under `D_SAMPLE`, the ticket as a 64-rank window of one ordering (the receipt's sample when N ≤ 64, bounded at 65 solves for any N), the rate 5.06 / 1.59 samples per second, `GENESIS_BITS` re-derived to 2^249, the header to 200 bytes; the one-marginal draw and the raw `i128` field of the first commit withdrawn.
