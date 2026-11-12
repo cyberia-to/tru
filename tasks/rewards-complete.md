@@ -355,3 +355,5 @@ green: slots by local draw alone, claimed length and chainwork not inputs, every
 ## P15b · review round 2, third cut at 2e088b6
 
 R18-14 green, R18-15 green, sync at full speed green; review evidence added to the PR as 37cde9c (`long_forged_chains_cost_one_branch_attempt_each`: V+1 recomputations, each forged chain dead at its first ticket with its D descendants, honest branch served within F+1 windows over 15 runs). New R18-17 should: a failed forged root is reported `NeedBodies` when another root is body-less, so the +100 score is lost. Ready for the apparatus review: yes, with R18-17 as a follow-up (or fix first).
+
+R18-17 green at ad13862 (c8d4916): a failed forged root is reported before any NeedBodies; four flood/sync tests pass on build-a.
