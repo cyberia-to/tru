@@ -305,3 +305,11 @@ Ready for the owner: no. Re-check when the receipt and `ticket_flood.rs` land: t
 ## review, 020c020
 
 green. cluster(E) = hemera(D_CLUSTER ‖ N u32 LE ‖ (card 32 ‖ side u8)…) and the 218-byte record (198 + 4 + 4 + 4 + 8) match cybernode#18 (`cluster_id`, `RECORD_BYTES = 218`); empty-game rank 0 matches `ticket.rs`; V_BUDGET scoped to tip gossip and the one-engine floor are consequences, no new rule; greps empty, §1–§3, §9, §13 byte-identical.
+
+## review, 69b34dc
+
+green on arithmetic and scope, one unverified input: 16/30 = 0.533/s; 128 attempts at about 1 ticket/s (12 workers at about 8 s = 1.5/s nominal, shared) = 128 s, inside 120–160 s, and 16 s at the floor; one core 1/8 = 0.125/s, 16/0.12 = 133 s; five Xeon/agent-a cores at 0.12–0.13 = 0.6–0.65 ≥ 0.53. The coordinator’s 0.10–0.13 is the per-worker rate (the network’s is 0.8–1.07), which is what the text says. A consequence of the clamp, not a rule. The receipt cybernode `audit/chain/ticket-pow-2026-11.md` is on neither origin/main nor feat/ticket-pow, so 120–160 s and 8 s per ticket are read from the text only.
+
+## review, 69b34dc — receipt read
+
+verified: cybernode `audit/chain/ticket-pow-2026-11.md` (feat/ticket-pow) gives about one ticket a second aggregate on agent-a’s 12 shared workers and blocks of 122 s (h10→h14) and 162 s (h14→h18) at 2^249: the 120–160 s and the ≈ 1/s hold. One mismatch (nit): "about 8 s per ticket per worker" is the receipt’s one-core recompute (7.8 s on build-a), not the mining rate; 12 workers at 1 ticket/s aggregate is about 12 s per ticket per worker. The 0.12/s single-core figure stands on the 7.8–8 s solve time.
