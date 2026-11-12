@@ -264,3 +264,14 @@ P14b-4 should — the sketch has a gap: ρ = clip(s/s_max, 0, 1) is not affine o
 P14b-5 nit — `roadmap/gfp-funding.md` uses the registry's words (launch.md:152: proven · simulated · measured · open) and then "refuted", which is not one; it names phase 2 as the closing event without a date.
 
 Ready for the owner: no. P14b-1 and P14b-3 are blocking; the rest are should or nit.
+
+## P14b · review round 2
+
+reviewer: another body, 2026-11-12, one commit: a73d7cf. Green on every item.
+
+- P14b-1: derived myself. pay(c) = min(⌊Δs/100⌋, ⌊B·x/X⌋), ΣP ≤ B = ⌊F/4⌋, so a cartel takes at most min(⌊R/100⌋, ⌊F/4⌋); with no payout F grows by one inflow I per epoch from the steady 4I (pay I, F/4 = I), so after q quiet epochs B = (4 + q)I/4 (q = 10: 3.5 I, the receipt's 59,738,532,840 / 17,068,152,240). One row by hand (256 honest, k = 2, s = 10^13, anchored): active 5.1164×10^13 → isqrt(active·10^8/S0) = 68 bps → I = 240·⌊SUBSIDY·68/10^4⌋ = 17,068,152,240; ring paid 16,905,512,138 / 3×10^13 = 0.05635 %; after ten quiet epochs 59,169,292,486 / 3×10^13 = 0.19723 %: the text's 0.056 % and 0.197 %. The cut reads the previous epoch's stake; "the miners fund it" is stated. "Isolated ring = 0" is scoped to the sweep and called a property of the measure, not a rule.
+- P14b-3: no gate text remains in §7, §15, §16 or amendment 1.19 (withdrawn); §7 states the withdrawal with the three reasons and the receipt §2; 1.20 rewritten; counts 78 consistent.
+- P14b-2 dropped; P14b-4 scoped to the reports rule set, the clip's residual M·E[(−s)^+]/s_max stated (nit: the top clip at s_max, which lowers the truthful payoff too, is not in the term); the §15 row says the root chain has no report; P14b-5 fixed.
+- Greps empty; §1–§3, §9, §13 byte-identical to origin/master.
+
+Ready for the owner: yes (the approving review of the apparatus account is the next step of deliver.md; this review is a comment).
