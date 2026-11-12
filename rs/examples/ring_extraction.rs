@@ -140,9 +140,10 @@ fn settle(
 
 /// External attention of each position's region: the region is the closure
 /// of the position's endpoints under this epoch's new axons; its external
-/// attention is the pre-existing weight entering it from outside (rewards.md
-/// §7). Returns `ext(region(c))` per position.
-fn external_attention(prev: &[Axon], positions: &[Position]) -> Vec<u128> {
+/// attention `ext` is the pre-existing weight entering it from outside, its
+/// internal attention `int` the stake this epoch's positions put on axons
+/// into it (rewards.md §7). Returns `(ext, int)` of `region(c)` per position.
+fn external_attention(prev: &[Axon], positions: &[Position]) -> Vec<(u128, u128)> {
     let existing: HashSet<([u8; 32], [u8; 32])> = prev.iter().map(|a| (a.from, a.to)).collect();
     // union-find over particles joined by new axons
     let mut parent: HashMap<[u8; 32], [u8; 32]> = HashMap::new();
@@ -171,11 +172,43 @@ fn external_attention(prev: &[Axon], positions: &[Position]) -> Vec<u128> {
             *ext.entry(rt).or_default() += a.weight;
         }
     }
+    let mut int: HashMap<[u8; 32], u128> = HashMap::new();
+    for c in positions {
+        let r = find(&mut parent, c.to);
+        *int.entry(r).or_default() += c.stake;
+    }
     positions
         .iter()
         .map(|c| {
             let r = find(&mut parent, c.to);
-            ext.get(&r).copied().unwrap_or(0)
+            (
+                ext.get(&r).copied().unwrap_or(0),
+                int.get(&r).copied().unwrap_or(0),
+            )
+        })
+        .collect()
+}
+
+/// The payout under the external-attention gate: `x` scaled by
+/// `min(1, ext/int)` per position, then the budget rule as in [`settle`].
+fn gated_pay(positions: &[Position], x: &[i128], att: &[(u128, u128)], budget: u128) -> Vec<u128> {
+    let xg: Vec<u128> = x
+        .iter()
+        .zip(att)
+        .map(|(&xc, &(ext, int))| {
+            let xc = xc as u128;
+            if int == 0 || ext >= int { xc } else { xc * ext / int }
+        })
+        .collect();
+    let total: u128 = xg.iter().sum();
+    positions
+        .iter()
+        .zip(&xg)
+        .map(|(c, &xc)| {
+            if total == 0 {
+                return 0;
+            }
+            (c.stake * R_MAX_PPM / 1_000_000).min(budget * xc / total)
         })
         .collect()
 }
@@ -235,8 +268,8 @@ fn main() {
         100.0 * honest_pay0 as f64 / b0.max(1) as f64
     );
     println!();
-    println!("| anchored | k | s (per colluder) | ring stake / honest stake | ring x share | budget B | ring paid | ring paid / B | ring paid / ring stake | cap Σ⌊s/100⌋ | ext(region) | honest paid |");
-    println!("|---|---|---|---|---|---|---|---|---|---|---|---|");
+    println!("| anchored | k | s (per colluder) | ring stake / honest stake | ring x share | budget B | ring paid | ring paid / B | ring paid / ring stake | cap Σ⌊s/100⌋ | honest paid | ext(region) | int(region) | ring paid, gated | honest paid, gated |");
+    println!("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
     let ks = [2usize, 4, 8, 16, 32, 64];
     let ss: [u128; 4] = [100_000_000_000, 1_000_000_000_000, 10_000_000_000_000, 100_000_000_000_000];
     for anchored in [false, true] {
@@ -263,7 +296,10 @@ fn main() {
                 let n_ring = pos.len() - honest;
                 let t = Instant::now();
                 let (pay, x, budget, total_x) = settle(&prev, &pos, S0_PUSSY, &p);
-                let ext = external_attention(&prev, &pos);
+                let att = external_attention(&prev, &pos);
+                let gated = gated_pay(&pos, &x, &att, budget);
+                let ring_gated: u128 = gated[honest..].iter().sum();
+                let honest_gated: u128 = gated[..honest].iter().sum();
                 let ring_pay: u128 = pay[honest..].iter().sum();
                 let ring_x: u128 = x[honest..].iter().map(|&v| v as u128).sum();
                 let honest_pay: u128 = pay[..honest].iter().sum();
@@ -271,13 +307,14 @@ fn main() {
                 let cap: u128 = pos[honest..].iter().map(|c| c.stake / 100).sum();
                 eprintln!("settled k={k} s={s} anchored={anchored} in {:.2?}", t.elapsed());
                 println!(
-                    "| {} | {k} | {s} | {:.3} | {:.4} % | {budget} | {ring_pay} | {:.3} % | {:.5} % | {cap} | {} | {honest_pay} |",
+                    "| {} | {k} | {s} | {:.3} | {:.4} % | {budget} | {ring_pay} | {:.3} % | {:.5} % | {cap} | {honest_pay} | {} | {} | {ring_gated} | {honest_gated} |",
                     if anchored { "yes" } else { "no" },
                     ring_stake as f64 / honest_stake as f64,
                     100.0 * ring_x as f64 / total_x.max(1) as f64,
                     100.0 * ring_pay as f64 / budget.max(1) as f64,
                     100.0 * ring_pay as f64 / ring_stake as f64,
-                    ext[honest],
+                    att[honest].0,
+                    att[honest].1,
                 );
             }
         }
