@@ -333,3 +333,7 @@ R18-1, 3, 5 (zero sample), 7, 8, 10, 11, 12 closed; R18-2 closed for replay, obs
 R18-13 (block times 120–160 s on agent-a), for this page: headers show `bits` 0x20100000, the POW_LIMIT floor, from height 5; floor 2^252 is 16 attempts, block time = 16·t_ticket / workers; 151 s a block with two single-worker miners is 19 s a ticket against 7.8 s unloaded; 30 s needs workers ≥ 0.53·t_ticket. Expected ASERT, not a bug. §7 "Difficulty": "about 35 s on one laptop core" is 16 × 2.2 s (M4 Max); one Xeon core at 8.2 s is 131 s. Say the floor means never stalls, not holds 30 s, and give the Xeon figure.
 
 Ready for the apparatus's approving review: no (R18-14 and R18-15). The six items relayed to tru#45 are accepted as logged.
+
+## P15b · review round 2, re-check at 4fd067b
+
+R18-15 green (532 header-only forgeries reproduced on build-a: honest block extended, cap held), R18-16 green, R18-4 green (EMA, floor 1). R18-14 red: `behind_verified()` needs an applied (`Valid`) header above tip + D, but `Valid` is set only on apply, so a syncing node never satisfies it and catch-up stays throttled by V_BUDGET (R18-2 sync half regresses); forged-header switch-off is closed. Ready for the apparatus review: no.
