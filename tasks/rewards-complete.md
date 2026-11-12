@@ -342,3 +342,7 @@ R18-15 green (532 header-only forgeries reproduced on build-a: honest block exte
 ## P15b · review round 2, re-check at d2ab6c7
 
 R18-14 red on cost: `catching_up` keys on a contiguous PoW-valid header chain longer than D, which a body-less forger mints for about 121 x 2^256/target = 15k hashes (~0.3 s of a core), switching the budget off at the live tip; tests pass, the exemption is the issue. Throttle by CPU fraction while catching up, or key it to ticket-verified ancestry or a checkpoint; a tru#45 decision. Ready for the apparatus review: no.
+
+## review, fb53b4a
+
+red on one point; the rest holds. Holds: chain.md §5.5 (cybernode main line 776) says "marks the header invalid (and every descendant)", no amendment needed; a body-less chain of D+1 forged headers costs one slot and one recomputation; copied honest blocks are already verified or are verified once. Hole: slots are served "in order of the branch’s chainwork", and a forged branch of D+1 id-passing headers claims D+1 blocks of work over the honest successor’s one, at about 121 × 128 hashes (about 0.2 s) per branch: V_BUDGET such branches per interval (about 1 s of one core) outrank every honest header deterministically, so V/(V+F) no longer applies. Needed: serve by verified chainwork (or one slot per branch ordered by the local draw, ignoring claimed length), and state it.
