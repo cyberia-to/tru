@@ -351,3 +351,7 @@ red on one point; the rest holds. Holds: chain.md §5.5 (cybernode main line 776
 ## review, 76a3d46
 
 green: slots by local draw alone, claimed length and chainwork not inputs, every candidate starts at the verified tip; many one-header branches are the same F (each costs one target-passing header, 128 hashes), so V/(V+F) holds. Nit: chain.md §5.4 bounds the orphan pool at 1,024 headers with "PoW-weight eviction" (line 922), which reintroduces claimed work at eviction; state that the pool evicts by the same local draw, or a flood of about 1,024 × 128 hashes evicts the honest candidate.
+
+## P15b · review round 2, third cut at 2e088b6
+
+R18-14 green, R18-15 green, sync at full speed green; review evidence added to the PR as 37cde9c (`long_forged_chains_cost_one_branch_attempt_each`: V+1 recomputations, each forged chain dead at its first ticket with its D descendants, honest branch served within F+1 windows over 15 runs). New R18-17 should: a failed forged root is reported `NeedBodies` when another root is body-less, so the +100 score is lost. Ready for the apparatus review: yes, with R18-17 as a follow-up (or fix first).
