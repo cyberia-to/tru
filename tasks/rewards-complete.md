@@ -275,3 +275,28 @@ reviewer: another body, 2026-11-12, one commit: a73d7cf. Green on every item.
 - Greps empty; §1–§3, §9, §13 byte-identical to origin/master.
 
 Ready for the owner: yes (the approving review of the apparatus account is the next step of deliver.md; this review is a comment).
+
+## P15b · review round 1
+
+reviewer: another body, 2026-11-12, on cybernode#18 (feat/ticket-pow, head 0968be7) and soft3#682, against this branch's spec at a73d7cf (102cc1b for the task page) and tru#46 cf5f23b; built and tested on build-a (lib 335 passed, 0 failed, 3 ignored). Consensus code only; the receipt, `ticket_flood.rs` and the redrawn payout tests are not in. The full review is the comment review on cybernode#18 (findings R18-1…R18-12).
+
+| lens | verdict |
+|---|---|
+| spec fidelity | green on header, draw, window, probes, preimage, W_TICKET, V_BUDGET, bits, clock; gaps below |
+| 1 determinism | green |
+| 3 arithmetic | green, nits |
+| 4 crypto hygiene | red: R18-7 (the cached ticket's commitment does not bind `covered`, `rank`, probe axon) |
+| 7 adversarial | red: R18-2, R18-4, R18-5 |
+| 11 performance | red: R18-3, R18-4, R18-8 |
+
+Blocking: R18-1 (`--backend cpu` is still passed by `run-node.sh`, `chain-fleet.nu` and `chain_adversary.rs`; the miner exits 2), R18-2 (replay and sync run under `V_BUDGET`: a node without `tickets/` cannot open), R18-11 (tru cf5f23b declares hemera 0.3, cybernode's lock needs 0.4 only through an uncommitted local edit). Should: R18-3 settlement job never starts at the window's close, R18-4 verification under the chain mutex, R18-5 no cap on unverified headers and bodies, R18-6 payout and question 9, R18-7, R18-8, R18-10.
+
+For this page (R18-9, spec gaps in tru#45):
+- the amendment 1.7 text writes the probe against `A_E / φ*_E`; §7 here and tru cf5f23b say `A_{E−1}`; the code follows §7. Fix the amendment text.
+- `cluster(E) = hemera(D_CLUSTER ‖ N ‖ (card ‖ side)…)` pins no widths; the code writes `N` as u32 LE and the side as an i8 byte (+1 = 0x01, −1 = 0xff). Pin them in §7 and in a chain-conformance vector.
+- the 218-byte epoch record (`players`, `samples`, `by_mean`, `value`) has no amendment entry for chain-economy §5.6 and chain-conformance.
+- §7 says `a^exact` is "the four-node path gradient of epoch §4": reading A of P15b question 9. The cybernode task page claims §15 fixes the source to one engine; it does not at 102cc1b. Decide: one engine, or the text as it stands; bostrom (W_TICKET 2, `k_c ≥ 64` only for N ≤ 3) and pussy epochs with N > 236 are paid by the exact gradient, so this is the launch payout, not an edge.
+- §7 is silent on catch-up: `V_BUDGET` per interval throttles sync to `V_BUDGET` blocks per 30 s (bostrom 2 against 1 produced); state what is outside the budget (replay, blocks buried deeper than D).
+- the empty-game rank: `r = u64 mod N` is undefined at N = 0; tru takes 0; say so.
+
+Ready for the owner: no. Re-check when the receipt and `ticket_flood.rs` land: the miner runs in the fleet, tickets/s and verification time, lock-hold time, equal epoch records on two nodes with the first payout at height 600, a restart without `tickets/`, the settlement job started at the boundary, the unverified store bounded under the flood with V_BUDGET honoured, and the redrawn payout tests (mean, exact, mixed, v(N) ≤ 0, dust).
