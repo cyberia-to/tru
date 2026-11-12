@@ -313,3 +313,23 @@ green on arithmetic and scope, one unverified input: 16/30 = 0.533/s; 128 attemp
 ## review, 69b34dc — receipt read
 
 verified: cybernode `audit/chain/ticket-pow-2026-11.md` (feat/ticket-pow) gives about one ticket a second aggregate on agent-a’s 12 shared workers and blocks of 122 s (h10→h14) and 162 s (h14→h18) at 2^249: the 120–160 s and the ≈ 1/s hold. One mismatch (nit): "about 8 s per ticket per worker" is the receipt’s one-core recompute (7.8 s on build-a), not the mining rate; 12 workers at 1 ticket/s aggregate is about 12 s per ticket per worker. The 0.12/s single-core figure stands on the 7.8–8 s solve time.
+
+## P15b · review round 2
+
+reviewer: another body, 2026-11-12, cybernode#18 at cda3c44, tru#46 3cd4e45, soft3#682 8dd579b; lib 338/0/1, `chain_adversary` 2/2, flood test green on build-a; the two dev chains read on agent-a. Full text: the comment review on cybernode#18.
+
+| lens | verdict |
+|---|---|
+| spec fidelity | green |
+| 1 determinism | green |
+| 3 arithmetic | green |
+| 4 crypto hygiene | green (cache checksum) |
+| 7 adversarial | red: R18-14, R18-15 |
+| 11 performance | amber: R18-4 deferral accepted on a condition |
+| tests | amber: R18-16, the mean path is not exercised end to end |
+
+R18-1, 3, 5 (zero sample), 7, 8, 10, 11, 12 closed; R18-2 closed for replay, observed live. Blocking: R18-15, `UNVERIFIED_CAP` refuses every new header once 512 forgeries sit above the tip, and bodiless forgeries are never verified, so nothing drains it (reproduced: 532 header-only forgeries in 0.5 s, then the honest block returns `Unverified`, tip unmoved); evict instead of refusing. R18-14, the catch-up exemption keys on `best_header().height > tip + 2`, which three cheap forged headers set, switching the budget off. R18-4: accepted if V_BUDGET follows the node's measured t_verify or the 8 s figure is a documented launch limit.
+
+R18-13 (block times 120–160 s on agent-a), for this page: headers show `bits` 0x20100000, the POW_LIMIT floor, from height 5; floor 2^252 is 16 attempts, block time = 16·t_ticket / workers; 151 s a block with two single-worker miners is 19 s a ticket against 7.8 s unloaded; 30 s needs workers ≥ 0.53·t_ticket. Expected ASERT, not a bug. §7 "Difficulty": "about 35 s on one laptop core" is 16 × 2.2 s (M4 Max); one Xeon core at 8.2 s is 131 s. Say the floor means never stalls, not holds 30 s, and give the Xeon figure.
+
+Ready for the apparatus's approving review: no (R18-14 and R18-15). The six items relayed to tru#45 are accepted as logged.
