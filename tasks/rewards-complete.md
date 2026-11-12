@@ -224,3 +224,30 @@ red on one sentence; the rule is free of unsound shortcuts (history tier and pro
 ## review, RW-1 at 32e876b
 
 green. The bound reads V/(V+F) per interval, expected delay about F/V intervals at F·2^256/target hashes, per node, non-propagating, safety untouched; failed headers dropped, scored, never re-queued, verified once; the condition is the proof or the accumulator. A rule with its bound and its condition, no hole.
+
+## P14b · review round 1
+
+reviewer: another body, 2026-11-12, one commit: eed4bbf. Greps (frontier, research, unbuilt, not closed, blunted, unspecified, deferred, to be measured, bold, later) on specs/rewards.md: empty except the owner's own "validate later"; §1–§3, §9, §13 byte-identical to origin/master. The dataset of the receipt (`links.tsv`, `balances.tsv`, build-a) is not on this machine, so no row was re-run; one row was re-derived by hand (below).
+
+| item | verdict |
+|---|---|
+| 1 collusion | red: P14b-1 |
+| 2 discovery leak | should: P14b-2 |
+| 3 self-dealing gate | red: P14b-3 |
+| 4 composite equilibrium | should: P14b-4 |
+| 5 roadmap | green, nit P14b-5 |
+| 6 grep | green |
+| 7 rules without a source | P14b-1 (the budget B) |
+| 8 amendments 1.19, 1.20 | green (old text verbatim at cybernode origin/main; 1.20 is line 833, not 834; count 79 = 20 + 13 + 7 + 8 + 4 + 7 + 13 + 7 + 2 + 2 matches) |
+
+P14b-1 blocking — B is not chain-economy's budget. chain-economy §5.5: `B = ⌊F / POOL_RELEASE⌋`, F the accumulated pool balance, POOL_RELEASE = 4; "a quiet epoch carries its accrual forward"; the pool grows through every epoch that pays nothing, so one epoch's budget can exceed one epoch's inflow. rewards.md §7 and the harness write `B = L·SUBSIDY·min(½, √((R+H)/S0))`, the steady-state inflow, with θ taken from the cartel's own epoch; §6.1 has `cut(h)` read `focus_bps(epoch(h) − 1)`, the previous epoch's active stake, and supply is `S0 + h·SUBSIDY`, not S0. The true bound is `min(⌊R/100⌋, ⌊F/4⌋)` (1 % cap: R_MAX_PPM = 10,000 ✓), stated with F; the spec's B is wrong after quiet epochs. "The cartel funds the budget it takes" (§7, receipt §2): emission is fixed; the cartel's stake moves a larger share of the same subsidy from the ticket to the pool (at most half, §6.1): the miners fund it. Hand check of one row (256 honest, k = 2, s = 10^13, anchored): active = 5.1164×10^13 + 3×10^13, isqrt(active·10^8/supply) = 85 bps, 240·⌊SUBSIDY·85/10^4⌋ = 21,335,190,240 = the table's B exactly; ring paid 21,131,890,114 / 3×10^13 = 0.07044 %; B/R = 0.0711 %, the text's 0.072 %. So "0.070 % vs bound 0.072 %" holds, but the ring takes 99 % of B, so the comparison tests the harness's own budget formula, not the bound. "0 for every isolated ring": under the gate a property (ext = 0 gives 0); under the exact rule alone an artefact of the sweep: attribution ≤ 0 holds up to R = 6.5×10^15 (0.6 % of S0); a ring of R ≳ ΣG (4.2×10^16, supply 1.1×10^18) concentrates focus and J rises. Say "within the sweep".
+
+P14b-3 blocking — the gate is neither a defense nor safe. (a) Bypass: any ring that includes one old particle by one new axon has ext > 0 (the receipt's anchored ring is exactly that: ext = the heaviest particle's in-weight, 1.19×10^12, free of capital); the scale `min(1, ext/int)` is applied to x before a pro-rata division, so it changes a share only against other earners: the receipt's own gated columns keep the ring at 12.4×10^9 of 14.0×10^9 (s = 10^13), 41.3×10^9 of 41.7×10^9 (s = 10^14); a lone or dominant ring with ext/int = 3×10^-14 and x ≥ 1 after the floor takes the whole budget up to its 1 % cap. "18 % → 83–100 %" reproduces from the table (71.7 M → 404.0 M = 18 %; 336.0 M / 404.0 M = 83 %), and measures the honest payout against its own alone value, which is cap-bound: the ring is not stopped, the honest swarm is only protected. (b) Griefing: in the harness `region(c)` is the union-find class of `c.to` under new axons, and `ext` counts only old axons with `rf != rt`; a spoiler who adds new axons joining p and q of an honest raise on the old axon (p,q) (p→z, z→q at minimal stake) merges the classes, the axon's own prior weight becomes internal, ext falls to the other inbound weight (0 on an island), and the honest raise is scaled to 0; §7's sentence "a raise of an existing axon has ext ≥ the axon's own prior weight" fails then. (c) Definition: §7 says "closure of its endpoints", the code uses the target's class only; "distinct non-colluding high-karma neurons" has no on-chain test (root chain: "every pre-existing weight", so the premium is gated on earlier weight, which a cartel may place a week early). Conservation and the rescale are untouched (x scaled after the rescale, payouts ≤ B). Needed: say the gate filters isolated regions only, state the bypass, drop "self-dealing closed", or define ext on weight of other authors with a test the chain can run.
+
+P14b-2 should — "loses (1−f) at first order and never more": a(c) = Δs·σ·ḡ is linear in Δs at a fixed ḡ (the receipt tests that: 100 pays what 60 + 40 pays, Sybil neutrality); f enters through A^eff, i.e. through the path and ḡ, nonlinearly (epoch §7: the midpoint is 6 % off on new particles); "never more" is not a theorem and the citation does not test f. Moot on the root chain (f = 1), so state it as first order and drop "never more", or measure one f.
+
+P14b-4 should — the sketch has a gap: ρ = clip(s/s_max, 0, 1) is not affine on the range s can take (a log score is unbounded below), E[clip(s)] ≠ clip(E[s]), so the maximizer of E[s] need not maximize E[Mρ(s) + λs]; the convex kink at 0 rewards variance. "weakly dominant at the ends" does not close it. The statement applies only to the reports rule set (kind 10); on the root chain (ρ = 1, no report, nothing slashed) it is vacuous, and the §15 row "truthful valence is a Bayes–Nash equilibrium" should say so.
+
+P14b-5 nit — `roadmap/gfp-funding.md` uses the registry's words (launch.md:152: proven · simulated · measured · open) and then "refuted", which is not one; it names phase 2 as the closing event without a date.
+
+Ready for the owner: no. P14b-1 and P14b-3 are blocking; the rest are should or nit.
