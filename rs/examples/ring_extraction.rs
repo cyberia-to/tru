@@ -11,11 +11,13 @@
 //! from the heaviest existing particle into the ring. The epoch is settled by
 //! the exact rule: the four-node path gradient, `a(c) = Δs·σ·ḡ`, `x = max(0, a)`
 //! (every position is a new high on an unstaked side, so `N/R = 1`), the budget
-//! `B = L · cut` with `cut = SUBSIDY · min(5000, isqrt(active·10^8/supply)) / 10^4`
-//! (one epoch's accrual, the steady state of the quarter release), `pay =
-//! min(⌊Δs/100⌋, ⌊B·x/X⌋)`. The external-attention gate of rewards.md §7 is
-//! reported beside: a region closed under the epoch's new axons with no
-//! pre-existing weight entering it earns nothing.
+//! `B = ⌊F/4⌋` of the pool (chain-economy §5.5), the pool fed per block by
+//! `cut = SUBSIDY · min(5000, isqrt(active_{E−1}·10^8/supply)) / 10^4` — the
+//! previous epoch's active stake, the honest swarm's (§6.1) — in a steady
+//! state (four epochs of accrual, one paid: `B` = one epoch's inflow) and after
+//! ten quiet epochs (`B` = 3.5 inflows); `pay = min(⌊Δs/100⌋, ⌊B·x/X⌋)`. The
+//! external-attention gate that rewards.md §7 carried on 2026-11-12 is
+//! reported beside, as the measurement that decided against it.
 //!
 //! ```text
 //! cargo run -p cyber-tru --release --example ring_extraction -- DIR [honest] [denom] [threads]
@@ -95,13 +97,34 @@ fn isqrt(n: u128) -> u128 {
     x
 }
 
-/// One settled epoch: `(pay per position, x per position, B, X)`.
-fn settle(
-    prev: &[Axon],
-    positions: &[Position],
-    supply: u128,
-    p: &EpochParams,
-) -> (Vec<u128>, Vec<i128>, u128, u128) {
+/// The pool's inflow over one epoch, `L · cut`, with `cut` reading the
+/// previous epoch's active stake (chain-economy §6.1: `focus_bps(epoch(h) − 1)`)
+/// and the supply at the settlement height.
+fn inflow(active_prev: u128, height: u128) -> u128 {
+    let supply = S0_PUSSY + height * SUBSIDY_PUSSY;
+    let bps = FOCUS_MAX_BPS.min(isqrt(active_prev * 100_000_000 / supply));
+    L * (SUBSIDY_PUSSY * bps / 10_000)
+}
+
+/// The payout of one epoch from the attribution `x` under the budget `B`
+/// (chain-economy §5.5): `pay = min(⌊Δs/100⌋, ⌊B·x/X⌋)`.
+fn pay_out(positions: &[Position], x: &[i128], budget: u128) -> Vec<u128> {
+    let total: u128 = x.iter().map(|&v| v as u128).sum();
+    positions
+        .iter()
+        .zip(x)
+        .map(|(c, &xc)| {
+            if total == 0 {
+                return 0;
+            }
+            (c.stake * R_MAX_PPM / 1_000_000).min(budget * xc as u128 / total)
+        })
+        .collect()
+}
+
+/// One settled epoch's attribution: `x = max(0, a)` per position (every
+/// position is a new high on an unstaked side, so `N/R = 1`).
+fn attribute(prev: &[Axon], positions: &[Position], p: &EpochParams) -> Vec<i128> {
     let cur = net_axons(prev, positions);
     let pg = path_gradient(prev, &cur, p);
     let g: HashMap<([u8; 32], [u8; 32]), i128> = pg
@@ -110,32 +133,14 @@ fn settle(
         .zip(&pg.by_axon)
         .map(|(a, &g)| ((a.from, a.to), g))
         .collect();
-    let x: Vec<i128> = positions
+    positions
         .iter()
         .map(|c| {
             let gk = g.get(&(c.from, c.to)).copied().unwrap_or(0);
             let sigma = if c.valence < 0 { -1 } else { 1 };
             score_of(c.stake as i128 * sigma, gk).max(0)
         })
-        .collect();
-    let active: u128 = positions.iter().map(|c| c.stake).sum();
-    let bps = FOCUS_MAX_BPS.min(isqrt(active * 100_000_000 / supply));
-    let cut = SUBSIDY_PUSSY * bps / 10_000;
-    let budget = L * cut;
-    let total: u128 = x.iter().map(|&v| v as u128).sum();
-    let pay: Vec<u128> = positions
-        .iter()
-        .zip(&x)
-        .map(|(c, &xc)| {
-            if total == 0 {
-                return 0;
-            }
-            let cap = c.stake * R_MAX_PPM / 1_000_000;
-            let share = budget * xc as u128 / total;
-            cap.min(share)
-        })
-        .collect();
-    (pay, x, budget, total)
+        .collect()
 }
 
 /// External attention of each position's region: the region is the closure
@@ -260,16 +265,25 @@ fn main() {
     }
     let hub = *out.iter().max_by_key(|e| *e.1).unwrap().0;
 
-    // the honest epoch alone
-    let (pay0, _, b0, _) = settle(&prev, &honest_pos, S0_PUSSY, &p);
-    let honest_pay0: u128 = pay0.iter().sum();
+    // the pool: fed by the previous epoch's active stake — the honest swarm's,
+    // the cartel's stake arriving in this epoch (chain-economy §6.1); the
+    // settlement at height 2L + D (epoch 1's game); the budget is a quarter of
+    // the pool (§5.5): steady state (four epochs of accrual, one paid), and
+    // after `quiet` epochs that paid nothing.
+    let quiet: u128 = 10;
+    let height = 2 * L + 120;
+    let flow = inflow(honest_stake, height);
+    let b_steady = (4 * flow) / 4;
+    let b_quiet = ((4 + quiet) * flow) / 4;
+    let x0 = attribute(&prev, &honest_pos, &p);
+    let honest_pay0: u128 = pay_out(&honest_pos, &x0, b_steady).iter().sum();
     println!(
-        "honest alone: stake {honest_stake}, budget {b0}, paid {honest_pay0} ({:.2} % of the budget)",
-        100.0 * honest_pay0 as f64 / b0.max(1) as f64
+        "pool inflow per epoch at the honest swarm's stake: {flow}; budget steady ⌊F/4⌋ = {b_steady}, after {quiet} quiet epochs {b_quiet}; honest alone paid {honest_pay0} ({:.2} % of the steady budget)",
+        100.0 * honest_pay0 as f64 / b_steady.max(1) as f64
     );
     println!();
-    println!("| anchored | k | s (per colluder) | ring stake / honest stake | ring x share | budget B | ring paid | ring paid / B | ring paid / ring stake | cap Σ⌊s/100⌋ | honest paid | ext(region) | int(region) | ring paid, gated | honest paid, gated |");
-    println!("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
+    println!("| anchored | k | s (per colluder) | ring stake / honest stake | ring x share | ring paid (steady) | ring paid / B | ring paid / ring stake | ring paid ({quiet} quiet) | / ring stake | cap Σ⌊s/100⌋ | honest paid (steady) | ext(region) | int(region) | ring paid, gated (steady) | honest paid, gated (steady) |");
+    println!("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
     let ks = [2usize, 4, 8, 16, 32, 64];
     let ss: [u128; 4] = [100_000_000_000, 1_000_000_000_000, 10_000_000_000_000, 100_000_000_000_000];
     for anchored in [false, true] {
@@ -295,24 +309,29 @@ fn main() {
                 }
                 let n_ring = pos.len() - honest;
                 let t = Instant::now();
-                let (pay, x, budget, total_x) = settle(&prev, &pos, S0_PUSSY, &p);
+                let x = attribute(&prev, &pos, &p);
+                let total_x: u128 = x.iter().map(|&v| v as u128).sum();
+                let pay = pay_out(&pos, &x, b_steady);
+                let pay_q = pay_out(&pos, &x, b_quiet);
                 let att = external_attention(&prev, &pos);
-                let gated = gated_pay(&pos, &x, &att, budget);
+                let gated = gated_pay(&pos, &x, &att, b_steady);
                 let ring_gated: u128 = gated[honest..].iter().sum();
                 let honest_gated: u128 = gated[..honest].iter().sum();
                 let ring_pay: u128 = pay[honest..].iter().sum();
+                let ring_pay_q: u128 = pay_q[honest..].iter().sum();
                 let ring_x: u128 = x[honest..].iter().map(|&v| v as u128).sum();
                 let honest_pay: u128 = pay[..honest].iter().sum();
                 let ring_stake = s * n_ring as u128;
                 let cap: u128 = pos[honest..].iter().map(|c| c.stake / 100).sum();
                 eprintln!("settled k={k} s={s} anchored={anchored} in {:.2?}", t.elapsed());
                 println!(
-                    "| {} | {k} | {s} | {:.3} | {:.4} % | {budget} | {ring_pay} | {:.3} % | {:.5} % | {cap} | {honest_pay} | {} | {} | {ring_gated} | {honest_gated} |",
+                    "| {} | {k} | {s} | {:.3} | {:.4} % | {ring_pay} | {:.3} % | {:.5} % | {ring_pay_q} | {:.5} % | {cap} | {honest_pay} | {} | {} | {ring_gated} | {honest_gated} |",
                     if anchored { "yes" } else { "no" },
                     ring_stake as f64 / honest_stake as f64,
                     100.0 * ring_x as f64 / total_x.max(1) as f64,
-                    100.0 * ring_pay as f64 / budget.max(1) as f64,
+                    100.0 * ring_pay as f64 / b_steady.max(1) as f64,
                     100.0 * ring_pay as f64 / ring_stake as f64,
+                    100.0 * ring_pay_q as f64 / ring_stake as f64,
                     att[honest].0,
                     att[honest].1,
                 );
