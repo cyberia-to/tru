@@ -77,7 +77,7 @@ Fixes on the branch; one line per finding. The coordinator's directions of 2026-
 | RW-11 | fixed — bold removed; "tickets are not transactions" → "a ticket is a header"; role separation stated as the owner's deterrent, not by negation; §10 PoW share `B(1 − min(½, θ^½))`; v(N) vs the record: the claim corrected (they differ by the ln\|U\| terms when a particle appears), epoch.md left as is; "transaction kinds" → "kinds". |
 | RW-12 | listed for the owner — (a) Aggregation → recomputation + conditional accumulator: kept, by the receipts; (b) the support-commitment anti-cheat sentence: restored; (c) role separation and the commit–reveal escalation: restored as the general law's deterrents, the forfeit the root chain's rule; (d) §5 "Closing it is open." and §12 "unbuilt": kept rewritten — the 11-04 sentence ("without notes about what is undone"); (e) §8 bootstrap ladder → UniversalHash in the viewing economy: kept, by launch.md and the 11-04 sentence (the ticket is the work from block 1); (f) §15 liveness "unspecified" → §7's rules: kept, required. |
 
-Implementation delta for tru#46 (for its author): (1) no change to `ordering` — the chain passes `nonce = u64_le(hemera(template)[0..8])`; (2) a window function `sample_window(game, beacon, cluster, nonce, r, w) -> Sample`: the marginals of the `min(N, w − 1)` cyclic ranks from `r` with prefix reuse (`v(∅) = 0` free on wrap), plus `w − min(N, w − 1)` probes `(a_i, t_i)` drawn from the hemera XOF of `D_PROBE ‖ beacon ‖ cluster ‖ nonce` (`D_PROBE = "soft3/chain/probe/v1\0"`), each `J_U(φ*(A_E + u_i·e_{a_i})) − J_U(φ*_E)`, `u_i = max(1, ⌊A_{a_i}·t_i/2^32⌋)`; (3) `Sample::preimage` unchanged in form — `D_SAMPLE ‖ k ‖ m…` with the covered players ascending by index, then the probes in draw order, `k = w`; (4) a test that the window's mean per player equals `shapley()` by enumeration for N > w − 1, and that two templates differing in one byte draw different probes.
+Implementation delta for tru#46 (for its author): (1) no change to `ordering` — the chain passes `nonce = u64_le(hemera(template)[0..8])`; (2) a window function `sample_window(game, beacon, cluster, nonce, r, w) -> Sample`: the marginals of the `min(N, w − 1)` cyclic ranks from `r` with prefix reuse (`v(∅) = 0` free on wrap), plus `w − min(N, w − 1)` probes `(a_i, t_i)` drawn from the hemera XOF of `D_PROBE ‖ beacon ‖ cluster ‖ nonce` (`D_PROBE = "soft3/chain/probe/v1\0"`), each `J_U(φ*(A_E + u_i·e_{a_i})) − J_U(φ*_E)`, `u_i = 1 + t_i` over the full `2^32` range (not a fraction of `A_{a_i}`: the probe space is `|A_E|·2^32` by construction); (3) `Sample::preimage` unchanged in form — `D_SAMPLE ‖ k ‖ m…` with the covered players ascending by index, then the probes in draw order, `k = w`; (4) a test that the window's mean per player equals `shapley()` by enumeration for N > w − 1, and that two templates differing in one byte draw different probes.
 
 Self-check, re-run after round 2: (1) clause fidelity — the Trace rows re-pointed (the ordering, the nonce, the probes, the window per chain, the payout, K_MIN, hash first); §1–§3, §9, §13 still byte-identical to origin/master; (2) deferral grep — see the log line below; (3) nothing superfluous — the probes, `W_TICKET`, `K_MIN`, `D_PROBE` each carry a derivation; the restored owner sentences (RW-12 b, c) are his; the ε/δ constants and the three-rule ladder are gone.
 
@@ -357,3 +357,23 @@ green: slots by local draw alone, claimed length and chainwork not inputs, every
 R18-14 green, R18-15 green, sync at full speed green; review evidence added to the PR as 37cde9c (`long_forged_chains_cost_one_branch_attempt_each`: V+1 recomputations, each forged chain dead at its first ticket with its D descendants, honest branch served within F+1 windows over 15 runs). New R18-17 should: a failed forged root is reported `NeedBodies` when another root is body-less, so the +100 score is lost. Ready for the apparatus review: yes, with R18-17 as a follow-up (or fix first).
 
 R18-17 green at ad13862 (c8d4916): a failed forged root is reported before any NeedBodies; four flood/sync tests pass on build-a.
+
+## apparatus review round 3, at 7a67eda
+
+R1 (major, the memoization floor) closed by the second of the two closings the review named: the probe's increment is
+drawn over the whole `2^32` range independently of the axon's weight, `u_i = 1 + t_i`, so the pair `(a_i, u_i)` ranges
+over `|A_{E−1}|·2^32` values by construction — `2^46.7` at pussy, `2^53.5` at bostrom, `2^32` on a base of one axon —
+and the conclusion no longer rests on an unmeasured per-axon weight floor. The first closing (measuring
+`Σ_a min(A_a, 2^32)` on the two genesis exports) was not taken: the exports are on build-a, not in the tree, and the
+figure would still be a measurement the rule depends on rather than a property of the rule. The empty epoch of
+§7 (epoch 1, every entry a probe) is now stated against the same space. The implementation delta for tru#46 (§ design,
+line 80) and the amendment row 1.7 carry the new `u_i`.
+
+R2 (minor) closed: `L(W_TICKET − 1)/N` written as the expectation it is, `k_c` binomial over the epoch's 240 tickets
+with mean 64.1 and sd ≈ 7 at `N = 236`, the rule reading the realized `k_c` as §7's payout already does; the
+consequence clause above it reads the same way. R3 (minor) closed: `audit/phi-relation-2026-11.md` cited with its
+branch (`release/phase1`) at all four of its citations. R4 (minor) closed: amendment row 10.1 carries the line and the
+new text that were applied, `specs/README.md:120`. R5 (evidence) is the build gate's: no Rust is compiled on the
+owner's desk, and the workflow runs on the push.
+
+Greps empty; §1–§3, §9, §13 still byte-identical to master.
