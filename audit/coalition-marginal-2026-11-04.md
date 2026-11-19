@@ -11,10 +11,12 @@ D20, soft3#680; the gap named in cybernode
 `audit/chain/settlement-mining-state-2026-11-02.md` §2 "sample", §5 and §6
 item 2: foculus computes a ticket's marginal with the legacy kernel
 `tru::impulse`, a different function from the integer epoch engine the chain
-settles by). Code: `rs/focusing/epoch/coalition.rs` at tru `d0a54b1`;
+settles by). Code: `rs/focusing/epoch/coalition.rs` at tru `d0a54b1` (now
+`rs/focusing/epoch/coalition/`);
 tests `rs/tests/coalition_marginal.rs`; harness
 `rs/examples/coalition_bench.rs`. Spec: `specs/epoch.md` §8, rewards.md §4,
-§7; soft3 `specs/chain-economy.md` §2.3 (beacon), §7.3 (ticket rule set).
+and the §7 tru#45 proposes (this tree's §7 carries the nonce, the sample and
+the win test, not the window or the probes); soft3 `specs/chain-economy.md` §2.3 (beacon), §7.3 (ticket rule set).
 
 ## 1. what was built
 
@@ -30,7 +32,7 @@ solves the base value once. Then:
 | `ordering(beacon, cluster, n, k)` | `π(n)`: Fisher–Yates on the hemera XOF of `D_ORDER ‖ beacon ‖ cluster ‖ n` | one hash |
 | `sample(beacon, cluster, n)` | `m(n)`: every player's marginal along `π(n)`; `Σ m = v(N)` exactly | `\|N\|` solves |
 | `samples(beacon, cluster, nonces, workers)` | the miner's loop, one sample per nonce, nonces in parallel | — |
-| `shapley()` | the exact Shapley value by subset enumeration (`\|N\| ≤ 20`) | `2^\|N\|` solves |
+| `shapley()` | the exact Shapley value by subset enumeration (`\|N\| ≤ 18`) | `2^\|N\|` solves |
 | `Sample::preimage()` | `D_SAMPLE ‖ k ‖ m[0] … m[k−1]` (i128 LE), the `commit(m(n))` preimage | — |
 | `ticket(beacon, cluster, nonce, r, W)` | rewards.md §7 step 2 (tru#45): the marginals of `W' = min(N, W−1)` cyclic ranks of `π(n)` from the drawn rank `r` (prefix reuse, `v(∅)` free on the wrap), then `W − W'` gradient probes | at most `W + 1` solves, for any `N` |
 | `probes(beacon, cluster, nonce, count, \|A_{E−1}\|)` | the draws `(a_i, t_i)`: `u64 mod \|A_{E−1}\|` and `u32` from the hemera XOF of `D_PROBE ‖ beacon ‖ cluster ‖ nonce` | one hash |

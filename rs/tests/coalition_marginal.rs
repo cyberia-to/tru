@@ -1,5 +1,5 @@
 //! The coalition marginal and the ticket sample on the epoch engine
-//! (`rs/focusing/epoch/coalition.rs`): the one-change marginal against the
+//! (`rs/focusing/epoch/coalition/`): the one-change marginal against the
 //! engine's own attribution, efficiency (the sample sums to the coalition's
 //! value, exactly), determinism across runs and thread counts (a pinned
 //! digest), the ordering as a beacon function, and the sample against the
