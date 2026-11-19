@@ -54,10 +54,11 @@ fn genesis_axons(dir: &str, denom: &str) -> Vec<Axon> {
     let mut balance: HashMap<[u8; 32], u128> = HashMap::new();
     for line in balances.lines().skip(1) {
         let f: Vec<&str> = line.split('\t').collect();
-        if f.len() >= 5 && f[4] == denom {
-            if let (Some(owner), Ok(amount)) = (hex32(f[0]), f[2].parse::<u128>()) {
-                *balance.entry(owner).or_default() += amount;
-            }
+        if f.len() < 5 || f[4] != denom {
+            continue;
+        }
+        if let (Some(owner), Ok(amount)) = (hex32(f[0]), f[2].parse::<u128>()) {
+            *balance.entry(owner).or_default() += amount;
         }
     }
     let links = std::fs::read_to_string(format!("{dir}/links.tsv")).expect("links.tsv");
