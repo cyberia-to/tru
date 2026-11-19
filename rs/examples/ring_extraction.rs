@@ -202,7 +202,11 @@ fn gated_pay(positions: &[Position], x: &[i128], att: &[(u128, u128)], budget: u
         .zip(att)
         .map(|(&xc, &(ext, int))| {
             let xc = xc as u128;
-            if int == 0 || ext >= int { xc } else { xc * ext / int }
+            if int == 0 || ext >= int {
+                xc
+            } else {
+                xc * ext / int
+            }
         })
         .collect();
     let total: u128 = xg.iter().sum();
@@ -228,7 +232,9 @@ fn pid(tag: u8, i: usize) -> [u8; 32] {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let dir = args.get(1).expect("usage: ring_extraction DIR [honest] [denom] [threads]");
+    let dir = args
+        .get(1)
+        .expect("usage: ring_extraction DIR [honest] [denom] [threads]");
     let honest: usize = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(64);
     let denom = args.get(3).map(String::as_str).unwrap_or("pussy");
     let threads: usize = args.get(4).and_then(|s| s.parse().ok()).unwrap_or(1);
@@ -258,12 +264,13 @@ fn main() {
         })
         .collect();
     let honest_stake: u128 = honest_pos.iter().map(|c| c.stake).sum();
-    // the heaviest existing particle by out-weight, the anchor
+    // the heaviest existing particle by out-weight, ties by the particle id as
+    // `canonical` breaks them — the anchor
     let mut out: HashMap<[u8; 32], u128> = HashMap::new();
     for a in &prev {
         *out.entry(a.from).or_default() += a.weight;
     }
-    let hub = *out.iter().max_by_key(|e| *e.1).unwrap().0;
+    let hub = *out.iter().max_by_key(|&(id, w)| (*w, *id)).unwrap().0;
 
     // the pool: fed by the previous epoch's active stake — the honest swarm's,
     // the cartel's stake arriving in this epoch (chain-economy §6.1); the
@@ -282,10 +289,17 @@ fn main() {
         100.0 * honest_pay0 as f64 / b_steady.max(1) as f64
     );
     println!();
-    println!("| anchored | k | s (per colluder) | ring stake / honest stake | ring x share | ring paid (steady) | ring paid / B | ring paid / ring stake | ring paid ({quiet} quiet) | / ring stake | cap Σ⌊s/100⌋ | honest paid (steady) | ext(region) | int(region) | ring paid, gated (steady) | honest paid, gated (steady) |");
+    println!(
+        "| anchored | k | s (per colluder) | ring stake / honest stake | ring x share | ring paid (steady) | ring paid / B | ring paid / ring stake | ring paid ({quiet} quiet) | / ring stake | cap Σ⌊s/100⌋ | honest paid (steady) | ext(region) | int(region) | ring paid, gated (steady) | honest paid, gated (steady) |"
+    );
     println!("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
     let ks = [2usize, 4, 8, 16, 32, 64];
-    let ss: [u128; 4] = [100_000_000_000, 1_000_000_000_000, 10_000_000_000_000, 100_000_000_000_000];
+    let ss: [u128; 4] = [
+        100_000_000_000,
+        1_000_000_000_000,
+        10_000_000_000_000,
+        100_000_000_000_000,
+    ];
     for anchored in [false, true] {
         for &k in &ks {
             for &s in &ss {
@@ -323,7 +337,10 @@ fn main() {
                 let honest_pay: u128 = pay[..honest].iter().sum();
                 let ring_stake = s * n_ring as u128;
                 let cap: u128 = pos[honest..].iter().map(|c| c.stake / 100).sum();
-                eprintln!("settled k={k} s={s} anchored={anchored} in {:.2?}", t.elapsed());
+                eprintln!(
+                    "settled k={k} s={s} anchored={anchored} in {:.2?}",
+                    t.elapsed()
+                );
                 println!(
                     "| {} | {k} | {s} | {:.3} | {:.4} % | {ring_pay} | {:.3} % | {:.5} % | {ring_pay_q} | {:.5} % | {cap} | {honest_pay} | {} | {} | {ring_gated} | {honest_gated} |",
                     if anchored { "yes" } else { "no" },
