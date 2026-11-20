@@ -377,3 +377,60 @@ new text that were applied, `specs/README.md:120`. R5 (evidence) is the build ga
 owner's desk, and the workflow runs on the push.
 
 Greps empty; §1–§3, §9, §13 still byte-identical to master.
+
+## the owner's decision, 2026-11-20 — the probe by construction, one payout formula
+
+The combine's verdict at `3e61737` stood blocked on R1 (major): the clause that makes a ticket unmemoizable counted
+the probe's inputs and concluded about its values, and a change of one axon by at most `2^32` against
+`ΣG = 4.18 × 10^16` could not be shown to move one integer of `J_U`. Read with the rest of §7 the same day, the
+payout carried a second weakness of the same kind: two computations of one quantity joined by a count.
+
+The owner's word (2026-11-20, translated). On the algorithm: "the algorithm itself must be made sturdy". On the rule
+"the probe is made hard by construction, and no measurement is what makes it hard": "yes, this is the key". On the
+prepared decision "count the exact value as 64 samples in every payout, so each miner's sample pays and no threshold
+remains?": "yes — the machine rewrites the payout, the review runs again".
+
+What was compared before the decision was put (each against the receipts already in this branch):
+
+| construction | what the receipts say |
+|---|---|
+| the threshold (the rule of `3e61737`) | every sample of a player under 64 is computed, verified by every node and discarded; at `N = 236` the binomial count (mean 64.1, sd ≈ 7) puts about half the players under each rule; on bostrom (`W_TICKET = 2`, 240 marginals an epoch) the samples pay only in games of up to three players |
+| the exact gradient alone | no sample moves a payout: against the owner's sentence of 2026-11-04 |
+| the swarm alone | bostrom delivers 240 marginals an epoch, so no rule pays a game of more than a few players by samples there without the accumulator's condition; a player the window did not reach has no payout |
+| the exact value as 64 samples (taken) | one formula at every count and both chains; every sample moves its player's payout by its weight; a miner's pull on its own players shrinks by `k/(k + 64)` beside the bound §7 already states |
+
+R1 (major) closed by construction, commit `52f82d2`: the probe is the base's syntropy without a drawn subset of its
+axons, `J_U(φ*(A_{E−1} ∖ R_i)) − J_U(φ*_{E−1})`, the mask `⌈|A_{E−1}|/8⌉` bytes per probe from the same XOF, one bit
+per axon ascending. The mask ranges over `2^|A_{E−1}|` subsets whatever the base weighs; a probe stays one solve
+against the base value every node holds, on a graph no larger than the base, so a ticket still costs at most
+`W_TICKET + 1` solves; the engine already values any axon list (`Game::syntropy_of`, zero axons dropped, the empty
+graph 0). The page states the one boundary of the rule: a base of fewer than 64 axons is covered by a table. Trace
+row and §16's row of the work follow; amendment row 1.7 and the chain.md row that names the probe carry the new text.
+
+The payout, commit `cc00711`: `a(c) = (Σ_c + K_EXACT · a_exact(c)) / (k_c + K_EXACT)`, `K_EXACT = 64`, rounded toward
+zero; the clip, the rescale to `v(N)`, the floor and the dust are unchanged. `K_MIN` is `K_EXACT` in the page, the
+Trace, the notation and the amendment rows (the constants table, §5.2's formula and paragraph, §7.1, the fold's
+schedule). The section's title loses `k_min`: the minimum sample count the general law asks for is none on the root
+chain, and the page says so where `K_EXACT` is derived.
+
+R2 (minor) of the same verdict closed in the commit that carries this section: the header of
+`rs/examples/ring_extraction.rs` says what the code does — the float seeds an integer search that two exact loops
+correct.
+
+Implementation delta for tru#46 (for its author): (1) `probes()` draws one mask per probe, `⌈|A_{E−1}|/8⌉` bytes from
+the hemera XOF of `D_PROBE ‖ beacon ‖ cluster ‖ nonce`, bit `j mod 8` (least significant first) of byte `⌊j/8⌋` for
+axon `j`; (2) `Game::probe(mask)` is `syntropy_of(the base with the masked axons at weight 0) − base_syntropy`;
+`Probe` carries the mask's count and the value; (3) `Ticket::preimage` unchanged in form, the probe values appended in
+draw order; (4) tests: the probe equals the engine's value of the masked list; a mask of every axon gives
+`−base_syntropy`; two templates differing in one byte draw different masks; (5) the receipt on the pussy genesis
+graph: the number of distinct values over a run of drawn masks beside the number drawn, the spread of those values in
+integers of `J_U`, and the time of one mask draw beside one solve; the pinned digests of §3 re-pinned.
+
+Implementation delta for cybernode#18 and soft3#682 (for their author): the verifier recomputes mask probes; the
+settlement's `a(c)` is the one formula above with `K_EXACT`; the conformance vectors and the corpus forgeries
+re-blessed; the alpha restarted from block 0 on the new ticket.
+
+Stated by construction and carried to the receipt of delta (5), not measured in this branch: that drawn masks give
+distinct values, and what a mask draw costs beside a solve. No Rust is compiled on the owner's desk.
+
+Greps empty; §1–§3, §9, §13 still byte-identical to master (compared section by section by digest).

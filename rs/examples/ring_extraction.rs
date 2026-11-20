@@ -23,7 +23,8 @@
 //! cargo run -p cyber-tru --release --example ring_extraction -- DIR [honest] [denom] [threads]
 //! ```
 //!
-//! Floats appear only in the printing.
+//! Floats appear in the printing and as the seed of `isqrt`, whose two
+//! integer loops correct the seed to the exact root.
 
 use std::collections::{HashMap, HashSet};
 use std::time::Instant;
