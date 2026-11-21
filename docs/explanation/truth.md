@@ -88,7 +88,7 @@ Each layer asks a different question about the same stake. The first is live at 
 
 Focus alone pays for coherence, and coherence is weaker than truth: a crowd can agree on a mistake, and stake that joins it sharpens the picture and is paid.
 
-The serum is the answer to that. Each staker also reports what share of the stake it expects on its own side. An answer that turns out more common than the crowd predicted is the one held by those who know something the rest did not expect ([[Bayesian Truth Serum]], Prelec 2004). The textbook case: asked whether Philadelphia is the capital of Pennsylvania, most people say yes. Those who say no also predict that most will say yes. "No" comes out more common than predicted, and "no" is correct. The score that pays this accumulates into [[karma]], and it is taken from those who added noise.
+The serum is the answer to that. The mechanism it borrows asks each answerer for two things: the answer, and what share of the others it expects on its own side. An answer that turns out more common than the crowd predicted is the one held by those who know something the rest did not expect ([[Bayesian Truth Serum]], Prelec 2004). The textbook case: asked whether Philadelphia is the capital of Pennsylvania, most people say yes. Those who say no also predict that most will say yes. "No" comes out more common than predicted, and "no" is correct. In cyber the second report is not a quantity of its own: the valence of the stake is what the score reads as the meta-prediction ([rewards](../../specs/rewards.md) §5). The score that pays this accumulates into [[karma]], and it is taken from those who added noise.
 
 The market is the answer to time. Every link carries a price between false and true that anyone can push by staking, and it stays open. When a link once believed turns out wrong, the neuron who sees it first stakes against it and earns as the rest follow. See [epistemic markets](epistemic-markets.md).
 
@@ -165,5 +165,5 @@ The honest summary is the last row. The theorem says what honest players do; whe
 - the reward law: [rewards](../../specs/rewards.md) — §1 the principle, §5 honesty, §9 the two axes of stake, §15 security, §16 what the root chain fixes
 - the epoch's computation: [epoch](../../specs/epoch.md)
 - the serum's contract: [truth scoring](../../specs/truth-scoring.md), [strong truthfulness](../../specs/strong-truthfulness.md)
-- positions, sides, the new-high rule, the cap and the budget on the root chain: chain-economy §3–§6 (cybernode `specs/chain-economy.md`)
+- positions, sides, the new-high rule, the cap and the budget on the root chain: chain-economy §3–§6 (soft3 `specs/chain-economy.md`)
 - the general law in narrative: [honesty](honesty.md), [valence](valence.md), [epistemic markets](epistemic-markets.md), [incentives](incentives.md)
