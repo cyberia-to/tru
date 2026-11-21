@@ -9,6 +9,7 @@ why [[tru]] works the way it does — narrative, derivations, and background. th
 ## start here
 
 - [overview](overview.md) — what tru computes and why it exists
+- [truth, from claim to payout](truth.md) — what a stake on a link claims, how the network settles it, where the reward comes from, what is live at launch and what follows
 
 ## focusing — computing φ*
 
