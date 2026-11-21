@@ -34,18 +34,18 @@ A link with no stake is free speech: it carries no weight. To take part a neuron
 
 | the activation | its sign says | its size says |
 |---|---|---|
-| above zero | this link is true | how much of the stake on this link I expect to stand with me |
+| above zero | this link is true | how much of the stake on this link I expect to stand against me |
 | below zero | this link is false | the same |
 | zero | I take no side | my stake weighs the link, risks nothing and earns nothing |
 
-The size runs from 1 to 127 and is read as a share of 128. So one number answers two questions: what do I think, and how many will think the same.
+The size runs from 1 to 127 and is read as a share of 128. So one number answers two questions: what do I think, and how many will think otherwise. A small size is quiet: I say what everyone says. A large size is loud: I bring news.
 
 | activation | reads as |
 |---|---|
-| `+115` | true, and nine in ten will agree with me |
-| `+26` | true, and only one in five will agree: I know something the crowd does not |
-| `−115` | false, and nine in ten will agree with me |
-| `−26` | false, and only one in five will agree: I know something the crowd does not |
+| `+13` | true, and one in ten will disagree: this is common knowledge |
+| `+102` | true, and four in five will disagree: I know something the crowd does not |
+| `−13` | false, and one in ten will disagree: this is common knowledge |
+| `−102` | false, and four in five will disagree: I know something the crowd does not |
 
 The second question is the unusual one. The rest of the page turns on it.
 
@@ -103,9 +103,9 @@ On a link the two questions are the sign and the size of the activation. Take th
 
 | neuron | stake | activation | reads as |
 |---|---|---|---|
-| A | 6,000 | `−26` | false, and one in five will agree with me |
+| A | 6,000 | `−102` | false, and four in five will disagree with me |
 | B | 2,000 | `−26` | the same |
-| C | 9,000 | `+115` | true, and nine in ten will agree with me |
+| C | 9,000 | `+13` | true, and one in ten will disagree with me |
 | D | 3,000 | `+115` | the same |
 
 How the crowd answered: 12,000 true, 8,000 false. False holds 40 % of the stake.
@@ -123,15 +123,15 @@ False came out 26 points more common than predicted. It wins, with less money, a
 
 Why 309 and not 12,000: the losing side pays a share of its stake each epoch, in proportion to how surprising the winner was. One epoch is one count, and one count can be wrong, so it moves a part and leaves the rest standing. A side that stays wrong pays again next epoch, and the one after.
 
-Now the same link attacked by a ring that knows nothing. It stakes 1,000 on false against 19,000 on true. The majority had said nine in ten would agree, so a tenth on the other side was expected, and the ring is only a twentieth. It comes out less common than predicted, and it pays. A small group cannot win by merely being small: it has to be larger than the crowd thought possible.
+Now the same link attacked by a ring that knows nothing. It stakes 1,000 on false against 19,000 on true. The majority had said a tenth would disagree, so a tenth on the other side was expected, and the ring is only a twentieth. It comes out less common than predicted, and it pays. A small group cannot win by merely being small: it has to be larger than the crowd thought possible.
 
 Move the sliders to try other crowds:
 
 <div id="truth-epoch"></div>
 <style>#truth-epoch{border:1px solid rgba(128,128,128,.4);border-radius:10px;padding:16px 18px;margin:18px 0;max-width:720px}#truth-epoch label{display:block;margin:0 0 12px;font-size:.95em}#truth-epoch label span{float:right;font-variant-numeric:tabular-nums}#truth-epoch input[type=range]{display:block;width:100%;margin-top:4px}#truth-epoch .bar{display:grid;grid-template-columns:15em 1fr 3.5em;gap:10px;align-items:center;margin:7px 0;font-size:.9em}#truth-epoch .bar i{display:block;height:12px;border-radius:6px;background:rgba(128,128,128,.22);overflow:hidden}#truth-epoch .bar em{display:block;height:100%}#truth-epoch .bar span:last-child{text-align:right;font-variant-numeric:tabular-nums}#truth-epoch p{margin:10px 0 0}#truth-epoch .v{font-size:1.05em}#truth-epoch .n{font-variant-numeric:tabular-nums;border-bottom:2px solid currentColor}#truth-epoch .note{font-size:.85em;opacity:.7}#truth-epoch h4{margin:14px 0 8px;font-size:.95em;font-weight:600}@media(max-width:560px){#truth-epoch .bar{grid-template-columns:1fr 3.5em}#truth-epoch .bar i{grid-column:1/3;grid-row:2}}</style>
-<script>(function(){var r=document.getElementById('truth-epoch');if(!r)return;r.innerHTML='<label>stake that calls the link true <span id="te-av"></span><input id="te-a" type="range" min="0" max="20000" step="500" value="12000"></label><label>its activation: how much of the stake it expects on its side <span id="te-mav"></span><input id="te-ma" type="range" min="1" max="127" step="1" value="115"></label><label>stake that calls the link false <span id="te-bv"></span><input id="te-b" type="range" min="0" max="20000" step="500" value="8000"></label><label>its activation: how much of the stake it expects on its side <span id="te-mbv"></span><input id="te-mb" type="range" min="1" max="127" step="1" value="26"></label><div id="te-out"></div>';function g(i){return document.getElementById(i)}function n(x){return Math.round(x).toLocaleString('en-US')}function pc(x){return Math.round(x*100)+' %'}function bar(l,v,c){return '<div class="bar"><span>'+l+'</span><i><em style="width:'+Math.round(v*100)+'%;background:'+c+'"></em></i><span>'+pc(v)+'</span></div>'}function u(){var a=+g('te-a').value,b=+g('te-b').value,ma=+g('te-ma').value,mb=+g('te-mb').value;g('te-av').textContent=n(a);g('te-bv').textContent=n(b);g('te-mav').textContent='+'+ma+' · '+pc(ma/128);g('te-mbv').textContent='−'+mb+' · '+pc(mb/128);var t=a+b,o=g('te-out');if(t===0){o.innerHTML='<p class="v">No stake, no claim: the link carries no weight.</p>';return}var st=a/t,pt=(a*ma/128+b*(1-mb/128))/t,gap=st-pt,h='<h4>true</h4>'+bar('how the crowd answered',st,'#3fb950')+bar('how it predicted it would',pt,'#d29922')+'<h4>false</h4>'+bar('how the crowd answered',1-st,'#3fb950')+bar('how it predicted it would',1-pt,'#d29922'),v;if(Math.abs(gap)<0.03){v='<p class="v">The crowd answered as it expected to. No surprise: nobody pays, nobody earns.</p>'}else{var w=gap>0,win=w?'True':'False',ls=w?b:a,ws=w?a:b,pay=0.1*Math.abs(gap)*ls;v='<p class="v">'+win+' came out '+Math.round(Math.abs(gap)*100)+' points more common than predicted: the surprisingly popular side'+(ws<ls?', though it holds less money':'')+'.</p><p>The '+(w?'false':'true')+' side pays <span class="n">'+n(pay)+'</span>. The '+(w?'true':'false')+' side receives <span class="n">'+n(pay)+'</span> from it and a premium of <span class="n">'+n(pay*0.1)+'</span> in new tokens.</p>'}o.innerHTML=h+v+'<p class="note">The rates are invented to show the shape: the losing side pays a tenth of its stake times the surprise, and the premium is a tenth of that.</p>'}['te-a','te-b','te-ma','te-mb'].forEach(function(i){g(i).addEventListener('input',u)});u()})();</script>
+<script>(function(){var r=document.getElementById('truth-epoch');if(!r)return;r.innerHTML='<label>stake that calls the link true <span id="te-av"></span><input id="te-a" type="range" min="0" max="20000" step="500" value="12000"></label><label>its activation: how much of the stake it expects against it <span id="te-mav"></span><input id="te-ma" type="range" min="1" max="127" step="1" value="13"></label><label>stake that calls the link false <span id="te-bv"></span><input id="te-b" type="range" min="0" max="20000" step="500" value="8000"></label><label>its activation: how much of the stake it expects against it <span id="te-mbv"></span><input id="te-mb" type="range" min="1" max="127" step="1" value="102"></label><div id="te-out"></div>';function g(i){return document.getElementById(i)}function n(x){return Math.round(x).toLocaleString('en-US')}function pc(x){return Math.round(x*100)+' %'}function bar(l,v,c){return '<div class="bar"><span>'+l+'</span><i><em style="width:'+Math.round(v*100)+'%;background:'+c+'"></em></i><span>'+pc(v)+'</span></div>'}function u(){var a=+g('te-a').value,b=+g('te-b').value,ma=+g('te-ma').value,mb=+g('te-mb').value;g('te-av').textContent=n(a);g('te-bv').textContent=n(b);g('te-mav').textContent='+'+ma+' · '+pc(ma/128);g('te-mbv').textContent='−'+mb+' · '+pc(mb/128);var t=a+b,o=g('te-out');if(t===0){o.innerHTML='<p class="v">No stake, no claim: the link carries no weight.</p>';return}var st=a/t,pt=(a*(1-ma/128)+b*mb/128)/t,gap=st-pt,h='<h4>true</h4>'+bar('how the crowd answered',st,'#3fb950')+bar('how it predicted it would',pt,'#d29922')+'<h4>false</h4>'+bar('how the crowd answered',1-st,'#3fb950')+bar('how it predicted it would',1-pt,'#d29922'),v;if(Math.abs(gap)<0.03){v='<p class="v">The crowd answered as it expected to. No surprise: nobody pays, nobody earns.</p>'}else{var w=gap>0,win=w?'True':'False',ls=w?b:a,ws=w?a:b,pay=0.1*Math.abs(gap)*ls;v='<p class="v">'+win+' came out '+Math.round(Math.abs(gap)*100)+' points more common than predicted: the surprisingly popular side'+(ws<ls?', though it holds less money':'')+'.</p><p>The '+(w?'false':'true')+' side pays <span class="n">'+n(pay)+'</span>. The '+(w?'true':'false')+' side receives <span class="n">'+n(pay)+'</span> from it and a premium of <span class="n">'+n(pay*0.1)+'</span> in new tokens.</p>'}o.innerHTML=h+v+'<p class="note">The rates are invented to show the shape: the losing side pays a tenth of its stake times the surprise, and the premium is a tenth of that.</p>'}['te-a','te-b','te-ma','te-mb'].forEach(function(i){g(i).addEventListener('input',u)});u()})();</script>
 
-Once the crowd expects the link to be false, calling it false shows no surprise: a neuron that arrives then pays nothing and earns nothing. Drag the last slider to the right and watch the payment vanish.
+When the crowd answers as it expected to, nobody is surprised: a neuron that only joins a view everyone already expects pays nothing and earns nothing. Drag the second slider to the right until the two bars meet, and watch the payment vanish.
 
 ---
 
@@ -152,10 +152,10 @@ Being right pays twice, from the losers and from the network. Being wrong costs 
 
 | what a neuron does | what happens to it |
 |---|---|
-| takes the side it believes and names the share it really expects | the highest expected score when others do the same: Prelec's theorem |
+| takes the side it believes and names the dissent it really expects | the highest expected score when others do the same: Prelec's theorem |
 | copies the visible majority | the majority is already expected: no surprise, nothing earned, and the stake is at risk if the majority is wrong |
 | takes the unpopular side with no knowledge | it is as few as the crowd expected, or fewer: it pays |
-| names a small share to look informed | its side must then come out larger than it said, which nothing it controls makes happen; the misprediction costs it |
+| names a large dissent to look informed | the size is a prediction checked against the count: its side must then come out as small as it said, and a misprediction costs it |
 | stakes both sides | pays itself; the fees and the lock are spent for nothing |
 | splits its stake across many keys | the same total: every rule is linear in stake |
 | joins a ring that agrees on a falsehood | every member expects the ring's answer, so it shows no surprise and scores nothing ([strong truthfulness](../../specs/strong-truthfulness.md)) |
