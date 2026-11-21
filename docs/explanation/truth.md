@@ -44,13 +44,13 @@ A link with no stake is free speech: it exists, carries no weight and earns noth
 
 A neuron that wants its link to count commits three things at once.
 
-| commitment | what it says | what it is for |
-|---|---|---|
-| a side | this link holds, or this link fails | the first-order belief: what the neuron itself thinks |
-| a stake | this much of my money stands behind that side | the cost of being wrong, and the weight of the voice |
-| a prediction | this is where I expect the crowd to stand | the second-order belief: the part that lets the network tell knowledge from agreement |
+| commitment | what it says | in the cyberlink | what it is for |
+|---|---|---|---|
+| a side | this link holds, or this link fails | the position: stake for the link or against it | the first-order belief: what the neuron itself thinks |
+| a stake | this much of my money stands behind that side | the amount locked | the cost of being wrong, and the weight of the voice |
+| a prediction | this is where I expect the crowd to settle | the [[valence]]: `+1` the crowd will hold the link true, `−1` it will hold it false | the second-order belief: the part that lets the network tell knowledge from agreement ([rewards](../../specs/rewards.md) §5) |
 
-A neuron may also stake passively: its money gives the link weight in the ranking and takes no side. Passive stake risks nothing, predicts nothing and earns nothing. It buys attention and that is its whole return ([rewards](../../specs/rewards.md) §9).
+A neuron may also decline to predict: valence `0`. Its money then gives the link weight in the ranking and takes no part in the game. Passive stake risks nothing and earns nothing. It buys attention and that is its whole return ([rewards](../../specs/rewards.md) §9).
 
 The third commitment is the unusual one, and the rest of the page turns on it.
 
@@ -94,7 +94,7 @@ The textbook case. Ask a crowd whether Philadelphia is the capital of Pennsylvan
 
 The reason it works is that knowledge is lopsided. Someone who knows the fact also knows the popular error; someone who holds the error has never heard of the fact. So the informed side is always underestimated by the crowd, and that gap is measurable without anyone knowing the answer in advance.
 
-On a link it is the same count. Each staker has taken a side and predicted the crowd. The serum compares, per link, how the stake actually stands with how the stakers predicted it would stand. A side that is common and was expected to be common shows no gap: that is plain agreement, and it scores nothing. A side that is more common than predicted shows the gap: someone knew something. Each neuron's score has two parts, the surprise of its side and the accuracy of its prediction of the crowd ([truth scoring](../../specs/truth-scoring.md)).
+On a link it is the same count. Each staker has taken a side and, by its valence, predicted where the crowd will settle. The serum compares, per link, how the stake actually stands with how the stakers predicted it would stand. A side that is common and was expected to be common shows no gap: that is plain agreement, and it scores nothing. A side that is more common than predicted shows the gap: someone knew something. Each neuron's score has two parts, the surprise of its side and the accuracy of its prediction of the crowd ([truth scoring](../../specs/truth-scoring.md)).
 
 This is the validation. It needs no outside judge: the question it asks is whether the people who stood behind the link knew more than the crowd expected them to.
 
@@ -133,31 +133,35 @@ The mechanism rewards honesty and stays silent on correctness. A neuron that hon
 
 ---
 
-## two epochs, with numbers
+## one epoch, with numbers
 
 The rates are invented to show the shape. The rules are the network's.
 
-A question `p` has a link to an answer `q`. In the first epoch three neurons take sides.
+A question `p` has a link to an answer `q`. The answer is right and little known. Four neurons take sides in one epoch.
 
-| neuron | side and stake | predicts the share staked for | |
+| neuron | side and stake | predicts the crowd will hold the link | |
 |---|---|---|---|
-| A | 10,000 for | 40 % | knows the answer, and knows few do |
-| B | 5,000 for | 55 % | read the source |
-| C | 8,000 against | 30 % | holds the common error |
+| A | 6,000 for | false | knows the answer, and knows the error is common |
+| B | 2,000 for | false | read the source |
+| C | 12,000 against | false | holds the common error and expects everyone to |
+| D | 3,000 against | false | follows C |
 
-The stake stands 15,000 for and 8,000 against: 65 % for. The crowd predicted about 40 %. "For" is the surprisingly popular side.
+The stake stands 8,000 for and 15,000 against: 35 % for. Nobody predicted the crowd would hold the link true, so "for" came out far more common than predicted. It is the surprisingly popular side, and it is the minority.
 
 | neuron | the redistribution | the premium | the record |
 |---|---|---|---|
-| A | + 267 | + 20 | karma up |
-| B | + 133 | + 10 | karma up |
-| C | − 400 | 0 | karma down |
+| A | + 300 | + 30 | karma up |
+| B | + 100 | + 10 | karma up |
+| C | − 320 | 0 | karma down |
+| D | − 80 | 0 | karma down |
 
-C pays 400 and A and B receive exactly 400 between them, in proportion to their stakes. The premium of 30 is new money on top, shared by what each stake added to the network's syntropy.
+C and D pay 400 and A and B receive exactly 400, each side in proportion to its stakes. The premium of 40 is new money on top, shared by what each stake added to the network's syntropy.
 
-In the second epoch D sees that the link is winning and adds 6,000 for it, predicting 75 % for, as everyone now does. The stake stands at about 73 % for, close to what was predicted. There is no surprise left on this link, so D's score is near zero: nothing lost, nothing earned. Arriving after the crowd is a purchase of ranking at the price of locked money.
+By the price alone this link would be held false: most of the money stands against it. The serum's count overturns that, and the link gains standing. This is why the network reinforces by the surprise and never by the raw price ([strong truthfulness](../../specs/strong-truthfulness.md)), and why a majority of money is weaker here than a minority of knowledge.
 
-Had C been right, the same table would run the other way: "against" would have come out more common than predicted, and A and B would have paid C.
+Later, once the crowd expects the link to hold, standing for it shows no surprise. A neuron that arrives then scores near zero: nothing lost, nothing earned. Arriving after the crowd is a purchase of ranking at the price of locked money.
+
+One count has a blind spot, and it is named below: a minority that shares one error and knows itself a minority reads, in a single epoch, like a minority that knows. Time is what separates them. The link stays open, those who know better keep staking, and holding a price against them costs the mistaken side in every epoch that follows.
 
 ---
 
@@ -176,6 +180,7 @@ A claim about an event fits the same machine. "This happened" is a link like any
 | focus has one value and every node computes the same | proven, and checked by every node each epoch ([[collective focus theorem]], [epoch](../../specs/epoch.md)) |
 | telling the truth is the best reply when others do | proven for the serum's report (Prelec 2004) |
 | the surprisingly popular side is the true one when no outside judge exists | proven under the standard model of peer prediction: a common prior and independent private evidence ([strong truthfulness](../../specs/strong-truthfulness.md)); weaker when everyone's evidence comes from one source |
+| a minority that shares one error and expects to be a minority | reads as knowledge in a single count: its evidence has one source, which is the case the model excludes; the open market is the correction, epoch after epoch |
 | an informed minority beats a coordinated majority | measured in the scorer at up to 200 agents ([receipt](../../audit/coordinated-consensus-scoring.md)) |
 | holding a false price costs a ring more than it gains | a model, with the threshold of honest capital stated ([strong truthfulness](../../specs/strong-truthfulness.md) § the capital bound); awaits a network |
 | a majority of all stake that agrees to invert its reports | wins: no scoring defends against it, as no chain defends against a majority of its work |
