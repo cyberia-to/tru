@@ -78,7 +78,7 @@ A neuron makes the link and commits a side, a stake and a prediction.
 
 ### 2 · the market
 
-Every staked link carries its own small market with two sides, true and false ([[inversely coupled bonding surface|ICBS]]). Stake for the link raises its price; stake against it lowers it; the two sides are coupled, so raising one presses the other down. The protocol itself is the market maker, so there is always someone to stake against.
+Every staked link carries its own small market with two sides, true and false ([[inversely coupled bonding surface|ICBS]]). Stake for the link raises its price; stake against it lowers it; the two sides are coupled, so raising one presses the other down. A stake needs no second player. Each link has one shared pool; a neuron pays into it to take a side and draws from it to leave, and a formula sets the price from how much stands on each side. So the first neuron to disagree with a link can stake against it at once, and what a winner takes out is what the other side put in: the protocol only computes the price and puts in no money of its own.
 
 The market does three jobs. It makes a link cost money, so spam is expensive. It turns the stakes into one number, the price, the network's running estimate of the link. And it makes a false link expensive to defend: whoever props it up must keep buying the losing side from everyone who sees the mistake. It never closes.
 
