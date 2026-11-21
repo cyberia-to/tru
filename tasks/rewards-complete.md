@@ -434,3 +434,15 @@ Stated by construction and carried to the receipt of delta (5), not measured in 
 distinct values, and what a mask draw costs beside a solve. No Rust is compiled on the owner's desk.
 
 Greps empty; §1–§3, §9, §13 still byte-identical to master (compared section by section by digest).
+
+## apparatus review at 028e5e5 — five findings, closed
+
+The round of 2026-11-20 left its own sweep incomplete: the search for the superseded payout looked for "the cap and the floor" and missed "capped and floored" and "cap and floor".
+
+- R1 (major) closed: §15's row of leaderless settlement and the Trace's row of the exact gradient state the one formula, the exact value counted as 64 samples; `v(N)` stays the cap of the total.
+- R2 (major) closed: the amendment rows that would have carried the superseded rule into other repositories — chain-economy §0 (row 1.3), §7.3 (the payout from genesis), launch.md's fold (row 5.5) and the row of the settlement — carry `K_EXACT`.
+- R3 (major) closed: the claim that an attempt's cost does not swing is withdrawn. The count of solves is the same in every epoch; a marginal's solve runs on the whole base and a probe's on the half its mask keeps, so an empty epoch's attempt costs between that count on half the graph and on the whole, a factor of about two that ASERT absorbs. The three sentences that said "the same cost" say the same count, each solve bounded by the base's.
+- R4 (minor) closed: the mask is drawn by the 64-bit nonce, so an epoch holds `min(2^64, 2^|A|)` distinct draws — `2^64` on both genesis graphs — against `2^27` attempts a year; the figures `2^26,805` and `2^(2.99 × 10^6)` named a space no miner reaches and are gone. The boundary of the rule follows: a base of under 27 axons has fewer masks than a year's attempts.
+- R5 (minor) closed: the goldilocks-parano1d amendment says `W_TICKET + 1` solves, 65 at pussy and 3 at bostrom.
+
+A wider sweep of `specs/` and the amendment list for the superseded wording and counts is empty. Greps empty; §1–§3, §9, §13 byte-identical to master by digest.
