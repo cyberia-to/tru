@@ -6,31 +6,33 @@ crystal-domain: cyber
 ---
 # truth, from claim to payout
 
-What a stake on a [[cyberlink]] claims, how the network settles it, where the reward comes from, and how far the result can be trusted. Written for a reader who knows how a prediction market works and asks the four plain questions: what is truth here, who asks and who answers, why would anyone stake on it, and who checks.
+What a stake on a [[cyberlink]] claims, how the network decides whether it holds, who pays whom, and how far the result can be trusted. Written for a reader who knows how a prediction market works and asks four plain questions: what is truth here, who asks and who answers, why would anyone stake on it, and who checks.
 
-The short answer: a prediction market settles on an event outside itself. [[cyber]] has no outside. It settles every epoch on its own state, and a link is true for as long as stake keeps holding it against anyone who could profit by pushing it down.
+The short answer. A prediction market waits for the world to settle its question. Most knowledge has no such day, so [[cyber]] settles inside itself, every epoch: the side of a link that turns out more common than the crowd itself predicted wins, the losing side pays it, and the network adds a premium for the knowledge the winners created. The link stays open to a new stake forever.
 
 ---
 
 ## the machine you already know
 
-A prediction market has four parts: an organizer writes a question, players stake on an outcome, the event happens in the world, and the losers pay the winners. Truth arrives from outside, once, and the market closes.
+A prediction market has four parts. An organizer writes a question. Players stake on an outcome. The event happens in the world. The losers pay the winners, and the market closes.
 
-Most knowledge never gets such a day. "This paper answers that question", "this file is the source of that claim", "this model is better at that task" — nothing happens in the world that closes them. They stay open, and people keep relying on them. That is the knowledge cyber is built for, so each of the four parts changes:
+It works because truth arrives from outside. That is also its limit. "This paper answers that question", "this file is the source of that claim", "this model is better at that task" — nothing ever happens in the world that closes these, yet people rely on them every day. This is the knowledge cyber is built for, and each of the four parts changes to fit it.
 
 | | a prediction market | cyber |
 |---|---|---|
 | the question | written by an organizer | the link itself, made by any [[neuron]] |
-| the stake | on an outcome of an event | on the link: for it, against it, or passive |
-| the settlement | once, when the event happens outside | every epoch, on the state of the graph; it never closes |
-| who pays | the losing side | at launch the network's emission; later the losing side as well |
-| being right means | matching the event | holding what the network keeps holding |
+| the stake | on the outcome of an event | on the link: for it or against it |
+| the judge | the world, once | the crowd's own surprise, every epoch |
+| who pays | the losing side pays the winning side | the losing side pays the winning side, and the network adds a premium to the winners |
+| the end | the market closes | the link stays open; a later stake can overturn it |
+
+One thing stays exactly as it is in the market: nobody is paid for holding tokens, and nobody is right for free. A stake that takes a side is at risk.
 
 ---
 
 ## the claim: who asks and who answers
 
-A cyberlink `p → q` joins two [[particles]], the identities of two [[files]]. It says one thing: from `p`, the file `q` deserves attention. If `p` is a question and `q` a text, the link says "this answers it". If `p` is a claim and `q` a dataset, it says "this supports it".
+A cyberlink `p → q` joins two [[particles]], the identities of two [[files]]. It says one thing: from `p`, the file `q` deserves attention. If `p` is a question and `q` a text, the link says "this answers it". If `p` is a claim and `q` a dataset, it says "this supports it". If `p` is the name of an event and `q` a report of it, it says "this is what happened".
 
 Nobody is appointed to ask or to answer. The question is a file, the answer is a file, and the link between them is the answer given. Whoever reads `p` later sees every link that leaves it, ordered by how much [[focus]] the network has placed on each.
 
@@ -38,102 +40,136 @@ A link with no stake is free speech: it exists, carries no weight and earns noth
 
 ---
 
-## the stake: three sides
+## one act, three commitments
 
-A neuron locks tokens on a link and chooses a side, the [[valence]] of the position.
+A neuron that wants its link to count commits three things at once.
 
-| side | what the stake does to the link | what it can earn |
-|---|---|---|
-| `+1`, for | adds its weight | a reward, when adding it made the shared picture sharper |
-| `−1`, against | removes weight, down to zero | a reward, when removing it made the shared picture sharper |
-| `0`, passive | adds its weight | nothing: it moves the ranking and takes no part in the reward |
+| commitment | what it says | in the cyberlink | what it is for |
+|---|---|---|---|
+| a side | this link holds, or this link fails | the position: stake for the link or against it | the first-order belief: what the neuron itself thinks |
+| a stake | this much of my money stands behind that side | the amount locked | the cost of being wrong, and the weight of the voice |
+| a prediction | this is where I expect the crowd to settle | the [[valence]]: `+1` the crowd will hold the link true, `−1` it will hold it false | the second-order belief: the part that lets the network tell knowledge from agreement ([rewards](../../specs/rewards.md) §5) |
 
-The stake stays locked for seven days. That lock is the whole risk at launch.
+A neuron may also decline to predict: valence `0`. Its money then gives the link weight in the ranking and takes no part in the game. Passive stake risks nothing and earns nothing. It buys attention and that is its whole return ([rewards](../../specs/rewards.md) §9).
+
+The third commitment is the unusual one, and the rest of the page turns on it.
 
 ---
 
 ## the process
 
 ```text
-   the claim           the premise          truth emerges         validation           reward
- ┌─────────────┐    ┌──────────────┐    ┌───────────────┐    ┌───────────────┐    ┌─────────────┐
- │ link p → q  │    │ every stake  │    │ focus is      │    │ whose added   │    │ a share of  │
- │ stake, side │ →  │ on every link│ →  │ recomputed    │ →  │ stake made    │ →  │ the focus   │
- │ +1 / 0 / −1 │    │ becomes its  │    │ over the      │    │ focus sharper,│    │ pool, by    │
- │             │    │ weight       │    │ whole graph   │    │ and by how    │    │ that measure│
- └─────────────┘    └──────────────┘    └───────────────┘    │ much?         │    └─────────────┘
-   one neuron         all neurons          the chain         └───────────────┘      the neuron
-                                         once an epoch          the chain
+        ┌───────────── the link stays open: anyone may stake on it again ─────────────┐
+        ▼                                                                              │
+ 1 the claim       2 the market      3 focus           4 the serum       5 settlement  │
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│ link p → q  │  │ stakes for  │  │ attention   │  │ which side   │  │ losers pay   │  │
+│ a side      │→ │ and against │→ │ settles over│→ │ came out more│→ │ winners; the │──┘
+│ a stake     │  │ set the     │  │ the weighted│  │ common than  │  │ network adds │
+│ a prediction│  │ link's price│  │ graph       │  │ predicted?   │  │ a premium    │
+└─────────────┘  └─────────────┘  └─────────────┘  └──────────────┘  └──────────────┘
+  the premise                       truth emerges     validation        payout
+  any neuron, any time              every node, once an epoch
 ```
 
-1. The claim. A neuron makes a link and locks stake on a side.
-2. The premise. At the end of an epoch (240 blocks, about two hours) the chain takes every link with the net stake on it: stake for, minus stake against, never below zero. This weighted graph is everything the network currently asserts.
-3. Truth emerges. Over that graph the chain computes [[focus]]: where attention settles when it flows along the links by their weights. The computation has one answer, every node gets the same one, and no neuron chooses it ([[collective focus theorem]]). The links that carry focus are what the network holds true this epoch.
-4. Validation. The chain measures [[syntropy]], how sharply focus is concentrated, before and after the epoch, and attributes the change to the stake each position added. Stake that sharpened the picture has a positive share. Stake that blurred it has none.
-5. Reward. The epoch's budget is divided by those shares and paid to the positions.
+### 1 · the claim
 
-Then the next epoch begins on the new graph. A link is never settled for good: new stake for it or against it moves it again.
+A neuron makes the link and commits a side, a stake and a prediction.
 
----
+### 2 · the market
 
-## what "true" means, in three layers
+Every staked link carries its own small market with two sides, true and false ([[inversely coupled bonding surface|ICBS]]). Stake for the link raises its price; stake against it lowers it; the two sides are coupled, so raising one presses the other down. A stake needs no second player. Each link has one shared pool; a neuron pays into it to take a side and draws from it to leave, and a formula sets the price from how much stands on each side. So the first neuron to disagree with a link can stake against it at once, and what a winner takes out is what the other side put in: the protocol only computes the price and puts in no money of its own.
 
-Each layer asks a different question about the same stake. The first is live at launch. The other two are rule sets that follow it, and the pages that describe them describe the general law.
+The market does three jobs. It makes a link cost money, so spam is expensive. It turns the stakes into one number, the price, the network's running estimate of the link. And it makes a false link expensive to defend: whoever props it up must keep buying the losing side from everyone who sees the mistake. It never closes.
 
-| layer | the question it asks | what it catches | state |
+### 3 · focus
+
+Once an epoch every node takes the whole graph, each link weighed by the stake on it and by the standing the market and the serum give it, and computes where attention settles when it flows along the links. The computation has exactly one answer, every node gets the same one, and no neuron chooses it ([[collective focus theorem]]). The links that carry focus are what the network holds true this epoch. This is where truth emerges: as the resting state of everyone's stakes taken together.
+
+### 4 · the serum
+
+Focus alone would pay for agreement, and a crowd can agree on a mistake. The serum is what tells knowledge from agreement, using the third commitment.
+
+The textbook case. Ask a crowd whether Philadelphia is the capital of Pennsylvania. Most say yes, and they are wrong. Now ask each person a second question: what share of the others will say yes? Those who answer yes expect nearly everyone to agree. Those who answer no know the real capital, and they also know the mistake is common, so they too predict that most will say yes. Count the answers: "no" comes out more common than the crowd predicted. The surprisingly popular answer is the correct one ([[Bayesian Truth Serum]], Prelec 2004; Prelec, Seung and McCoy 2017).
+
+The reason it works is that knowledge is lopsided. Someone who knows the fact also knows the popular error; someone who holds the error has never heard of the fact. So the informed side is always underestimated by the crowd, and that gap is measurable without anyone knowing the answer in advance.
+
+On a link it is the same count. Each staker has taken a side and, by its valence, predicted where the crowd will settle. The serum compares, per link, how the stake actually stands with how the stakers predicted it would stand. A side that is common and was expected to be common shows no gap: that is plain agreement, and it scores nothing. A side that is more common than predicted shows the gap: someone knew something. Each neuron's score has two parts, the surprise of its side and the accuracy of its prediction of the crowd ([truth scoring](../../specs/truth-scoring.md)).
+
+This is the validation. It needs no outside judge: the question it asks is whether the people who stood behind the link knew more than the crowd expected them to.
+
+### 5 · settlement
+
+Three flows of value leave the epoch, and one record.
+
+| flow | from | to | by what measure |
 |---|---|---|---|
-| focus | did this stake make the shared picture sharper? | noise: stake that fits nothing | live at launch |
-| the serum | did this neuron hold the view before the crowd came to it? | copying and herding | a later rule set |
-| the market | can anyone profit by staking against this link? | errors that outlive their epoch | a later rule set |
+| the redistribution | stakes with a negative score | stakes with a positive score | the serum's score; it sums to zero, so the losing side always pays ([rewards](../../specs/rewards.md) §5) |
+| the premium | the network's emission, through the focus pool | the winners | the gain in [[syntropy]] their stake caused, weighed by its surprise: new money is minted only where knowledge was created ([rewards](../../specs/rewards.md) §1–§4) |
+| the annuity | the network's emission | links that keep carrying focus | the growth of focus on the link's target in each later epoch: foundational links earn as the graph builds on them ([rewards](../../specs/rewards.md) §11–§12) |
+| [[karma]] | — | the neuron | the running sum of its scores: it cannot be bought or transferred, and it weighs the neuron's future links |
 
-Focus alone pays for coherence, and coherence is weaker than truth: a crowd can agree on a mistake, and stake that joins it sharpens the picture and is paid.
+So being right pays twice, from the losers and from the network, and being wrong costs once, to the winners. The premium is what makes staking on knowledge better than a zero-sum game; the redistribution is what makes it a game with something to lose.
 
-The serum is the answer to that. The mechanism it borrows asks each answerer for two things: the answer, and what share of the others it expects on its own side. An answer that turns out more common than the crowd predicted is the one held by those who know something the rest did not expect ([[Bayesian Truth Serum]], Prelec 2004). The textbook case: asked whether Philadelphia is the capital of Pennsylvania, most people say yes. Those who say no also predict that most will say yes. "No" comes out more common than predicted, and "no" is correct. In cyber the second report is not a quantity of its own: the valence of the stake is what the score reads as the meta-prediction ([rewards](../../specs/rewards.md) §5). The score that pays this accumulates into [[karma]], and it is taken from those who added noise.
+### and again
 
-The market is the answer to time. Every link carries a price between false and true that anyone can push by staking, and it stays open. When a link once believed turns out wrong, the neuron who sees it first stakes against it and earns as the rest follow. See [epistemic markets](epistemic-markets.md).
+The link stays open. A later neuron who knows better stakes against it; the price moves; focus moves; the next epoch's serum scores the new stand. A link is true for as long as it survives this, and that is the only sense of the word the network uses.
 
 ---
 
-## why anyone stakes
+## why honesty is the best play
 
-The reward is the only source of staking income in the network. A share of the block subsidy flows into the focus pool; the share grows with the fraction of supply that is actively staked. Each epoch the pool releases a quarter of its balance to the positions that earned, in proportion to what each contributed.
-
-What a position can earn and lose at launch:
-
-| | |
+| what a neuron does | what happens to it |
 |---|---|
-| it earns | when it is active (`+1` or `−1`), it added stake this epoch, and that stake has a positive share of the epoch's gain |
-| once | only stake that lifts a link's side above its previous high is paid; unlocking and locking again to the same height earns nothing |
-| at most | 1 % of the stake added, per epoch |
-| it risks | the fee of the link, seven days of lock, and earning nothing |
-| it loses | nothing else: a stake on the wrong side comes back whole. Losses for being wrong arrive with the serum |
+| stakes what it believes and predicts the crowd as it really expects | the highest expected score of any strategy, when others do the same: this is Prelec's theorem |
+| copies the visible majority | the majority is already expected, so its side shows no surprise: nothing earned, and the stake stands at risk if the majority turns out wrong |
+| goes against the crowd with no knowledge | has nothing that puts it on the surprising side, mispredicts where the crowd stands, and pays for the misprediction |
+| stakes both sides | pays itself: the two positions cancel, and the fees and the lock are spent for nothing |
+| splits its stake across many keys | the same total: every rule is linear in stake |
+| stakes passively | no risk, no reward: it bought ranking |
+| joins a ring that agrees on a falsehood | every member predicts the ring's answer, so the answer shows no surprise and scores nothing; to move the price as well, the ring must keep buying the losing side from everyone who sees the mistake, a cost that runs for as long as the lie stands ([strong truthfulness](../../specs/strong-truthfulness.md)) |
 
-Tokens enter the network through work and through this reward. A neuron that mined can stake, and mining is tuned for ordinary hardware ([rewards](../../specs/rewards.md) §8).
+The mechanism rewards honesty and stays silent on correctness. A neuron that honestly holds an error loses to those who know better, and that loss is how the error gets corrected. Honest mistakes scatter around the fact; strategic reports lean one way; the sum of the first converges and the sum of the second does not.
 
 ---
 
 ## one epoch, with numbers
 
-The numbers are invented to show the shape; the rules are the chain's.
+The rates are invented to show the shape. The rules are the network's.
 
-A question `p` has two links: to a good answer `q` and to a noise file `z`. In one epoch four neurons act, and the epoch's budget is 40 tokens.
+A question `p` has a link to an answer `q`. The answer is right and little known. Four neurons take sides in one epoch.
 
-| neuron | position | share of the epoch's gain | paid |
+| neuron | side and stake | predicts the crowd will hold the link | |
 |---|---|---|---|
-| A | 10,000 for `p → q` | 50 % | 20 |
-| B | 5,000 for `p → q`, the same link, the same epoch | 25 % | 10 |
-| C | 8,000 for `p → z` | none: focus got blurrier | 0 |
-| D | 4,000 against `p → z` | 25 % | 10 |
+| A | 6,000 for | false | knows the answer, and knows the error is common |
+| B | 2,000 for | false | read the source |
+| C | 12,000 against | false | holds the common error and expects everyone to |
+| D | 3,000 against | false | follows C |
 
-A and B share one link's credit in proportion to what each added: copying A in the same epoch takes half as much with half the stake, and copying an epoch later meets a link that is already heavy and gains little. C is paid nothing and gets 8,000 back after the lock. D is paid for removing weight from the noise.
+The stake stands 8,000 for and 15,000 against: 35 % for. Nobody predicted the crowd would hold the link true, so "for" came out far more common than predicted. It is the surprisingly popular side, and it is the minority.
+
+| neuron | the redistribution | the premium | the record |
+|---|---|---|---|
+| A | + 300 | + 30 | karma up |
+| B | + 100 | + 10 | karma up |
+| C | − 320 | 0 | karma down |
+| D | − 80 | 0 | karma down |
+
+C and D pay 400 and A and B receive exactly 400, each side in proportion to its stakes. The premium of 40 is new money on top, shared by what each stake added to the network's syntropy.
+
+By the price alone this link would be held false: most of the money stands against it. The serum's count overturns that, and the link gains standing. This is why the network reinforces by the surprise and never by the raw price ([strong truthfulness](../../specs/strong-truthfulness.md)), and why a majority of money is weaker here than a minority of knowledge.
+
+Later, once the crowd expects the link to hold, standing for it shows no surprise. A neuron that arrives then scores near zero: nothing lost, nothing earned. Arriving after the crowd is a purchase of ranking at the price of locked money.
+
+One count has a blind spot, and it is named below: a minority that shares one error and knows itself a minority reads, in a single epoch, like a minority that knows. Time is what separates them. The link stays open, those who know better keep staking, and holding a price against them costs the mistaken side in every epoch that follows.
 
 ---
 
 ## where the outside world comes in
 
-The chain reads no news. The world enters through neurons: someone who knows that a claim failed stakes against it, and is paid when that makes the picture sharper. So the network knows what its neurons know and are willing to stake on, and a fact nobody stakes on is a fact the network does not hold.
+The chain reads no news. The world enters through neurons: someone who saw the event, ran the experiment or read the source stakes on what it knows, and is paid when that turns out to be more than the crowd expected. The network therefore knows what its neurons know and are willing to stake on. A fact nobody stakes on is a fact the network does not hold.
 
-That is also the limit. A majority of stake that agrees on a falsehood holds it, the way a majority of work holds a chain. The design aims at making that expensive to keep up and profitable to break.
+A claim about an event fits the same machine. "This happened" is a link like any other; those who watched stake for it, and they are few against a crowd that has yet to hear. That is exactly the lopsided case the serum is built to detect, and the market's price is the running forecast before the crowd catches up.
 
 ---
 
@@ -142,28 +178,36 @@ That is also the limit. A majority of stake that agrees on a falsehood holds it,
 | claim | standing |
 |---|---|
 | focus has one value and every node computes the same | proven, and checked by every node each epoch ([[collective focus theorem]], [epoch](../../specs/epoch.md)) |
-| splitting a stake across many keys earns the same | holds by the arithmetic: every rule is linear in stake |
-| telling the truth is the best reply when others do | proven for the serum's report taken alone (Prelec); for the whole payoff together it is assumed ([rewards](../../specs/rewards.md) §15, [strong truthfulness](../../specs/strong-truthfulness.md)) |
-| a ring of real stakers that agrees among itself gains little | bounded by capital: 1 % of the stake added, once per new high, seven days locked; it is bounded, and it is open |
-| the network converges on what is the case | a hypothesis; the test is a public network under real stake |
-
-The honest summary is the last row. The theorem says what honest players do; whether a live network of strategic ones behaves that way is what the launch measures.
+| telling the truth is the best reply when others do | proven for the serum's report (Prelec 2004) |
+| the surprisingly popular side is the true one when no outside judge exists | proven under the standard model of peer prediction: a common prior and independent private evidence ([strong truthfulness](../../specs/strong-truthfulness.md)); weaker when everyone's evidence comes from one source |
+| a minority that shares one error and expects to be a minority | reads as knowledge in a single count: its evidence has one source, which is the case the model excludes; the open market is the correction, epoch after epoch |
+| an informed minority beats a coordinated majority | measured in the scorer at up to 200 agents ([receipt](../../audit/coordinated-consensus-scoring.md)) |
+| holding a false price costs a ring more than it gains | a model, with the threshold of honest capital stated ([strong truthfulness](../../specs/strong-truthfulness.md) § the capital bound); awaits a network |
+| a majority of all stake that agrees to invert its reports | wins: no scoring defends against it, as no chain defends against a majority of its work |
+| the whole payoff taken together keeps honesty the best reply | assumed, and bounded where measured ([rewards](../../specs/rewards.md) §15) |
+| the network converges on what is the case | the hypothesis the network exists to test, in public, under real stake |
 
 ---
 
 ## the four questions, answered
 
-- What is truth? What the network keeps holding: the links that carry focus after every stake for and against them is counted, recomputed each epoch.
+- What is truth? The side of a link that keeps coming out more common than the crowd predicted, and so keeps its price and its focus. It is held, epoch after epoch, and it can be overturned.
 - Who asks and who answers? Any neuron. A link from one file to another is a question answered.
-- Why stake on it? Active stake that sharpens the shared picture is the one thing the network pays for holding tokens.
-- Who checks? Every node recomputes the same result each epoch, and every neuron may stake against any link at any time. There is no outside judge and no closing day.
+- Why stake on it? Being right is paid twice, by those who were wrong and by the network's premium for created knowledge, and it builds karma that weighs every later link. Holding tokens idle is paid nothing.
+- Who checks? The crowd checks itself: every staker's prediction of the others is the yardstick the stand is measured against, every node recomputes the result, and every neuron may stake against any link at any time. There is no outside judge and no closing day.
+
+---
+
+## where it stands
+
+The mechanism above is the law of [rewards](../../specs/rewards.md). Its parts are at different distances from a running network: focus, attribution and the focus pool run in consensus on the rehearsal network; the serum's scorer, the market's cost function and the annuity's accrual are implemented and tested in this repository and are yet to be joined to the chain. The project that joins them before genesis is [the truth market at genesis](https://github.com/cyberia-to/tru/blob/master/projects/truth-market-at-genesis.md).
 
 ---
 
 ## where the rules are
 
-- the reward law: [rewards](../../specs/rewards.md) — §1 the principle, §5 honesty, §9 the two axes of stake, §15 security, §16 what the root chain fixes
+- the reward law: [rewards](../../specs/rewards.md) — §1 the principle, §5 honesty, §9 the two axes of stake, §11 the reward equation, §12 timing, §15 security
+- the serum: [truth scoring](../../specs/truth-scoring.md), [strong truthfulness](../../specs/strong-truthfulness.md)
+- the market: [epistemic markets](epistemic-markets.md), [markets](markets.md), and the protocol of one link, [market](../terms/market.md)
 - the epoch's computation: [epoch](../../specs/epoch.md)
-- the serum's contract: [truth scoring](../../specs/truth-scoring.md), [strong truthfulness](../../specs/strong-truthfulness.md)
-- positions, sides, the new-high rule, the cap and the budget on the root chain: chain-economy §3–§6 (soft3 `specs/chain-economy.md`)
-- the general law in narrative: [honesty](honesty.md), [valence](valence.md), [epistemic markets](epistemic-markets.md), [incentives](incentives.md)
+- the general law in narrative: [honesty](honesty.md), [valence](valence.md), [incentives](incentives.md)
