@@ -167,7 +167,7 @@ Being right pays twice, from the losers and from the network. Being wrong costs 
 | splits its stake across many keys | same total: every rule is linear in stake |
 | joins a ring that agrees on a lie | every member expects the ring's answer, so there is no surprise |
 
-The count rewards honesty and stays silent on correctness. A neuron that honestly holds an error loses to those who know better, and that loss is how the error gets fixed.
+The count pays for knowing more than the crowd expected. Honesty is the best a neuron can do with what it knows, and it is no guarantee: a neuron that honestly holds an error still pays those who know better, and that payment is how the error gets fixed. Lying about it would only cost more.
 
 The chain reads no news. The world enters through neurons: someone who saw the event or read the source stakes on what it knows. A fact nobody stakes on is a fact the network does not hold.
 
