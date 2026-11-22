@@ -6,7 +6,7 @@ alias: epoch engine, epoch focus, root chain focus, epoch gradient, PHI_STEPS
 ---
 # epoch
 
-the form of [[focusing]] the phase-1 root chain runs in consensus. every full node computes, at every epoch boundary, from chain state alone: φ* of the staked graph, its [[syntropy]] J, and the gradient ∂J/∂A of syntropy with respect to every axon weight, which the chain multiplies by stake changes to divide the epoch's budget ([[rewards]] §4, §16; soft3 `specs/chain-economy.md` §4–§5). this page is normative for the operators, the arithmetic, the step count, the transposes and the scales. the implementation is `rs/focusing/epoch/`; measurements are `audit/epoch-settlement-2026-10.md`.
+the form of [[focusing]] the phase-1 root chain runs in consensus. every full node computes, at every epoch boundary, from chain state alone: φ* of the staked graph, its [[syntropy]] J, and the gradient ∂J/∂A of syntropy with respect to every axon weight, which the chain multiplies by stake changes to divide the epoch's budget ([[rewards]] §4, §16; soft3 `specs/chain-economy.md` §4–§5). the coalition value `v(S)` and the block's sample `m(n)` of [[rewards]] §7 are defined on this engine — `phi` over `A^S` with `J` read over the union particle set of the two boundaries — so the chain's work and its settlement run one function. this page is normative for the operators, the arithmetic, the step count, the transposes and the scales. the implementation is `rs/focusing/epoch/`; measurements are `audit/epoch-settlement-2026-10.md`.
 
 ## 1. input
 
