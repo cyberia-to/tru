@@ -222,7 +222,61 @@ pub(crate) fn m_svd(g: &FxAdj, phi: &[Fx], k: usize, iters: usize) -> super::svd
     };
     let apply_m = &apply_m as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
     let apply_mt = &apply_mt as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
-    super::svd::top_svd_banded(n, apply_m, apply_mt, k, 8, iters)
+    // f64 mirror of the operator for the tail bands: identical sparse
+    // structure, values as f64. the head stays field-exact.
+    let rows64: Vec<Vec<(u32, f64)>> = g
+        .out
+        .iter()
+        .map(|r| r.iter().map(|&(j, w)| (j, w.to_f64())).collect())
+        .collect();
+    let mut inc64: Vec<Vec<(u32, f64)>> = vec![Vec::new(); n];
+    for (i, r) in rows64.iter().enumerate() {
+        for &(j, w) in r {
+            inc64[j as usize].push((i as u32, w));
+        }
+    }
+    let dsf: Vec<f64> = ds.iter().map(|x| x.to_f64()).collect();
+    let hop2 = hop2_mix().to_f64();
+    let dsf_m = dsf.clone();
+    let apply_m64 = move |x: &[f64]| -> Vec<f64> {
+        let t: Vec<f64> = (0..n).map(|i| dsf_m[i] * x[i]).collect();
+        let ax: Vec<f64> = rows64
+            .iter()
+            .map(|r| r.iter().map(|&(j, w)| w * t[j as usize]).sum())
+            .collect();
+        let a2x: Vec<f64> = rows64
+            .iter()
+            .map(|r| r.iter().map(|&(j, w)| w * ax[j as usize]).sum())
+            .collect();
+        (0..n).map(|i| dsf_m[i] * (ax[i] + hop2 * a2x[i])).collect()
+    };
+    let dsf2 = dsf.clone();
+    let apply_mt64 = move |x: &[f64]| -> Vec<f64> {
+        let t: Vec<f64> = (0..n).map(|i| dsf2[i] * x[i]).collect();
+        let atx: Vec<f64> = inc64
+            .iter()
+            .map(|r| r.iter().map(|&(j, w)| w * t[j as usize]).sum())
+            .collect();
+        let at2x: Vec<f64> = inc64
+            .iter()
+            .map(|r| r.iter().map(|&(j, w)| w * atx[j as usize]).sum())
+            .collect();
+        (0..n).map(|i| dsf[i] * (atx[i] + hop2 * at2x[i])).collect()
+    };
+    let apply_m = &apply_m as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
+    let apply_mt = &apply_mt as &(dyn Fn(&[Fx]) -> Vec<Fx> + Sync);
+    let apply_m64 = &apply_m64 as &(dyn Fn(&[f64]) -> Vec<f64> + Sync);
+    let apply_mt64 = &apply_mt64 as &(dyn Fn(&[f64]) -> Vec<f64> + Sync);
+    super::svd::top_svd_banded_hybrid(
+        n,
+        apply_m,
+        apply_mt,
+        Some(apply_m64),
+        Some(apply_mt64),
+        k,
+        4,
+        iters,
+    )
 }
 
 /// d* = ceil(exp(−Σ σ̂ ln σ̂)) — the exp-entropy (effective rank) of the
