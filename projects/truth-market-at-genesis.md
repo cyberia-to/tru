@@ -1,16 +1,16 @@
 ---
 tags: cyber, tru, project, pussy, launch
-alias: truth market at genesis, the truth market at genesis, serum and market at genesis
+alias: the truth market, truth market, truth market at genesis, the truth market at genesis, serum and market at genesis
 kind: project
 status: proposed
 owner: master
 serves: launch spacepussy ($PUSSY)
-part of: launch spacepussy
+part of: complete rewards
 lane: wide
 date: 2026-11-21
 ---
 
-# the truth market at genesis
+# the truth market
 
 On pussy's chain at genesis every staked cyberlink carries the whole truth mechanism of [rewards](../specs/rewards.md) §5: a side, a stake and a prediction of the crowd; a market on the link; the serum's score every epoch; the losing side paying the winning side; the mint as the winners' premium; karma.
 
