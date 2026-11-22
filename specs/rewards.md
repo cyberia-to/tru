@@ -48,7 +48,7 @@ Two properties make $\Delta\phi^+$ usable as the reward primitive, and they are 
 - local. By the [[locality theorem]], $\Delta\phi^+$ is computable on the neuron's $O(\log 1/\varepsilon)$-hop neighborhood; the perturbation of a single edge decays exponentially with graph distance, and entries past that radius fall below $\varepsilon$.
 - provable. A single [[zheng]] proof $\sigma$ certifies $\Delta\phi^+$ against the current [[BBG]] root in $O(\log n)$, with no re-execution of the [[tri-kernel]].
 
-Everything paid by the protocol traces to this one scalar.
+Everything paid by the protocol traces to this one scalar. The clip $[\,\cdot\,]_+$ belongs to the payment: the coalition game a settlement sample divides carries the signed $\Delta J$, and the clips are applied to the settled shares (§3, *the sampled game is signed*).
 
 ---
 
@@ -70,9 +70,15 @@ Three of those properties are load-bearing, each invoked by name later:
 
 - honesty enters here, and only here. $A^{\text{eff}}$ folds in stake, [[karma]], and market price, so a low-reputation or market-doubted link joins $v$ with reduced weight. But [[karma]] is accumulated reputation and price is the standing market belief; neither sees whether the contribution at hand carried information the crowd had not already expected. Since a copy and an original produce the same $\Delta\phi^+$, Shapley's symmetry alone would split their credit equally — so the per-contribution surprise gate (§5) supplies the missing asymmetry. Karma and surprise shape what is valuable; attribution (§4) only divides it.
 - submodular among substitutes, supermodular among complements. Overlapping links on a saturating particle have diminishing returns (substitutes), so within a contested cluster the standalone marginal is the largest a link contributes — the regime where the propose bound (§6) holds and settlement is an honest sampling problem (§7). But links that form a path or build on a foundation are complementary: together they shift focus more than the sum of their parts, so a foundational link's Shapley share can exceed its standalone marginal. $v$ is therefore neither globally sub- nor supermodular, and the only universal guarantee is conservation, not a per-link ceiling.
-- monotone and bounded — a true contribution never lowers value and value never runs away, so the game has a well-defined, finite [[Shapley]] solution (§4).
+- monotone and bounded — a true contribution never lowers value and value never runs away, so the game has a well-defined, finite [[Shapley]] solution (§4). Monotonicity is a property of the clipped $\Delta\phi^+$; the signed game the sample divides (below) is bounded and conserved but not monotone, and the [[Shapley]] solution needs only boundedness.
 
 $v$ is the same $\Delta\phi^+$ (§2) read over sets, by the incremental [[tri-kernel]] recomputation the network already runs.
+
+**The sampled game is signed** (amended 2026-11-19). The clip in $\Delta\phi^+ = [\Delta J]_+$ is the mint's step, not the game's. The value a settlement sample (§7) divides is the signed coalition marginal
+
+$$v(S) \;=\; J_U\big(\phi^*(A^{\text{eff}} \cup S)\big) \;-\; J_U\big(\phi^*(A^{\text{eff}})\big),\qquad v(\emptyset) = 0,$$
+
+so a coalition that lowers [[syntropy]] carries a negative value, exactly as the chain's per-contribution attribution $a(c)$ does (soft3 [[chain-economy]] §5.2). The clips come after the division: per contribution $\max(0, a(c))$ (chain-economy §5.3), and on the total $\min(v^\star(N), \Delta\phi^+(N))$ (§4). So one definition stands — the signed game inside the sample, the clips outside it — and it is the one tru computes (`rs/focusing/epoch/coalition/`, tru `specs/epoch.md` §8). Conservation is unaffected and in fact exact on the signed game: along any ordering $\sum_j m_j(n) = v(N)$ bit for bit, by telescoping.
 
 For the reward, $v$ is read in its surprise-weighted form $v^\star$: each contribution is scaled by its [[Bayesian Truth Serum|BTS]] surprise $\rho_\ell \in [0,1]$ (§5), so a copy contributes nothing and the mint divides [[surprising syntropy]] — the focus shift the crowd did not predict. Rank reads the unweighted graph (§9), so a copy's capital still ranks even as it mints nothing.
 
